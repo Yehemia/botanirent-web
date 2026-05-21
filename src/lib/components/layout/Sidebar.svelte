@@ -54,9 +54,10 @@
 		{ section: 'OWNER', roles: ['owner'] },
 		{ icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', roles: ['owner'] },
 		{ icon: BarChart3, label: 'Statistik', href: '/statistics', roles: ['owner'] },
-		{ icon: Store, label: 'Cabang', href: '/branches', roles: ['owner'] },
-		{ icon: Settings, label: 'Denda', href: '/penalties', roles: ['owner'] },
-		{ icon: Activity, label: 'Log Aktivitas', href: '/activity-log', roles: ['owner'] }
+		{ icon: Store, label: 'Manajemen Cabang', href: '/branches', roles: ['owner'] },
+		{ icon: Users, label: 'Manajemen Staff', href: '/staff', roles: ['owner'] },
+		{ icon: Settings, label: 'Pengaturan Denda', href: '/penalties', roles: ['owner'] },
+		{ icon: FileText, label: 'Log Aktivitas', href: '/activity-log', roles: ['owner'] }
 	];
 
 	// Filter menu items based on user role

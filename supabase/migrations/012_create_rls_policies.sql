@@ -8,13 +8,13 @@
 -- ==========================================
 
 -- Ambil branch_id user yang sedang login
-create or replace function auth.user_branch_id()
+create or replace function public.user_branch_id()
 returns uuid as $$
   select branch_id from public.profiles where id = auth.uid()
 $$ language sql security definer stable;
 
 -- Ambil role user yang sedang login
-create or replace function auth.user_role()
+create or replace function public.user_role()
 returns text as $$
   select role from public.profiles where id = auth.uid()
 $$ language sql security definer stable;
@@ -45,18 +45,18 @@ alter table public.activity_logs enable row level security;
 
 create policy "branches_select" on public.branches
   for select using (
-    auth.user_role() = 'owner'
-    or id = auth.user_branch_id()
+    public.user_role() = 'owner'
+    or id = public.user_branch_id()
   );
 
 create policy "branches_insert" on public.branches
-  for insert with check (auth.user_role() = 'owner');
+  for insert with check (public.user_role() = 'owner');
 
 create policy "branches_update" on public.branches
-  for update using (auth.user_role() = 'owner');
+  for update using (public.user_role() = 'owner');
 
 create policy "branches_delete" on public.branches
-  for delete using (auth.user_role() = 'owner');
+  for delete using (public.user_role() = 'owner');
 
 -- ==========================================
 -- Policies: profiles
@@ -66,14 +66,14 @@ create policy "branches_delete" on public.branches
 create policy "profiles_select" on public.profiles
   for select using (
     id = auth.uid()
-    or auth.user_role() = 'owner'
-    or branch_id = auth.user_branch_id()
+    or public.user_role() = 'owner'
+    or branch_id = public.user_branch_id()
   );
 
 create policy "profiles_update" on public.profiles
   for update using (
     id = auth.uid()
-    or auth.user_role() = 'owner'
+    or public.user_role() = 'owner'
   );
 
 -- ==========================================
@@ -84,7 +84,7 @@ create policy "categories_select" on public.categories
   for select using (true);
 
 create policy "categories_manage" on public.categories
-  for all using (auth.user_role() in ('owner', 'gudang'));
+  for all using (public.user_role() in ('owner', 'gudang'));
 
 -- ==========================================
 -- Policies: items (isolasi per cabang)
@@ -92,26 +92,26 @@ create policy "categories_manage" on public.categories
 
 create policy "items_select" on public.items
   for select using (
-    branch_id = auth.user_branch_id()
-    or auth.user_role() = 'owner'
+    branch_id = public.user_branch_id()
+    or public.user_role() = 'owner'
   );
 
 create policy "items_insert" on public.items
   for insert with check (
-    auth.user_role() in ('gudang', 'owner')
-    and (branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+    public.user_role() in ('gudang', 'owner')
+    and (branch_id = public.user_branch_id() or public.user_role() = 'owner')
   );
 
 create policy "items_update" on public.items
   for update using (
-    auth.user_role() in ('gudang', 'owner')
-    and (branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+    public.user_role() in ('gudang', 'owner')
+    and (branch_id = public.user_branch_id() or public.user_role() = 'owner')
   );
 
 create policy "items_delete" on public.items
   for delete using (
-    auth.user_role() in ('gudang', 'owner')
-    and (branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+    public.user_role() in ('gudang', 'owner')
+    and (branch_id = public.user_branch_id() or public.user_role() = 'owner')
   );
 
 -- ==========================================
@@ -123,17 +123,17 @@ create policy "rental_assets_select" on public.rental_assets
     exists (
       select 1 from public.items
       where items.id = rental_assets.item_id
-      and (items.branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+      and (items.branch_id = public.user_branch_id() or public.user_role() = 'owner')
     )
   );
 
 create policy "rental_assets_manage" on public.rental_assets
   for all using (
-    auth.user_role() in ('gudang', 'owner')
+    public.user_role() in ('gudang', 'owner')
     and exists (
       select 1 from public.items
       where items.id = rental_assets.item_id
-      and (items.branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+      and (items.branch_id = public.user_branch_id() or public.user_role() = 'owner')
     )
   );
 
@@ -143,14 +143,14 @@ create policy "rental_assets_manage" on public.rental_assets
 
 create policy "packages_select" on public.packages
   for select using (
-    branch_id = auth.user_branch_id()
-    or auth.user_role() = 'owner'
+    branch_id = public.user_branch_id()
+    or public.user_role() = 'owner'
   );
 
 create policy "packages_manage" on public.packages
   for all using (
-    auth.user_role() in ('gudang', 'owner')
-    and (branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+    public.user_role() in ('gudang', 'owner')
+    and (branch_id = public.user_branch_id() or public.user_role() = 'owner')
   );
 
 create policy "package_items_select" on public.package_items
@@ -158,13 +158,13 @@ create policy "package_items_select" on public.package_items
     exists (
       select 1 from public.packages
       where packages.id = package_items.package_id
-      and (packages.branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+      and (packages.branch_id = public.user_branch_id() or public.user_role() = 'owner')
     )
   );
 
 create policy "package_items_manage" on public.package_items
   for all using (
-    auth.user_role() in ('gudang', 'owner')
+    public.user_role() in ('gudang', 'owner')
   );
 
 -- ==========================================
@@ -173,14 +173,14 @@ create policy "package_items_manage" on public.package_items
 
 create policy "customers_select" on public.customers
   for select using (
-    branch_id = auth.user_branch_id()
-    or auth.user_role() = 'owner'
+    branch_id = public.user_branch_id()
+    or public.user_role() = 'owner'
   );
 
 create policy "customers_manage" on public.customers
   for all using (
-    auth.user_role() in ('kasir', 'owner')
-    and (branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+    public.user_role() in ('kasir', 'owner')
+    and (branch_id = public.user_branch_id() or public.user_role() = 'owner')
   );
 
 -- ==========================================
@@ -189,20 +189,20 @@ create policy "customers_manage" on public.customers
 
 create policy "transactions_select" on public.transactions
   for select using (
-    branch_id = auth.user_branch_id()
-    or auth.user_role() = 'owner'
+    branch_id = public.user_branch_id()
+    or public.user_role() = 'owner'
   );
 
 create policy "transactions_insert" on public.transactions
   for insert with check (
-    auth.user_role() in ('kasir', 'owner')
-    and (branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+    public.user_role() in ('kasir', 'owner')
+    and (branch_id = public.user_branch_id() or public.user_role() = 'owner')
   );
 
 create policy "transactions_update" on public.transactions
   for update using (
-    branch_id = auth.user_branch_id()
-    or auth.user_role() = 'owner'
+    branch_id = public.user_branch_id()
+    or public.user_role() = 'owner'
   );
 
 create policy "transaction_items_select" on public.transaction_items
@@ -210,13 +210,13 @@ create policy "transaction_items_select" on public.transaction_items
     exists (
       select 1 from public.transactions
       where transactions.id = transaction_items.transaction_id
-      and (transactions.branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+      and (transactions.branch_id = public.user_branch_id() or public.user_role() = 'owner')
     )
   );
 
 create policy "transaction_items_manage" on public.transaction_items
   for all using (
-    auth.user_role() in ('kasir', 'owner')
+    public.user_role() in ('kasir', 'owner')
   );
 
 -- ==========================================
@@ -225,14 +225,14 @@ create policy "transaction_items_manage" on public.transaction_items
 
 create policy "bookings_select" on public.bookings
   for select using (
-    branch_id = auth.user_branch_id()
-    or auth.user_role() = 'owner'
+    branch_id = public.user_branch_id()
+    or public.user_role() = 'owner'
   );
 
 create policy "bookings_manage" on public.bookings
   for all using (
-    auth.user_role() in ('kasir', 'owner')
-    and (branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+    public.user_role() in ('kasir', 'owner')
+    and (branch_id = public.user_branch_id() or public.user_role() = 'owner')
   );
 
 -- ==========================================
@@ -243,7 +243,7 @@ create policy "penalty_rules_select" on public.penalty_rules
   for select using (true);
 
 create policy "penalty_rules_manage" on public.penalty_rules
-  for all using (auth.user_role() = 'owner');
+  for all using (public.user_role() = 'owner');
 
 -- ==========================================
 -- Policies: penalties (isolasi per cabang)
@@ -251,14 +251,14 @@ create policy "penalty_rules_manage" on public.penalty_rules
 
 create policy "penalties_select" on public.penalties
   for select using (
-    branch_id = auth.user_branch_id()
-    or auth.user_role() = 'owner'
+    branch_id = public.user_branch_id()
+    or public.user_role() = 'owner'
   );
 
 create policy "penalties_manage" on public.penalties
   for all using (
-    auth.user_role() in ('kasir', 'owner')
-    and (branch_id = auth.user_branch_id() or auth.user_role() = 'owner')
+    public.user_role() in ('kasir', 'owner')
+    and (branch_id = public.user_branch_id() or public.user_role() = 'owner')
   );
 
 -- ==========================================
@@ -267,14 +267,14 @@ create policy "penalties_manage" on public.penalties
 
 create policy "activity_logs_select" on public.activity_logs
   for select using (
-    auth.user_role() = 'owner'
-    or branch_id = auth.user_branch_id()
+    public.user_role() = 'owner'
+    or branch_id = public.user_branch_id()
   );
 
 create policy "activity_logs_insert" on public.activity_logs
   for insert with check (
-    branch_id = auth.user_branch_id()
-    or auth.user_role() = 'owner'
+    branch_id = public.user_branch_id()
+    or public.user_role() = 'owner'
   );
 
 -- ==========================================
