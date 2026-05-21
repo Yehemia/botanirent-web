@@ -3,19 +3,13 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+
+	import { formatCurrency, formatDate } from '$lib/utils/format';
 
 	let { data } = $props();
-	let { transactions, search } = data;
-
-	function formatCurrency(amount) {
-		return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
-	}
-
-	function formatDate(dateStr) {
-		return new Intl.DateTimeFormat('id-ID', {
-			day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-		}).format(new Date(dateStr));
-	}
+	let transactions = $derived(data.transactions);
+	let search = $derived(data.search);
 </script>
 
 <div class="space-y-6 max-w-7xl mx-auto pb-12">
@@ -30,16 +24,15 @@
 	<!-- Pencarian -->
 	<Card padding="md">
 		<form method="GET" class="relative max-w-md">
-			<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-stone)]">
-				<Search size={18} />
-			</div>
-			<input 
-				type="text" 
+			<Input 
 				name="q"
 				value={search} 
 				placeholder="Cari berdasarkan kode transaksi (TRX-...)" 
-				class="w-full pl-10 pr-4 py-2 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
 			>
+				{#snippet iconLeft()}
+					<Search size={18} />
+				{/snippet}
+			</Input>
 		</form>
 	</Card>
 
@@ -87,7 +80,7 @@
 									{:else if trx.type === 'rental'}
 										<Badge variant="info">Sewa</Badge>
 									{:else}
-										<Badge variant="default">Hybrid</Badge>
+										<Badge variant="neutral">Hybrid</Badge>
 									{/if}
 								</td>
 								<td class="px-6 py-4">

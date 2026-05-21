@@ -5,10 +5,13 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Select from '$lib/components/ui/Select.svelte';
+	import { formatCurrency } from '$lib/utils/format';
 
 	let { data, form } = $props();
-	let { customers } = data;
+	let customers = $derived(data.customers);
 
+	/** @type {any[]} */
 	let cart = $state([]);
 	let hasRental = $state(false);
 	let isMounted = $state(false);
@@ -36,7 +39,7 @@
 				return;
 			}
 			
-			hasRental = cart.some(c => c.type === 'rental' || c.type === 'package');
+			hasRental = cart.some((/** @type {any} */ c) => c.type === 'rental' || c.type === 'package');
 			
 			if (hasRental) {
 				const today = new Date();
@@ -57,13 +60,13 @@
 		if (!hasRental || !startDate || !endDate) return 1;
 		const start = new Date(startDate);
 		const end = new Date(endDate);
-		const diffTime = end - start;
+		const diffTime = end.getTime() - start.getTime();
 		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 		return diffDays > 0 ? diffDays : 1;
 	});
 
 	let subtotal = $derived(() => {
-		return cart.reduce((acc, curr) => {
+		return cart.reduce((/** @type {number} */ acc, /** @type {any} */ curr) => {
 			if (curr.type === 'rental' || curr.type === 'package') {
 				return acc + (curr.price * curr.quantity * rentalDays());
 			}
@@ -104,9 +107,7 @@
 		return JSON.stringify(payload);
 	});
 
-	function formatCurrency(amount) {
-		return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
-	}
+
 
 	function handleSuccess() {
 		// Clear cart after successful submission
@@ -163,27 +164,21 @@
 								<CalendarClock size={20} class="text-[var(--color-forest)]" /> Jadwal Sewa
 							</h3>
 							<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-								<div>
-									<label for="startDate" class="block text-sm font-semibold text-[var(--color-earth)] mb-2">Tanggal Mulai (Ambil)</label>
-									<input 
-										type="date" 
-										id="startDate"
-										bind:value={startDate}
-										class="w-full px-4 py-3 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
-										required
-									>
-								</div>
-								<div>
-									<label for="endDate" class="block text-sm font-semibold text-[var(--color-earth)] mb-2">Tanggal Selesai (Kembali)</label>
-									<input 
-										type="date" 
-										id="endDate"
-										bind:value={endDate}
-										min={startDate}
-										class="w-full px-4 py-3 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
-										required
-									>
-								</div>
+								<Input 
+									type="date" 
+									id="startDate"
+									label="Tanggal Mulai (Ambil)"
+									bind:value={startDate}
+									required
+								/>
+								<Input 
+									type="date" 
+									id="endDate"
+									label="Tanggal Selesai (Kembali)"
+									bind:value={endDate}
+									min={startDate}
+									required
+								/>
 							</div>
 							<div class="mt-3 text-sm text-[var(--color-stone)] bg-[var(--color-sand)]/50 p-3 rounded-lg border border-[var(--color-border-light)]">
 								Total durasi sewa: <strong class="text-[var(--color-forest)]">{rentalDays()} Hari</strong>
@@ -210,19 +205,16 @@
 								<Input id="customerPhone" label="Nomor HP/WA" bind:value={customerPhone} placeholder="misal: 081234567890" />
 							</div>
 						{:else}
-							<div>
-								<label for="customerId" class="block text-sm font-semibold text-[var(--color-earth)] mb-2">Pilih Pelanggan</label>
-								<select 
-									id="customerId" 
-									bind:value={customerId}
-									class="w-full px-4 py-3 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
-								>
-									<option value="" disabled selected>-- Pilih Pelanggan --</option>
-									{#each customers as cust}
-										<option value={cust.id}>{cust.full_name} ({cust.phone || '-'})</option>
-									{/each}
-								</select>
-							</div>
+							<Select 
+								id="customerId" 
+								label="Pilih Pelanggan"
+								bind:value={customerId}
+							>
+								<option value="" disabled selected>-- Pilih Pelanggan --</option>
+								{#each customers as cust}
+									<option value={cust.id}>{cust.full_name} ({cust.phone || '-'})</option>
+								{/each}
+							</Select>
 						{/if}
 						<p class="text-xs text-[var(--color-stone)] mt-3">Data pelanggan wajib diisi untuk transaksi yang mengandung barang sewa sebagai jaminan tracing.</p>
 					</Card>
@@ -271,32 +263,27 @@
 						</h3>
 
 						<div class="space-y-4">
-							<div>
-								<label for="paymentMethod" class="block text-sm font-semibold text-[var(--color-earth)] mb-2">Metode Pembayaran</label>
-								<select 
-									id="paymentMethod" 
-									bind:value={paymentMethod}
-									class="w-full px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
-								>
-									<option value="cash">Tunai (Cash)</option>
-									<option value="transfer">Transfer Manual (BCA/Mandiri)</option>
-									<option value="qris">QRIS Otomatis (Midtrans)</option>
-								</select>
-							</div>
+							<Select 
+								id="paymentMethod" 
+								label="Metode Pembayaran"
+								bind:value={paymentMethod}
+							>
+								<option value="cash">Tunai (Cash)</option>
+								<option value="transfer">Transfer Manual (BCA/Mandiri)</option>
+								<option value="qris">QRIS Otomatis (Midtrans)</option>
+							</Select>
 
-							<div>
-								<label for="paidAmount" class="block text-sm font-semibold text-[var(--color-earth)] mb-2">Jumlah Uang Diterima (Rp)</label>
-								<input 
-									type="number" 
-									id="paidAmount"
-									bind:value={paidAmount}
-									disabled={paymentMethod === 'qris'}
-									placeholder={paymentMethod === 'qris' ? 'Otomatis' : 'misal: 150000'}
-									min={paymentMethod === 'qris' ? 0 : subtotal()}
-									class="w-full px-4 py-3 text-lg font-bold bg-white border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all disabled:opacity-50"
-									required={paymentMethod !== 'qris'}
-								>
-							</div>
+							<Input 
+								type="number" 
+								id="paidAmount"
+								label="Jumlah Uang Diterima (Rp)"
+								bind:value={paidAmount}
+								disabled={paymentMethod === 'qris'}
+								placeholder={paymentMethod === 'qris' ? 'Otomatis' : 'misal: 150000'}
+								min={paymentMethod === 'qris' ? 0 : subtotal()}
+								required={paymentMethod !== 'qris'}
+								size="lg"
+							/>
 
 							{#if changeAmount() > 0}
 								<div class="bg-[var(--color-warning)]/10 text-[var(--color-warning)] p-3 rounded-lg border border-[var(--color-warning)]/20 text-center">

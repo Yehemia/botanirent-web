@@ -11,16 +11,20 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import Select from '$lib/components/ui/Select.svelte';
+	import { formatCurrency } from '$lib/utils/format';
 
 	let { data } = $props();
-	let { items, categories } = data;
+	let items = $derived(data.items);
+	let categories = $derived(data.categories);
 
 	let searchQuery = $state('');
 	let selectedCategory = $state('all');
 
 	// Filter items based on search and category
 	let filteredItems = $derived(
-		items.filter(item => {
+		items.filter((/** @type {any} */ item) => {
 			const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
 								(item.barcode && item.barcode.toLowerCase().includes(searchQuery.toLowerCase()));
 			const matchCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
@@ -28,14 +32,7 @@
 		})
 	);
 
-	function formatCurrency(amount) {
-		if (amount == null) return '-';
-		return new Intl.NumberFormat('id-ID', {
-			style: 'currency',
-			currency: 'IDR',
-			minimumFractionDigits: 0
-		}).format(amount);
-	}
+
 </script>
 
 <div class="space-y-6 max-w-7xl mx-auto pb-12">
@@ -62,30 +59,25 @@
 	<!-- Controls (Search & Category) -->
 	<Card padding="md">
 		<div class="flex flex-col md:flex-row gap-4">
-			<div class="flex-1">
-				<div class="relative">
-					<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-stone)]">
-						<Search size={18} />
-					</div>
-					<input 
-						type="text" 
-						bind:value={searchQuery} 
-						placeholder="Cari nama barang atau barcode..." 
-						class="w-full pl-10 pr-4 py-2 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
-					>
-				</div>
-			</div>
-			<div class="w-full md:w-64">
-				<select 
-					bind:value={selectedCategory}
-					class="w-full px-4 py-2 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all appearance-none cursor-pointer"
-				>
-					<option value="all">Semua Kategori</option>
-					{#each categories as cat (cat.id)}
-						<option value={cat.id}>{cat.name} ({cat.type})</option>
-					{/each}
-				</select>
-			</div>
+			<Input 
+				bind:value={searchQuery} 
+				placeholder="Cari nama barang atau barcode..." 
+				class="flex-1"
+			>
+				{#snippet iconLeft()}
+					<Search size={18} />
+				{/snippet}
+			</Input>
+			
+			<Select 
+				bind:value={selectedCategory}
+				class="w-full md:w-64"
+			>
+				<option value="all">Semua Kategori</option>
+				{#each categories as cat (cat.id)}
+					<option value={cat.id}>{cat.name} ({cat.type})</option>
+				{/each}
+			</Select>
 		</div>
 	</Card>
 
@@ -154,7 +146,7 @@
 									{#if item.is_active}
 										<Badge variant="success">Aktif</Badge>
 									{:else}
-										<Badge variant="default">Nonaktif</Badge>
+										<Badge variant="neutral">Nonaktif</Badge>
 									{/if}
 								</td>
 								<td class="px-6 py-4 text-right">

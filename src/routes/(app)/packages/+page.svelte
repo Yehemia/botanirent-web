@@ -3,26 +3,19 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import { formatCurrency } from '$lib/utils/format';
 
 	let { data } = $props();
-	let { packages } = data;
+	let packages = $derived(data.packages);
 
 	let searchQuery = $state('');
 
 	let filteredPackages = $derived(
-		packages.filter(pkg => 
+		packages.filter((/** @type {any} */ pkg) => 
 			pkg.name.toLowerCase().includes(searchQuery.toLowerCase())
 		)
 	);
-
-	function formatCurrency(amount) {
-		if (amount == null) return '-';
-		return new Intl.NumberFormat('id-ID', {
-			style: 'currency',
-			currency: 'IDR',
-			minimumFractionDigits: 0
-		}).format(amount);
-	}
 </script>
 
 <div class="space-y-6 max-w-7xl mx-auto pb-12">
@@ -42,22 +35,21 @@
 
 	<!-- Search -->
 	<Card padding="md">
-		<div class="relative max-w-md">
-			<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-stone)]">
+		<Input 
+			type="text" 
+			bind:value={searchQuery} 
+			placeholder="Cari nama paket..." 
+			class="max-w-md"
+		>
+			{#snippet iconLeft()}
 				<Search size={18} />
-			</div>
-			<input 
-				type="text" 
-				bind:value={searchQuery} 
-				placeholder="Cari nama paket..." 
-				class="w-full pl-10 pr-4 py-2 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
-			>
-		</div>
+			{/snippet}
+		</Input>
 	</Card>
 
 	<!-- Grid -->
 	{#if filteredPackages.length === 0}
-		<Card padding="xl" class="text-center text-[var(--color-stone)]">
+		<Card padding="lg" class="text-center text-[var(--color-stone)]">
 			<Boxes size={48} class="mx-auto mb-3 opacity-20" />
 			<p class="text-lg font-medium text-[var(--color-earth)]">Tidak ada paket ditemukan</p>
 			<p class="text-sm mt-1">Silakan buat paket bundling baru untuk penyewa Anda.</p>
@@ -79,7 +71,7 @@
 							{#if pkg.is_active}
 								<Badge variant="success">Aktif</Badge>
 							{:else}
-								<Badge variant="default">Nonaktif</Badge>
+								<Badge variant="neutral">Nonaktif</Badge>
 							{/if}
 						</div>
 					</div>

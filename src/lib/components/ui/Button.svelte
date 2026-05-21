@@ -1,16 +1,13 @@
 <script>
 	/**
-	 * @typedef {Object} Props
-	 * @property {'button' | 'submit' | 'reset'} [type]
-	 * @property {'primary' | 'secondary' | 'danger' | 'ghost'} [variant]
+	 * @typedef {Object} ExtraProps
+	 * @property {'primary' | 'secondary' | 'danger' | 'ghost' | 'outline'} [variant]
 	 * @property {'sm' | 'md' | 'lg'} [size]
-	 * @property {boolean} [disabled]
 	 * @property {boolean} [fullWidth]
-	 * @property {string} [class]
-	 * @property {import('svelte/elements').MouseEventHandler<HTMLButtonElement>} [onclick]
-	 * @property {import('svelte').Snippet} [children]
 	 * @property {import('svelte').Snippet} [iconLeft]
 	 * @property {import('svelte').Snippet} [iconRight]
+	 *
+	 * @typedef {import('svelte/elements').HTMLButtonAttributes & ExtraProps} Props
 	 */
 
 	/** @type {Props} */
@@ -33,6 +30,7 @@
 	const variantClasses = {
 		primary: 'bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)] focus-visible:ring-[var(--color-forest)] active:bg-[var(--color-forest-dark)] active:scale-[0.97]',
 		secondary: 'bg-transparent border-[1.5px] border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-sage-10)] active:bg-[var(--color-sage-20)] focus-visible:ring-[var(--color-forest)]',
+		outline: 'bg-transparent border-[1.5px] border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-sage-10)] active:bg-[var(--color-sage-20)] focus-visible:ring-[var(--color-forest)]',
 		danger: 'bg-[var(--color-error)] text-white hover:bg-[#A83428] focus-visible:ring-[var(--color-error)]',
 		ghost: 'bg-transparent text-[var(--color-stone)] hover:bg-[var(--color-sand)] active:bg-[var(--color-sand-light)] focus-visible:ring-[var(--color-border)]'
 	};

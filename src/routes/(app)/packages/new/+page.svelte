@@ -4,42 +4,51 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import { formatCurrency } from '$lib/utils/format';
 
 	let { data, form } = $props();
-	let { availableItems } = data;
+	let availableItems = $derived(data.availableItems);
 
 	let loading = $state(false);
 	
 	// State for selected items in the package
+	/** @type {any[]} */
 	let selectedItems = $state([]);
 	let searchQuery = $state('');
 	
 	let filteredAvailable = $derived(
-		availableItems.filter(item => 
+		availableItems.filter((/** @type {any} */ item) => 
 			item.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-			!selectedItems.find(s => s.id === item.id)
+			!selectedItems.find((/** @type {any} */ s) => s.id === item.id)
 		).slice(0, 10) // Limit suggestions
 	);
 
 	let totalPriceNormal = $derived(
-		selectedItems.reduce((acc, curr) => acc + (curr.rental_price_per_day * curr.quantity), 0)
+		selectedItems.reduce((/** @type {number} */ acc, /** @type {any} */ curr) => acc + (curr.rental_price_per_day * curr.quantity), 0)
 	);
 
+	/** @param {any} item */
 	function addItem(item) {
 		selectedItems = [...selectedItems, { ...item, quantity: 1 }];
 		searchQuery = '';
 	}
 
+	/** @param {any} id */
 	function removeItem(id) {
-		selectedItems = selectedItems.filter(s => s.id !== id);
+		selectedItems = selectedItems.filter((/** @type {any} */ s) => s.id !== id);
 	}
 
+	/**
+	 * @param {any} id
+	 * @param {any} qty
+	 */
 	function updateQuantity(id, qty) {
 		const val = parseInt(qty);
 		if (isNaN(val) || val < 1) return;
-		selectedItems = selectedItems.map(s => s.id === id ? { ...s, quantity: val } : s);
+		selectedItems = selectedItems.map((/** @type {any} */ s) => s.id === id ? { ...s, quantity: val } : s);
 	}
 
+	/** @type {string | null} */
 	let imagePreview = $state(null);
 	/** @param {Event & { currentTarget: HTMLInputElement }} e */
 	function handleImageChange(e) {
@@ -49,15 +58,6 @@
 		} else {
 			imagePreview = null;
 		}
-	}
-
-	function formatCurrency(amount) {
-		if (amount == null) return '-';
-		return new Intl.NumberFormat('id-ID', {
-			style: 'currency',
-			currency: 'IDR',
-			minimumFractionDigits: 0
-		}).format(amount);
 	}
 </script>
 
@@ -169,16 +169,16 @@
 					
 					<!-- Pencarian Barang -->
 					<div class="relative mb-6">
-						<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-stone)]">
-							<Search size={18} />
-						</div>
-						<input 
-							type="text" 
+						<Input 
 							bind:value={searchQuery} 
 							placeholder="Ketik nama barang sewa..." 
-							class="w-full pl-10 pr-4 py-3 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
+							size="lg"
 						>
-						
+							{#snippet iconLeft()}
+								<Search size={18} />
+							{/snippet}
+						</Input>
+							
 						{#if searchQuery.trim().length > 0 && filteredAvailable.length > 0}
 							<div class="absolute z-10 w-full mt-1 bg-white border border-[var(--color-border)] rounded-xl shadow-lg max-h-60 overflow-y-auto">
 								{#each filteredAvailable as item}

@@ -6,7 +6,7 @@ export async function load({ locals }) {
 	const { session, profile } = await locals.safeGetSession();
 
 	if (!session || !profile) {
-		throw redirect(303, '/auth/login');
+		throw redirect(303, '/login');
 	}
 
 	// Ambil daftar pelanggan yang sudah ada
@@ -135,7 +135,8 @@ export const actions = {
 					console.error("Midtrans API Error:", midtransData);
 				}
 			} catch (e) {
-				if (e.status === 303) throw e; // Pass SvelteKit redirect error
+				const err = /** @type {any} */ (e);
+				if (err.status === 303) throw e; // Pass SvelteKit redirect error
 				console.error("Midtrans Request Error:", e);
 				// Biarkan tetap lanjut ke struk, biar kasir tau kalau error Midtrans tapi data masuk
 			}

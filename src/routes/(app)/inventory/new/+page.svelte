@@ -4,18 +4,24 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Select from '$lib/components/ui/Select.svelte';
 
+	/** @type {{ data: any, form: any }} */
 	let { data, form } = $props();
-	let { categories } = data;
+	
+	let categories = $derived(data.categories);
 
 	let loading = $state(false);
 	
 	// Default to first category if none selected previously
-	let selectedCategoryId = $state(form?.values?.category_id || (categories.length > 0 ? categories[0].id : ''));
+	const initialForm = form;
+	const initialData = data;
+	let selectedCategoryId = $state(initialForm?.values?.category_id || (initialData.categories.length > 0 ? initialData.categories[0].id : ''));
 	
 	// Reactively find the selected category to toggle price inputs
-	let selectedCategory = $derived(categories.find(c => c.id === selectedCategoryId));
+	let selectedCategory = $derived(categories.find((/** @type {any} */ c) => c.id === selectedCategoryId));
 	
+	/** @type {string | null} */
 	let imagePreview = $state(null);
 
 	/** @param {Event & { currentTarget: HTMLInputElement }} e */
@@ -111,29 +117,19 @@
 							/>
 						</div>
 
-						<!-- Kategori -->
-						<div>
-							<label for="category_id" class="block text-sm font-semibold text-[var(--color-earth)] mb-2">Kategori</label>
-							<div class="relative">
-								<select 
-									id="category_id" 
-									name="category_id" 
-									bind:value={selectedCategoryId}
-									class="w-full px-4 py-3 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all appearance-none cursor-pointer"
-								>
-									{#if categories.length === 0}
-										<option value="" disabled>Belum ada kategori di database</option>
-									{/if}
-									{#each categories as cat}
-										<option value={cat.id}>{cat.name} ({cat.type})</option>
-									{/each}
-								</select>
-								<!-- Dropdown Icon -->
-								<div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-[var(--color-stone)]">
-									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-								</div>
-							</div>
-						</div>
+						<Select 
+							id="category_id" 
+							name="category_id" 
+							label="Kategori"
+							bind:value={selectedCategoryId}
+						>
+							{#if categories.length === 0}
+								<option value="" disabled>Belum ada kategori di database</option>
+							{/if}
+							{#each categories as cat}
+								<option value={cat.id}>{cat.name} ({cat.type})</option>
+							{/each}
+						</Select>
 
 						<!-- Grid untuk Harga dan Stok -->
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">

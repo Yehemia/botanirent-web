@@ -3,18 +3,10 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 
+	import { formatCurrency, formatDate } from '$lib/utils/format';
+
 	let { data } = $props();
-	let { transaction } = data;
-
-	function formatCurrency(amount) {
-		return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
-	}
-
-	function formatDate(dateStr) {
-		return new Intl.DateTimeFormat('id-ID', {
-			day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-		}).format(new Date(dateStr));
-	}
+	let transaction = $derived(data.transaction);
 
 	function handlePrint() {
 		window.print();
@@ -28,7 +20,7 @@
 		<a href="/transactions" class="inline-flex items-center gap-2 text-[var(--color-stone)] hover:text-[var(--color-earth)] font-medium transition-colors">
 			<ArrowLeft size={18} /> Kembali ke Riwayat
 		</a>
-		<Button onclick={handlePrint} variant="outline" class="border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-forest)]/10">
+		<Button onclick={handlePrint} variant="secondary" class="border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-forest)]/10">
 			<Printer size={18} class="mr-2" /> Cetak Struk
 		</Button>
 	</div>
@@ -50,7 +42,7 @@
 						</div>
 						<div class="flex items-center gap-1.5 text-sm text-[var(--color-earth)]">
 							<Clock size={16} class="text-[var(--color-stone)]" />
-							<span>{formatDate(transaction.created_at)}</span>
+							<span>{formatDate(transaction.created_at, { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
 						</div>
 					</div>
 				</div>

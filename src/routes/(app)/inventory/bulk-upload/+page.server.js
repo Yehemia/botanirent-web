@@ -6,7 +6,7 @@ export async function load({ locals }) {
 	const { session } = await locals.safeGetSession();
 
 	if (!session) {
-		throw redirect(303, '/auth/login');
+		throw redirect(303, '/login');
 	}
 
 	const { data: categories } = await supabase.from('categories').select('*').order('sort_order');
@@ -47,6 +47,9 @@ export const actions = {
 
 			// We need categories to validate category_id
 			const { data: categories } = await supabase.from('categories').select('id, type');
+			if (!categories) {
+				return fail(500, { error: 'Gagal mengambil kategori dari database.' });
+			}
 			const catMap = new Map(categories.map(c => [c.id, c.type]));
 
 			const insertData = [];
@@ -57,7 +60,7 @@ export const actions = {
 				const row = rows[i];
 				
 				// Skip completely empty rows
-				if (!row || row.length === 0 || row.every(cell => cell === null || cell === undefined || cell === '')) {
+				if (!row || row.length === 0 || row.every(/** @param {any} cell */ cell => cell === null || cell === undefined || cell === '')) {
 					continue;
 				}
 

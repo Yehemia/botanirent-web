@@ -20,7 +20,15 @@
 		if (path.includes('/customers')) return 'Data Penyewa';
 		if (path.includes('/booking')) return 'Kalender Booking';
 		if (path.includes('/inventory')) return 'Inventaris';
+		if (path.includes('/packages')) return 'Paket Bundling';
+		if (path.includes('/asset-status')) return 'Status Aset';
+		if (path.includes('/returns')) return 'Pengembalian Barang';
 		if (path.includes('/transactions')) return 'Riwayat Transaksi';
+		if (path.includes('/statistics')) return 'Statistik Bisnis';
+		if (path.includes('/branches')) return 'Manajemen Cabang';
+		if (path.includes('/staff')) return 'Manajemen Staff';
+		if (path.includes('/penalties')) return 'Pengaturan Denda';
+		if (path.includes('/activity-log')) return 'Log Aktivitas';
 		return 'BotaniRent';
 	});
 </script>

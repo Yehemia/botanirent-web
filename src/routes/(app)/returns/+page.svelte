@@ -4,14 +4,20 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import Select from '$lib/components/ui/Select.svelte';
+	import { formatCurrency, formatDate } from '$lib/utils/format';
 
 	let { data, form } = $props();
-	let { transactions } = data;
+	let transactions = $derived(data.transactions);
+	let penaltyRules = $derived(data.penaltyRules);
 
 	let searchQuery = $state('');
+	/** @type {any} */
 	let selectedTrx = $state(null);
 	
 	// Form state per item inside selectedTrx
+	/** @type {Record<string, any>} */
 	let returnData = $state({}); 
 	// { itemId: { condition: 'good', actualReturnDate: 'YYYY-MM-DD' } }
 	
@@ -19,19 +25,21 @@
 	let successMsg = $state('');
 
 	let filteredTransactions = $derived(
-		transactions.filter(t => 
+		transactions.filter((/** @type {any} */ t) => 
 			t.transaction_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
 			t.customer_name.toLowerCase().includes(searchQuery.toLowerCase())
 		)
 	);
 
+	/** @param {any} trx */
 	function selectTransaction(trx) {
 		selectedTrx = trx;
 		const today = new Date().toISOString().split('T')[0];
 		
 		// Initialize form data
+		/** @type {Record<string, any>} */
 		let initData = {};
-		trx.items.forEach(item => {
+		trx.items.forEach((/** @type {any} */ item) => {
 			initData[item.id] = {
 				condition: 'good',
 				actualReturnDate: today
@@ -40,6 +48,10 @@
 		returnData = initData;
 	}
 
+	/**
+	 * @param {string} expectedEndStr
+	 * @param {string} actualReturnStr
+	 */
 	function calculateLateDays(expectedEndStr, actualReturnStr) {
 		const expected = new Date(expectedEndStr);
 		const actual = new Date(actualReturnStr);
@@ -48,48 +60,65 @@
 		expected.setHours(0,0,0,0);
 		actual.setHours(0,0,0,0);
 		
-		const diffTime = actual - expected;
+		const diffTime = actual.getTime() - expected.getTime();
 		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 		
 		return diffDays > 0 ? diffDays : 0;
 	}
 
+	/** @param {any} item */
 	function calculatePenalty(item) {
 		const rData = returnData[item.id];
 		if (!rData) return { lateDays: 0, penalty: 0, desc: '' };
 
 		let penalty = 0;
+		/** @type {string[]} */
 		let desc = [];
+		const sellPrice = item.item?.sell_price || 0;
 
-		// 1. Denda Hilang (Ambil alih dari denda telat)
-		if (rData.condition === 'lost') {
-			const sellPrice = item.item?.sell_price || 0;
-			return { 
-				lateDays: 0, 
-				penalty: sellPrice, 
-				desc: `Barang Hilang (Ganti Harga Beli: ${formatCurrency(sellPrice)})`
-			};
+		// 1. Denda Kondisi Barang (rusak ringan, rusak berat, hilang)
+		if (rData.condition !== 'good') {
+			const conditionRule = penaltyRules?.find((/** @type {any} */ r) => r.type === rData.condition);
+			if (conditionRule) {
+				let damagePenalty = 0;
+				const rate = parseFloat(conditionRule.amount);
+				if (conditionRule.calculation_method === 'flat') {
+					damagePenalty = rate;
+					desc.push(`${conditionRule.name} (${formatCurrency(damagePenalty)})`);
+				} else if (conditionRule.calculation_method === 'percentage') {
+					damagePenalty = (rate / 100) * sellPrice;
+					desc.push(`${conditionRule.name} (${rate}% dari harga jual ${formatCurrency(sellPrice)} = ${formatCurrency(damagePenalty)})`);
+				}
+				penalty += damagePenalty;
+			}
 		}
 
-		// 2. Denda Telat (Rp 10.000 / hari)
+		// 2. Denda Telat (Dinamis dari database penaltyRules)
+		// Denda telat tidak dikenakan jika barang hilang
 		const lateDays = calculateLateDays(item.rental_end_date, rData.actualReturnDate);
-		if (lateDays > 0) {
-			const latePenalty = lateDays * 10000;
+		if (rData.condition !== 'lost' && lateDays > 0) {
+			const lateRule = penaltyRules?.find((/** @type {any} */ r) => r.type === 'late');
+			const lateRate = lateRule ? parseFloat(lateRule.amount) : 10000; // fallback to 10k
+			const latePenalty = lateDays * lateRate;
 			penalty += latePenalty;
 			desc.push(`Telat ${lateDays} hari (${formatCurrency(latePenalty)})`);
 		}
 
-		return { lateDays, penalty, desc: desc.join(' + ') };
+		return { 
+			lateDays: rData.condition === 'lost' ? 0 : lateDays, 
+			penalty, 
+			desc: desc.join(' + ') 
+		};
 	}
 
 	let totalPenalty = $derived(() => {
 		if (!selectedTrx) return 0;
-		return selectedTrx.items.reduce((acc, item) => acc + calculatePenalty(item).penalty, 0);
+		return selectedTrx.items.reduce((/** @type {number} */ acc, /** @type {any} */ item) => acc + calculatePenalty(item).penalty, 0);
 	});
 
 	let payloadStr = $derived(() => {
 		if (!selectedTrx) return '';
-		const payload = selectedTrx.items.map(item => {
+		const payload = selectedTrx.items.map((/** @type {any} */ item) => {
 			const calc = calculatePenalty(item);
 			return {
 				id: item.id,
@@ -103,15 +132,7 @@
 		return JSON.stringify(payload);
 	});
 
-	function formatCurrency(amount) {
-		return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
-	}
-	
-	function formatDate(dateStr) {
-		return new Intl.DateTimeFormat('id-ID', {
-			day: '2-digit', month: 'short', year: 'numeric'
-		}).format(new Date(dateStr));
-	}
+
 </script>
 
 <div class="space-y-6 max-w-7xl mx-auto pb-12">
@@ -135,17 +156,15 @@
 		<!-- Daftar Transaksi Aktif -->
 		<div class="lg:col-span-1 space-y-4">
 			<Card padding="md">
-				<div class="relative mb-4">
-					<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-stone)]">
+				<Input 
+					bind:value={searchQuery} 
+					placeholder="Cari transaksi..." 
+					class="mb-4"
+				>
+					{#snippet iconLeft()}
 						<Search size={18} />
-					</div>
-					<input 
-						type="text" 
-						bind:value={searchQuery} 
-						placeholder="Cari transaksi..." 
-						class="w-full pl-10 pr-4 py-2 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] transition-all"
-					>
-				</div>
+					{/snippet}
+				</Input>
 
 				<div class="space-y-2 max-h-[600px] overflow-y-auto pr-2">
 					{#if filteredTransactions.length === 0}
@@ -197,43 +216,38 @@
 
 						<div class="space-y-4 mb-6 max-h-[500px] overflow-y-auto pr-2">
 							{#each selectedTrx.items as item (item.id)}
+								{@const penaltyInfo = calculatePenalty(item)}
 								<div class="bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl p-4">
 									<div class="flex justify-between items-start mb-3">
 										<div>
 											<h4 class="font-bold text-[var(--color-earth)]">{item.item_name}</h4>
 											<div class="flex gap-4 mt-1 text-xs text-[var(--color-stone)]">
-												<span class="flex items-center gap-1"><Calendar size={12}/> Ambil: {formatDate(item.rental_start_date)}</span>
-												<span class="flex items-center gap-1"><Calendar size={12}/> Tenggat: {formatDate(item.rental_end_date)}</span>
+												<span class="flex items-center gap-1"><Calendar size={12}/> Ambil: {formatDate(item.rental_start_date, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+												<span class="flex items-center gap-1"><Calendar size={12}/> Tenggat: {formatDate(item.rental_end_date, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
 											</div>
 										</div>
 									</div>
 
 									<!-- Form Interaktif per Item -->
 									<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 p-3 bg-white rounded-lg border border-[var(--color-border-light)]">
-										<div>
-											<label class="block text-xs font-semibold text-[var(--color-earth)] mb-1">Tanggal Kembali Aktual</label>
-											<input 
-												type="date" 
-												bind:value={returnData[item.id].actualReturnDate}
-												class="w-full px-3 py-1.5 text-sm bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--color-forest)]"
-											>
-										</div>
-										<div>
-											<label class="block text-xs font-semibold text-[var(--color-earth)] mb-1">Kondisi Barang</label>
-											<select 
-												bind:value={returnData[item.id].condition}
-												class="w-full px-3 py-1.5 text-sm bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--color-forest)]"
-											>
-												<option value="good">Baik / Layak Pakai</option>
-												<option value="minor_damage">Rusak Ringan</option>
-												<option value="major_damage">Rusak Berat</option>
-												<option value="lost">Hilang</option>
-											</select>
-										</div>
+										<Input 
+											type="date" 
+											label="Tanggal Kembali Aktual"
+											bind:value={returnData[item.id].actualReturnDate}
+											size="md"
+										/>
+										<Select 
+											label="Kondisi Barang"
+											bind:value={returnData[item.id].condition}
+										>
+											<option value="good">Baik / Layak Pakai</option>
+											<option value="minor_damage">Rusak Ringan</option>
+											<option value="major_damage">Rusak Berat</option>
+											<option value="lost">Hilang</option>
+										</Select>
 									</div>
 
 									<!-- Info Denda -->
-									{@const penaltyInfo = calculatePenalty(item)}
 									{#if penaltyInfo.penalty > 0}
 										<div class="mt-3 flex items-start gap-2 p-2 bg-[var(--color-error-bg)] text-[var(--color-error)] rounded-lg text-sm border border-[var(--color-error)]/20">
 											<AlertTriangle size={16} class="shrink-0 mt-0.5" />

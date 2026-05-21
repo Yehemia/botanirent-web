@@ -5,7 +5,7 @@ export async function load({ locals }) {
 	const { session, profile } = await locals.safeGetSession();
 
 	if (!session || !profile) {
-		throw redirect(303, '/auth/login');
+		throw redirect(303, '/login');
 	}
 
 	// Hanya ambil barang yang bertipe 'sewa' dan aktif
@@ -92,7 +92,7 @@ export const actions = {
 		}
 
 		// Insert Package Items
-		const packageItemsData = parsedItems.map((item, index) => ({
+		const packageItemsData = parsedItems.map(/** @param {any} item @param {number} index */ (item, index) => ({
 			package_id: newPackage.id,
 			item_id: item.id,
 			quantity: parseInt(item.quantity, 10),

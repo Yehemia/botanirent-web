@@ -6,7 +6,7 @@
 	 * @property {boolean} sidebarExpanded
 	 * @property {string} title
 	 * @property {any} userProfile
-	 * @property {Function} toggleSidebar
+	 * @property {() => void} toggleSidebar
 	 */
 
 	/** @type {Props} */

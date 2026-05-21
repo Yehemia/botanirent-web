@@ -5,7 +5,7 @@ export async function load({ locals, url }) {
 	const { session, profile } = await locals.safeGetSession();
 
 	if (!session || !profile) {
-		throw redirect(303, '/auth/login');
+		throw redirect(303, '/login');
 	}
 
 	const search = url.searchParams.get('q') || '';

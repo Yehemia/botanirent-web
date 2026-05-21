@@ -6,6 +6,7 @@
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Select from '$lib/components/ui/Select.svelte';
 
 	let { data, form } = $props();
 	
@@ -154,45 +155,35 @@
 			{#snippet iconLeft()}<Mail size={18} />{/snippet}
 		</Input>
 		
-		<div class="flex flex-col gap-1.5">
-			<label for="role" class="text-[13px] font-medium text-[var(--color-earth)]">Role / Jabatan</label>
-			<div class="relative">
-				<select 
-					id="role" 
-					name="role" 
-					bind:value={formData.role}
-					class="w-full bg-white border border-[var(--color-border)] rounded-md pl-10 pr-3 py-2 text-sm appearance-none focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)]"
-					required
-				>
-					<option value="kasir">Kasir (POS & Transaksi)</option>
-					<option value="gudang">Admin Gudang (Inventaris & Aset)</option>
-				</select>
-				<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-stone)]">
-					<Shield size={18} />
-				</div>
-			</div>
-		</div>
+		<Select 
+			id="role" 
+			name="role" 
+			label="Role / Jabatan"
+			bind:value={formData.role}
+			required
+		>
+			{#snippet iconLeft()}
+				<Shield size={18} />
+			{/snippet}
+			<option value="kasir">Kasir (POS & Transaksi)</option>
+			<option value="gudang">Admin Gudang (Inventaris & Aset)</option>
+		</Select>
 
-		<div class="flex flex-col gap-1.5">
-			<label for="branch_id" class="text-[13px] font-medium text-[var(--color-earth)]">Penempatan Cabang</label>
-			<div class="relative">
-				<select 
-					id="branch_id" 
-					name="branch_id" 
-					bind:value={formData.branch_id}
-					class="w-full bg-white border border-[var(--color-border)] rounded-md pl-10 pr-3 py-2 text-sm appearance-none focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)]"
-					required
-				>
-					<option value="" disabled>-- Pilih Cabang --</option>
-					{#each data.branches as branch}
-						<option value={branch.id}>{branch.name}</option>
-					{/each}
-				</select>
-				<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-stone)]">
-					<Store size={18} />
-				</div>
-			</div>
-		</div>
+		<Select 
+			id="branch_id" 
+			name="branch_id" 
+			label="Penempatan Cabang"
+			bind:value={formData.branch_id}
+			required
+		>
+			{#snippet iconLeft()}
+				<Store size={18} />
+			{/snippet}
+			<option value="" disabled>-- Pilih Cabang --</option>
+			{#each data.branches as branch}
+				<option value={branch.id}>{branch.name}</option>
+			{/each}
+		</Select>
 
 	</form>
 

@@ -5,7 +5,7 @@ export async function load({ locals, params }) {
 	const { session, profile } = await locals.safeGetSession();
 
 	if (!session || !profile) {
-		throw redirect(303, '/auth/login');
+		throw redirect(303, '/login');
 	}
 
 	const { id } = params;

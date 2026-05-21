@@ -14,14 +14,20 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import { formatCurrency } from '$lib/utils/format';
 
 	let { data } = $props();
-	let { items, packages, categories } = data;
+	let items = $derived(data.items);
+	let packages = $derived(data.packages);
+	let categories = $derived(data.categories);
 
 	// --- BARCODE SCANNER LOGIC ---
 	let barcodeBuffer = '';
+	/** @type {any} */
 	let barcodeTimeout;
 
+	/** @param {any} e */
 	function handleKeydown(e) {
 		// Abaikan jika fokus sedang ada di dalam input teks/textarea
 		if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
@@ -41,8 +47,9 @@
 		}
 	}
 
+	/** @param {any} code */
 	function processBarcode(code) {
-		const foundItem = items.find(i => i.barcode === code);
+		const foundItem = items.find((/** @type {any} */ i) => i.barcode === code);
 		if (foundItem) {
 			addToCart(foundItem, foundItem.category.type);
 		}
@@ -54,16 +61,19 @@
 
 	// Keranjang: array of { id, type, name, price, quantity, maxQty, rawData }
 	// type: 'retail', 'rental', 'package'
+	/** @type {any[]} */
 	let cart = $state([]);
 
 	// --- DERIVED VALUES ---
+	/** @type {any} */
 	let displayItems = $derived(() => {
+		/** @type {any[]} */
 		let list = [];
 		if (activeTab === 'package' || activeTab === 'all') {
-			packages.forEach(p => list.push({ ...p, __displayType: 'package' }));
+			packages.forEach((/** @type {any} */ p) => list.push({ ...p, __displayType: 'package' }));
 		}
 		if (activeTab !== 'package') {
-			items.forEach(i => {
+			items.forEach((/** @type {any} */ i) => {
 				if (activeTab === 'all' || activeTab === i.category.type) {
 					list.push({ ...i, __displayType: i.category.type });
 				}
@@ -73,7 +83,7 @@
 		// Filter pencarian
 		if (searchQuery) {
 			const q = searchQuery.toLowerCase();
-			list = list.filter(item => 
+			list = list.filter((/** @type {any} */ item) => 
 				item.name.toLowerCase().includes(q) || 
 				(item.barcode && item.barcode.toLowerCase().includes(q))
 			);
@@ -81,13 +91,17 @@
 		return list;
 	});
 
-	let cartHasRental = $derived(cart.some(c => c.type === 'rental' || c.type === 'package'));
-	let cartTotal = $derived(cart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0));
+	let cartHasRental = $derived(cart.some((/** @type {any} */ c) => c.type === 'rental' || c.type === 'package'));
+	let cartTotal = $derived(cart.reduce((/** @type {number} */ acc, /** @type {any} */ curr) => acc + (curr.price * curr.quantity), 0));
 	
 	// --- ACTIONS ---
+	/**
+	 * @param {any} item
+	 * @param {any} type
+	 */
 	function addToCart(item, type) {
 		const id = item.id;
-		const existingIdx = cart.findIndex(c => c.id === id && c.type === type);
+		const existingIdx = cart.findIndex((/** @type {any} */ c) => c.id === id && c.type === type);
 		
 		let price = type === 'retail' ? item.sell_price : (type === 'package' ? item.package_price : item.rental_price_per_day);
 		let maxQty = type === 'package' ? 999 : item.stock_available; // Asumsi paket tidak limitasi realtime UI dulu
@@ -114,6 +128,10 @@
 		}
 	}
 
+	/**
+	 * @param {any} index
+	 * @param {any} change
+	 */
 	function updateCartQty(index, change) {
 		const item = cart[index];
 		const newQty = item.quantity + change;
@@ -124,9 +142,7 @@
 		}
 	}
 
-	function formatCurrency(amount) {
-		return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
-	}
+
 
 	function checkout() {
 		if (cart.length === 0) return;
@@ -147,17 +163,15 @@
 		<div class="bg-white p-4 border-b border-[var(--color-border)] flex flex-col gap-4 z-10">
 			<div class="flex items-center justify-between">
 				<h1 class="text-2xl font-bold font-heading text-[var(--color-earth)]">Point of Sales</h1>
-				<div class="relative w-64">
-					<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-stone)]">
+				<Input 
+					bind:value={searchQuery} 
+					placeholder="Cari atau scan barcode..." 
+					class="w-64"
+				>
+					{#snippet iconLeft()}
 						<Search size={18} />
-					</div>
-					<input 
-						type="text" 
-						bind:value={searchQuery} 
-						placeholder="Cari atau scan barcode..." 
-						class="w-full pl-10 pr-4 py-2 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
-					>
-				</div>
+					{/snippet}
+				</Input>
 			</div>
 
 			<!-- Filter Tabs -->
@@ -240,7 +254,7 @@
 				<ShoppingCart size={20} />
 				<h2 class="font-bold font-heading text-lg">Keranjang</h2>
 			</div>
-			<Badge variant="default" class="bg-[var(--color-sand)]">{cart.length} Item</Badge>
+			<Badge variant="neutral" class="bg-[var(--color-sand)]">{cart.length} Item</Badge>
 		</div>
 
 		<!-- Cart Items List (Scrollable) -->

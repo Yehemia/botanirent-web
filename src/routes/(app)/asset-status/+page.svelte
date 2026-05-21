@@ -3,15 +3,17 @@
 	import { Tent, Wrench, Waves, PackageCheck, Search, ArrowRight, ArrowLeft } from '@lucide/svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import { formatDate } from '$lib/utils/format';
 
 	let { data, form } = $props();
-	let { assets } = data;
+	let assets = $derived(data.assets);
 
 	let searchQuery = $state('');
 	let updatingId = $state(null);
 	
 	let filteredAssets = $derived(
-		assets.filter(a => 
+		assets.filter((/** @type {any} */ a) => 
 			a.asset_code.toLowerCase().includes(searchQuery.toLowerCase()) || 
 			a.item?.name.toLowerCase().includes(searchQuery.toLowerCase())
 		)
@@ -24,17 +26,12 @@
 		{ id: 'maintenance', title: 'Perbaikan', icon: Wrench, color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10', border: 'border-[var(--color-warning)]/30' }
 	];
 
+	/** @param {string} status */
 	function getAssetsByStatus(status) {
-		return filteredAssets.filter(a => a.status === status);
+		return filteredAssets.filter((/** @type {any} */ a) => a.status === status);
 	}
 
-	function formatDate(dateStr) {
-		if (!dateStr) return '-';
-		const d = new Date(dateStr);
-		return new Intl.DateTimeFormat('id-ID', {
-			day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-		}).format(d);
-	}
+
 </script>
 
 <div class="space-y-6 max-w-[1400px] mx-auto pb-12 overflow-x-hidden">
@@ -44,17 +41,15 @@
 			<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)]">Status Aset Fisik</h1>
 			<p class="text-[var(--color-stone)] mt-1">Pantau pergerakan setiap unit fisik barang sewa Anda (Kanban Board).</p>
 		</div>
-		<div class="relative w-full md:w-72">
-			<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-stone)]">
+		<Input 
+			bind:value={searchQuery} 
+			placeholder="Cari nama atau kode aset..." 
+			class="w-full md:w-72 shadow-sm"
+		>
+			{#snippet iconLeft()}
 				<Search size={18} />
-			</div>
-			<input 
-				type="text" 
-				bind:value={searchQuery} 
-				placeholder="Cari nama atau kode aset..." 
-				class="w-full pl-10 pr-4 py-2.5 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all shadow-sm"
-			>
-		</div>
+			{/snippet}
+		</Input>
 	</div>
 
 	{#if form?.error}
@@ -67,17 +62,18 @@
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 items-start">
 		{#each columns as col}
 			{@const colAssets = getAssetsByStatus(col.id)}
+			{@const Icon = col.icon}
 			<div class="flex flex-col bg-[var(--color-sand-lightest)]/50 rounded-2xl border border-[var(--color-border)] h-[75vh] overflow-hidden">
 				
 				<!-- Column Header -->
 				<div class="p-4 border-b border-[var(--color-border)] bg-white flex justify-between items-center shrink-0">
 					<div class="flex items-center gap-2">
 						<div class="p-1.5 rounded-lg {col.bg} {col.color}">
-							<svelte:component this={col.icon} size={18} />
+							<Icon size={18} />
 						</div>
 						<h2 class="font-bold font-heading text-[var(--color-earth)]">{col.title}</h2>
 					</div>
-					<Badge variant="default" class="bg-[var(--color-sand)]">{colAssets.length}</Badge>
+					<Badge variant="neutral" class="bg-[var(--color-sand)]">{colAssets.length}</Badge>
 				</div>
 
 				<!-- Column Body (Scrollable) -->
@@ -98,12 +94,13 @@
 									{asset.item?.name}
 								</h3>
 								<div class="text-[10px] text-[var(--color-stone)]">
-									Update: {formatDate(asset.last_status_change)}
+									Update: {formatDate(asset.last_status_change, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
 								</div>
 
 								<!-- Status Change Actions (Hover) -->
 								<div class="absolute inset-x-0 bottom-0 top-auto translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all bg-white/95 backdrop-blur border-t border-[var(--color-border-light)] p-2 rounded-b-xl flex flex-wrap gap-1 justify-center z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
 									{#each columns as targetCol}
+										{@const TargetIcon = targetCol.icon}
 										{#if targetCol.id !== col.id}
 											<form 
 												method="POST" 
@@ -124,7 +121,7 @@
 													class="w-full text-[10px] font-medium py-1 px-1 rounded-md transition-colors border {targetCol.color} {targetCol.bg} {targetCol.border} hover:opacity-80 flex flex-col items-center gap-0.5"
 													title="Pindah ke {targetCol.title}"
 												>
-													<svelte:component this={targetCol.icon} size={12} />
+													<TargetIcon size={12} />
 													<span class="truncate w-full text-center">{targetCol.title.split(' ')[0]}</span>
 												</button>
 											</form>

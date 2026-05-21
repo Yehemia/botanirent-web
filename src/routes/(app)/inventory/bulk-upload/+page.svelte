@@ -6,11 +6,13 @@
 	import * as xlsx from 'xlsx';
 
 	let { data, form } = $props();
-	let { categories } = data;
+	let categories = $derived(data.categories);
 
 	let loading = $state(false);
+	/** @type {File | null} */
 	let selectedFile = $state(null);
 
+	/** @param {Event & { currentTarget: HTMLInputElement }} e */
 	function handleFileChange(e) {
 		selectedFile = e.currentTarget.files?.[0] || null;
 	}
@@ -19,8 +21,8 @@
 		// Prepare instructional data
 		const ws_data = [
 			['Nama', 'Deskripsi', 'ID Kategori', 'Harga Sewa', 'Harga Jual', 'Stok'],
-			['Tenda Dome 4P Consina', 'Tenda kapasitas 4 orang, warna biru', categories.find(c => c.type === 'sewa')?.id || 'CONTOH-ID-SEWA', 35000, 0, 10],
-			['Gas Portable Hi-Cook 230g', 'Gas kaleng isi ulang', categories.find(c => c.type === 'retail')?.id || 'CONTOH-ID-RETAIL', 0, 15000, 50]
+			['Tenda Dome 4P Consina', 'Tenda kapasitas 4 orang, warna biru', categories.find((/** @type {any} */ c) => c.type === 'sewa')?.id || 'CONTOH-ID-SEWA', 35000, 0, 10],
+			['Gas Portable Hi-Cook 230g', 'Gas kaleng isi ulang', categories.find((/** @type {any} */ c) => c.type === 'retail')?.id || 'CONTOH-ID-RETAIL', 0, 15000, 50]
 		];
 
 		const ws = xlsx.utils.aoa_to_sheet(ws_data);

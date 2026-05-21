@@ -38,6 +38,8 @@
 	}
 
 	const menuItems = [
+		{ icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', roles: ['owner', 'kasir', 'gudang'] },
+
 		// --- KASIR ---
 		{ section: 'KASIR', roles: ['kasir', 'owner'] },
 		{ icon: MonitorSmartphone, label: 'POS', href: '/pos', roles: ['kasir', 'owner'] },
@@ -54,7 +56,6 @@
 
 		// --- OWNER ---
 		{ section: 'OWNER', roles: ['owner'] },
-		{ icon: LayoutDashboard, label: 'Dashboard', href: '/', roles: ['owner'] },
 		{ icon: BarChart3, label: 'Statistik', href: '/statistics', roles: ['owner'] },
 		{ icon: Store, label: 'Manajemen Cabang', href: '/branches', roles: ['owner'] },
 		{ icon: Users, label: 'Manajemen Staff', href: '/staff', roles: ['owner'] },
@@ -134,7 +135,7 @@
 					<p class="text-sm font-medium text-white truncate">{userProfile?.full_name}</p>
 					<p class="text-xs text-white/70 truncate capitalize">{userProfile?.role}</p>
 				</div>
-				<form action="/auth/logout" method="POST">
+				<form action="/logout" method="POST">
 					<button class="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors">
 						<LogOut size={18} />
 					</button>

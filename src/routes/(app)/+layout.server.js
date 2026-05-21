@@ -4,7 +4,7 @@ export const load = async ({ locals }) => {
 	const { session, user, profile } = await locals.safeGetSession();
 
 	if (!session) {
-		throw redirect(303, '/auth/login');
+		throw redirect(303, '/login');
 	}
 
 	return {

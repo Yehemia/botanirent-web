@@ -5,7 +5,7 @@
 	/**
 	 * @typedef {Object} Props
 	 * @property {boolean} open
-	 * @property {Function} onclose
+	 * @property {Function} [onclose]
 	 * @property {string} [title]
 	 * @property {'sm' | 'md' | 'lg'} [size]
 	 * @property {boolean} [hideCloseButton]

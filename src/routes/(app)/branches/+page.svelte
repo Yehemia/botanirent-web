@@ -29,6 +29,7 @@
 		showModal = true;
 	}
 
+	/** @param {any} branch */
 	function openEditModal(branch) {
 		isEditing = true;
 		formData = { ...branch };
