@@ -13,11 +13,12 @@ export const handle = async ({ event, resolve }) => {
 	 */
 	event.locals.safeGetSession = async () => {
 		const {
-			data: { session }
+			data: { session },
+			error: sessionError
 		} = await event.locals.supabase.auth.getSession();
 		
-		if (!session) {
-			return { session: null, user: null };
+		if (sessionError) {
+			return { session: null, user: null, profile: null };
 		}
 
 		const {
@@ -27,7 +28,7 @@ export const handle = async ({ event, resolve }) => {
 		
 		if (error) {
 			// JWT validation has failed
-			return { session: null, user: null };
+			return { session: null, user: null, profile: null };
 		}
 
 		// Also get the profile to know the user's role and branch_id

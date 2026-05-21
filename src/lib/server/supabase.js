@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 /**
  * Creates a Supabase client for use on the server.
  * Requires event to set/get cookies correctly during SSR.
+ * @param {import('@sveltejs/kit').RequestEvent} event
  */
 export const createSupabaseServerClient = (event) => {
 	return createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
@@ -21,7 +22,7 @@ export const createSupabaseServerClient = (event) => {
 					cookiesToSet.forEach(({ name, value, options }) => {
 						event.cookies.set(name, value, { ...options, path: '/' });
 					});
-				} catch (error) {
+				} catch {
 					// The `setAll` method was called from a context where cookies cannot be set
 					// like a Server Component or inside a page. This can be ignored.
 				}

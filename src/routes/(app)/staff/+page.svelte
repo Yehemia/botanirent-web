@@ -1,6 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { UserPlus, Shield, Store, Mail, Power, CheckCircle2 } from 'lucide-svelte';
+	import { UserPlus, Shield, Store, Mail, Power, CheckCircle2 } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -24,6 +24,7 @@
 		showModal = true;
 	}
 
+	/** @type {import('@sveltejs/kit').SubmitFunction} */
 	function handleSubmit() {
 		loading = true;
 		return async ({ update, result }) => {

@@ -1,5 +1,5 @@
 <script>
-	import { Menu, Bell } from 'lucide-svelte';
+	import { Menu, Bell } from '@lucide/svelte';
 
 	/**
 	 * @typedef {Object} Props

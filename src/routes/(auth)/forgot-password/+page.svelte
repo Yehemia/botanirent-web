@@ -1,6 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { Mail, ArrowLeft, Send } from 'lucide-svelte';
+	import { Mail, ArrowLeft, Send } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 
@@ -8,6 +8,7 @@
 	
 	let loading = $state(false);
 	
+	/** @type {import('@sveltejs/kit').SubmitFunction} */
 	function handleSubmit() {
 		loading = true;
 		return async ({ update }) => {
@@ -17,7 +18,8 @@
 	}
 </script>
 
-<div class="bg-white rounded-2xl shadow-[var(--shadow-xl)] overflow-hidden flex max-w-lg w-full mx-4">
+<div class="min-h-screen flex items-center justify-center bg-[var(--color-cream)] bg-[url('/pattern.svg')] p-4">
+	<div class="bg-white rounded-2xl shadow-[var(--shadow-xl)] overflow-hidden flex max-w-lg w-full mx-4">
 	
 	<div class="w-full p-8 sm:p-10 flex flex-col justify-center">
 		<div class="mb-8 text-center">
@@ -42,6 +44,7 @@
 				<p>Link reset password telah dikirim ke {form.email}</p>
 			</div>
 			
+			<!-- eslint-disable-next-line -->
 			<a href="/login" class="w-full">
 				<Button variant="secondary" fullWidth class="mt-2">
 					Kembali ke Halaman Login
@@ -74,6 +77,7 @@
 			</form>
 			
 			<div class="mt-6 text-center">
+				<!-- eslint-disable-next-line -->
 				<a href="/login" class="inline-flex items-center text-sm font-semibold text-[var(--color-stone)] hover:text-[var(--color-forest)] transition-colors">
 					<ArrowLeft size={16} class="mr-2" /> Kembali ke Login
 				</a>
@@ -81,4 +85,5 @@
 		{/if}
 	</div>
 
+	</div>
 </div>

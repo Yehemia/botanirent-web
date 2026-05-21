@@ -7,7 +7,7 @@
 	 * @property {boolean} [disabled]
 	 * @property {boolean} [fullWidth]
 	 * @property {string} [class]
-	 * @property {Function} [onclick]
+	 * @property {import('svelte/elements').MouseEventHandler<HTMLButtonElement>} [onclick]
 	 * @property {import('svelte').Snippet} [children]
 	 * @property {import('svelte').Snippet} [iconLeft]
 	 * @property {import('svelte').Snippet} [iconRight]
@@ -43,7 +43,7 @@
 		lg: 'px-7 py-3 text-[16px] h-12 gap-3'
 	};
 
-	const widthClass = fullWidth ? 'w-full' : '';
+	let widthClass = $derived(fullWidth ? 'w-full' : '');
 </script>
 
 <button

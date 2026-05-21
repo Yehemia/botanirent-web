@@ -1,5 +1,6 @@
 <script>
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 	import { 
 		LayoutDashboard, 
 		MonitorSmartphone, 
@@ -13,9 +14,9 @@
 		BarChart3,
 		Store,
 		Settings,
-		Activity,
-		LogOut
-	} from 'lucide-svelte';
+		LogOut,
+		FileText
+	} from '@lucide/svelte';
 
 	/**
 	 * @typedef {Object} Props
@@ -29,6 +30,7 @@
 	// Derived state to check current path
 	let currentPath = $derived($page.url.pathname);
 	
+	/** @param {string} path */
 	function isActive(path) {
 		if (path === '/' && currentPath === '/') return true;
 		if (path !== '/' && currentPath.startsWith(path)) return true;
@@ -84,7 +86,7 @@
 	<!-- Navigation Links -->
 	<div class="flex-1 overflow-y-auto py-4 scrollbar-hide">
 		<nav class="flex flex-col gap-1">
-			{#each visibleItems as item}
+			{#each visibleItems as item (item.label || item.section)}
 				{#if item.section}
 					{#if expanded}
 						<div class="px-5 mt-4 mb-2">
@@ -94,9 +96,10 @@
 						<div class="h-px bg-white/10 mx-4 my-2"></div>
 					{/if}
 				{:else}
-					{@const active = isActive(item.href)}
+					{@const active = isActive(item.href || '')}
+					<!-- eslint-disable-next-line -->
 					<a 
-						href={item.href}
+						href="{base}{item.href}"
 						class="flex items-center px-5 py-3 mx-2 rounded-lg transition-colors group relative
 							{active 
 								? 'bg-white/15 text-white' 
@@ -108,7 +111,7 @@
 						{/if}
 						
 						{#if item.icon}
-							<svelte:component this={item.icon} size={20} class="shrink-0 {active ? 'text-[var(--color-amber)]' : ''}" />
+							{@const Icon = item.icon}<Icon size={20} class="shrink-0 {active ? 'text-[var(--color-amber)]' : ''}" />
 						{/if}
 						
 						{#if expanded}
@@ -151,3 +154,4 @@
 		scrollbar-width: none;
 	}
 </style>
+

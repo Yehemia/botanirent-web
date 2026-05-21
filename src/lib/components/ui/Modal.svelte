@@ -1,6 +1,6 @@
 <script>
 	import { fade, scale } from 'svelte/transition';
-	import { X } from 'lucide-svelte';
+	import { X } from '@lucide/svelte';
 	
 	/**
 	 * @typedef {Object} Props
@@ -30,6 +30,7 @@
 		lg: 'max-w-[860px]'
 	};
 
+	/** @param {MouseEvent} e */
 	function handleBackdropClick(e) {
 		if (e.target === e.currentTarget) {
 			close();
@@ -42,6 +43,7 @@
 	}
 
 	// Handle escape key
+	/** @param {KeyboardEvent} e */
 	function handleKeydown(e) {
 		if (open && e.key === 'Escape') {
 			close();

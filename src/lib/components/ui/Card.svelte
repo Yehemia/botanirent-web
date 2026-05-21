@@ -14,7 +14,7 @@
 	} = $props();
 
 	const baseClass = "bg-white border border-[var(--color-border-light)] rounded-lg p-5 shadow-[var(--shadow-sm)]";
-	const hoverClass = hoverable ? "transition-all duration-250 hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5 hover:border-[var(--color-border)]" : "";
+	let hoverClass = $derived(hoverable ? "transition-all duration-250 hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5 hover:border-[var(--color-border)]" : "");
 </script>
 
 <div class="{baseClass} {hoverClass} {className}">
