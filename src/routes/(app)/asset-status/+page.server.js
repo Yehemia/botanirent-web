@@ -8,15 +8,26 @@ export async function load({ locals }) {
 		throw redirect(303, '/login');
 	}
 
-	// Fetch all rental assets that belong to items in the current branch
-	const { data: assets, error } = await supabase
+	// Fetch all rental assets
+	let query = supabase
 		.from('rental_assets')
-		.select('*, item:items!inner(name, branch_id)')
-		.eq('items.branch_id', profile.branch_id)
-		.order('last_status_change', { ascending: false });
+		.select('*, item:items!inner(name, branch_id)');
+
+	// If not owner, filter by branch_id
+	if (profile.role !== 'owner') {
+		if (!profile.branch_id) {
+			console.error("User has no branch_id assigned");
+			return { assets: [] };
+		}
+		query = query.eq('items.branch_id', profile.branch_id);
+	}
+
+	const { data: assets, error } = await query.order('last_status_change', { ascending: false });
 
 	if (error) {
 		console.error("Error fetching assets:", error);
+		// If query fails, it might be due to RLS or join issues.
+		// Let's try to return what we can or at least an empty array.
 	}
 
 	return {

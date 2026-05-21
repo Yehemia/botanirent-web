@@ -1,9 +1,21 @@
 import { fail, redirect } from '@sveltejs/kit';
 
-export const load = async ({ locals }) => {
-	const { session } = await locals.safeGetSession();
+export const load = async ({ url, locals: { supabase, safeGetSession } }) => {
+	const code = url.searchParams.get('code');
+
+	// Jika ada code di URL (dari email Supabase), tukarkan dulu dengan session
+	if (code) {
+		const { error } = await supabase.auth.exchangeCodeForSession(code);
+		if (error) {
+			console.error('Error exchanging code for session:', error.message);
+			throw redirect(303, '/login?error=invalid_token');
+		}
+		// Setelah exchange berhasil, kita lanjutkan pengecekan session di bawah
+	}
+
+	const { session } = await safeGetSession();
 	
-	// Jika tidak ada sesi (link expired atau tidak valid), tendang ke login
+	// Jika tetap tidak ada sesi (link expired atau tidak valid), tendang ke login
 	if (!session) {
 		throw redirect(303, '/login?error=link_expired');
 	}
