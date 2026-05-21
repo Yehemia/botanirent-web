@@ -53,7 +53,7 @@ export const actions = {
 		// 1. Invite user via Supabase Admin API
 		const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
 			email.toString(),
-			{ redirectTo: `${url.origin}/reset-password` }
+			{ redirectTo: `${url.origin}/set-password` }
 		);
 
 		if (inviteError) {
