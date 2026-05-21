@@ -280,8 +280,7 @@
 								>
 									<option value="cash">Tunai (Cash)</option>
 									<option value="transfer">Transfer Manual (BCA/Mandiri)</option>
-									<!-- Midtrans/QRIS akan diaktifkan di Sprint 4 -->
-									<option value="qris" disabled>QRIS (Coming Soon)</option>
+									<option value="qris">QRIS Otomatis (Midtrans)</option>
 								</select>
 							</div>
 
@@ -291,10 +290,11 @@
 									type="number" 
 									id="paidAmount"
 									bind:value={paidAmount}
-									placeholder="misal: 150000"
-									min={subtotal()}
-									class="w-full px-4 py-3 text-lg font-bold bg-white border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
-									required
+									disabled={paymentMethod === 'qris'}
+									placeholder={paymentMethod === 'qris' ? 'Otomatis' : 'misal: 150000'}
+									min={paymentMethod === 'qris' ? 0 : subtotal()}
+									class="w-full px-4 py-3 text-lg font-bold bg-white border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all disabled:opacity-50"
+									required={paymentMethod !== 'qris'}
 								>
 							</div>
 
@@ -305,11 +305,11 @@
 								</div>
 							{/if}
 
-							<Button type="submit" disabled={loading || (parseFloat(paidAmount)||0) < subtotal() || (hasRental && (!startDate || !endDate))} class="w-full py-4 text-lg">
+							<Button type="submit" disabled={loading || (paymentMethod !== 'qris' && (parseFloat(paidAmount)||0) < subtotal()) || (hasRental && (!startDate || !endDate))} class="w-full py-4 text-lg">
 								{#if loading}
 									Memproses...
 								{:else}
-									<CheckCircle size={20} class="mr-2" /> Selesaikan Transaksi
+									<CheckCircle size={20} class="mr-2" /> {paymentMethod === 'qris' ? 'Bayar via QRIS' : 'Selesaikan Transaksi'}
 								{/if}
 							</Button>
 						</div>

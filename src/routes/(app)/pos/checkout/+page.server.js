@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { MIDTRANS_SERVER_KEY } from '$env/static/private';
 
 export async function load({ locals }) {
 	const { supabase } = locals;
@@ -65,9 +66,17 @@ export const actions = {
 			}
 		}
 
-		// Validasi jumlah pembayaran
-		if (payload.paid_amount < payload.total_amount) {
-			return fail(400, { error: 'Nominal pembayaran tidak mencukupi.' });
+		// Jika QRIS, status awal adalah pending
+		if (payload.payment_method === 'qris') {
+			payload.payment_status = 'pending';
+			payload.paid_amount = 0; // Belum dibayar
+			payload.change_amount = 0;
+		} else {
+			// Validasi pembayaran tunai
+			if (payload.paid_amount < payload.total_amount) {
+				return fail(400, { error: 'Nominal pembayaran tunai tidak mencukupi.' });
+			}
+			payload.payment_status = 'paid';
 		}
 
 		// Panggil Fungsi RPC yang sudah dibuat di database
@@ -75,11 +84,10 @@ export const actions = {
 
 		if (error) {
 			console.error("RPC Checkout Error:", error);
-			// Biasanya error dari RAISE EXCEPTION Postgres akan terbaca di error.message
 			return fail(500, { error: `Gagal Checkout: ${error.message}` });
 		}
 
-		// Log activity fire-and-forget
+		// Log activity
 		supabase.from('activity_logs').insert({
 			user_id: profile.id,
 			branch_id: profile.branch_id,
@@ -89,7 +97,51 @@ export const actions = {
 			metadata: { code: payload.transaction_code, amount: payload.total_amount }
 		}).then();
 
-		// Redirect ke halaman sukses/detail struk
+		// JIKA QRIS -> Request ke Midtrans API
+		if (payload.payment_method === 'qris') {
+			try {
+				const authString = btoa(`${MIDTRANS_SERVER_KEY}:`);
+				const isProdKey = !MIDTRANS_SERVER_KEY.startsWith('SB-');
+				const apiUrl = isProdKey 
+					? 'https://app.midtrans.com/snap/v1/transactions' 
+					: 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+				
+				const midtransPayload = {
+					transaction_details: {
+						order_id: payload.transaction_code,
+						gross_amount: Math.round(payload.total_amount)
+					},
+					customer_details: {
+						first_name: payload.customer_name || 'Pelanggan',
+						phone: payload.customer_phone || '-'
+					}
+				};
+
+				const response = await fetch(apiUrl, {
+					method: 'POST',
+					headers: {
+						'Accept': 'application/json',
+						'Content-Type': 'application/json',
+						'Authorization': `Basic ${authString}`
+					},
+					body: JSON.stringify(midtransPayload)
+				});
+
+				const midtransData = await response.json();
+				if (response.ok && midtransData.redirect_url) {
+					// Redirect user ke halaman pembayaran Midtrans
+					throw redirect(303, midtransData.redirect_url);
+				} else {
+					console.error("Midtrans API Error:", midtransData);
+				}
+			} catch (e) {
+				if (e.status === 303) throw e; // Pass SvelteKit redirect error
+				console.error("Midtrans Request Error:", e);
+				// Biarkan tetap lanjut ke struk, biar kasir tau kalau error Midtrans tapi data masuk
+			}
+		}
+
+		// Redirect ke halaman struk
 		throw redirect(303, `/transactions/${data.transaction_id}?success=true`);
 	}
 };
