@@ -1,0 +1,178 @@
+<script>
+	import { 
+		Plus, 
+		Search, 
+		Package, 
+		Filter, 
+		MoreHorizontal, 
+		Edit, 
+		Trash2 
+	} from '@lucide/svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
+
+	let { data } = $props();
+	let { items, categories } = data;
+
+	let searchQuery = $state('');
+	let selectedCategory = $state('all');
+
+	// Filter items based on search and category
+	let filteredItems = $derived(
+		items.filter(item => {
+			const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+								(item.barcode && item.barcode.toLowerCase().includes(searchQuery.toLowerCase()));
+			const matchCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
+			return matchSearch && matchCategory;
+		})
+	);
+
+	function formatCurrency(amount) {
+		if (amount == null) return '-';
+		return new Intl.NumberFormat('id-ID', {
+			style: 'currency',
+			currency: 'IDR',
+			minimumFractionDigits: 0
+		}).format(amount);
+	}
+</script>
+
+<div class="space-y-6 max-w-7xl mx-auto pb-12">
+	<!-- Header -->
+	<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+		<div>
+			<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)]">Data Barang</h1>
+			<p class="text-[var(--color-stone)] mt-1">Kelola master data barang sewa dan retail.</p>
+		</div>
+		<div class="flex items-center gap-3 w-full sm:w-auto">
+			<!-- eslint-disable-next-line -->
+			<a href="/inventory/bulk-upload" class="flex-1 sm:flex-none">
+				<Button variant="secondary" class="w-full">Bulk Upload</Button>
+			</a>
+			<!-- eslint-disable-next-line -->
+			<a href="/inventory/new" class="flex-1 sm:flex-none">
+				<Button class="w-full">
+					<Plus size={18} class="mr-2" /> Tambah Barang
+				</Button>
+			</a>
+		</div>
+	</div>
+
+	<!-- Controls (Search & Category) -->
+	<Card padding="md">
+		<div class="flex flex-col md:flex-row gap-4">
+			<div class="flex-1">
+				<div class="relative">
+					<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-stone)]">
+						<Search size={18} />
+					</div>
+					<input 
+						type="text" 
+						bind:value={searchQuery} 
+						placeholder="Cari nama barang atau barcode..." 
+						class="w-full pl-10 pr-4 py-2 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all"
+					>
+				</div>
+			</div>
+			<div class="w-full md:w-64">
+				<select 
+					bind:value={selectedCategory}
+					class="w-full px-4 py-2 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all appearance-none cursor-pointer"
+				>
+					<option value="all">Semua Kategori</option>
+					{#each categories as cat (cat.id)}
+						<option value={cat.id}>{cat.name} ({cat.type})</option>
+					{/each}
+				</select>
+			</div>
+		</div>
+	</Card>
+
+	<!-- Data Table -->
+	<Card padding="none" class="overflow-hidden">
+		<div class="overflow-x-auto">
+			<table class="w-full text-left text-sm whitespace-nowrap">
+				<thead class="bg-[var(--color-sand-light)] text-[var(--color-earth)] font-semibold border-b border-[var(--color-border)]">
+					<tr>
+						<th class="px-6 py-4">Barang</th>
+						<th class="px-6 py-4">Kategori</th>
+						<th class="px-6 py-4">Harga Sewa / Jual</th>
+						<th class="px-6 py-4">Stok (Tersedia / Total)</th>
+						<th class="px-6 py-4">Status</th>
+						<th class="px-6 py-4 text-right">Aksi</th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-[var(--color-border-light)]">
+					{#if filteredItems.length === 0}
+						<tr>
+							<td colspan="6" class="px-6 py-12 text-center text-[var(--color-stone)]">
+								<Package size={48} class="mx-auto mb-3 opacity-20" />
+								<p class="text-lg font-medium">Tidak ada barang ditemukan</p>
+								<p class="text-sm mt-1">Coba sesuaikan kata kunci pencarian atau tambah barang baru.</p>
+							</td>
+						</tr>
+					{:else}
+						{#each filteredItems as item (item.id)}
+							<tr class="hover:bg-[var(--color-sand-lightest)]/50 transition-colors group">
+								<td class="px-6 py-4">
+									<div class="flex items-center gap-3">
+										<div class="w-10 h-10 rounded-lg bg-[var(--color-sand)] flex items-center justify-center overflow-hidden border border-[var(--color-border-light)] shrink-0">
+											{#if item.image_url}
+												<img src={item.image_url} alt={item.name} class="w-full h-full object-cover" />
+											{:else}
+												<Package size={20} class="text-[var(--color-stone)] opacity-50" />
+											{/if}
+										</div>
+										<div>
+											<div class="font-semibold text-[var(--color-earth)] truncate max-w-[200px]" title={item.name}>{item.name}</div>
+											<div class="text-xs text-[var(--color-stone)] font-mono">{item.barcode || '-'}</div>
+										</div>
+									</div>
+								</td>
+								<td class="px-6 py-4">
+									<Badge variant={item.category?.type === 'sewa' ? 'info' : 'warning'}>
+										{item.category?.name || 'Unknown'}
+									</Badge>
+								</td>
+								<td class="px-6 py-4">
+									{#if item.category?.type === 'sewa'}
+										<div class="text-[var(--color-forest)] font-medium">{formatCurrency(item.rental_price_per_day)}<span class="text-xs text-[var(--color-stone)] font-normal">/hari</span></div>
+									{:else}
+										<div class="text-[var(--color-terracotta)] font-medium">{formatCurrency(item.sell_price)}</div>
+									{/if}
+								</td>
+								<td class="px-6 py-4">
+									<div class="flex items-center gap-1.5">
+										<span class="font-bold {item.stock_available > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}">
+											{item.stock_available}
+										</span>
+										<span class="text-[var(--color-stone)]">/ {item.stock_total}</span>
+									</div>
+								</td>
+								<td class="px-6 py-4">
+									{#if item.is_active}
+										<Badge variant="success">Aktif</Badge>
+									{:else}
+										<Badge variant="default">Nonaktif</Badge>
+									{/if}
+								</td>
+								<td class="px-6 py-4 text-right">
+									<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+										<!-- eslint-disable-next-line -->
+										<a href="/inventory/{item.id}" class="p-1.5 text-[var(--color-stone)] hover:text-[var(--color-forest)] hover:bg-[var(--color-forest)]/10 rounded-md transition-colors" title="Edit">
+											<Edit size={16} />
+										</a>
+										<button type="button" class="p-1.5 text-[var(--color-stone)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 rounded-md transition-colors" title="Hapus">
+											<Trash2 size={16} />
+										</button>
+									</div>
+								</td>
+							</tr>
+						{/each}
+					{/if}
+				</tbody>
+			</table>
+		</div>
+	</Card>
+</div>
