@@ -54,7 +54,7 @@
 
 		// --- OWNER ---
 		{ section: 'OWNER', roles: ['owner'] },
-		{ icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', roles: ['owner'] },
+		{ icon: LayoutDashboard, label: 'Dashboard', href: '/', roles: ['owner'] },
 		{ icon: BarChart3, label: 'Statistik', href: '/statistics', roles: ['owner'] },
 		{ icon: Store, label: 'Manajemen Cabang', href: '/branches', roles: ['owner'] },
 		{ icon: Users, label: 'Manajemen Staff', href: '/staff', roles: ['owner'] },
