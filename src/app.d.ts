@@ -3,7 +3,14 @@
 declare global {
 	namespace App {
 		// interface Error {}
-		// interface Locals {}
+		interface Locals {
+			supabase: import('@supabase/supabase-js').SupabaseClient;
+			safeGetSession: () => Promise<{
+				session: import('@supabase/supabase-js').Session | null;
+				user: import('@supabase/supabase-js').User | null;
+				profile: any | null;
+			}>;
+		}
 		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}
