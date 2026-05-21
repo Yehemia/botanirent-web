@@ -1,9 +1,12 @@
 <script>
-	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import '../app.css';
 
 	let { children } = $props();
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head>
+	<title>BotaniRent — Sistem Manajemen Rental & Retail Outdoor</title>
+	<meta name="description" content="BotaniRent: POS dan manajemen inventaris terpadu untuk toko outdoor. Multi-cabang, transaksi hybrid sewa & jual." />
+</svelte:head>
+
 {@render children()}
