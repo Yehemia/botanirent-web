@@ -51,7 +51,12 @@ export const actions = {
 		});
 
 		if (error) {
-			return fail(400, { error: 'Gagal menghubungi Google untuk login' });
+			console.error('OAuth error:', error);
+			let message = 'Gagal menghubungi Google untuk login';
+			if (error.message.includes('provider is not enabled')) {
+				message = 'Metode login Google belum diaktifkan di Dashboard Supabase.';
+			}
+			return fail(400, { error: message });
 		}
 
 		throw redirect(303, data.url);

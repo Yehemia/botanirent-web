@@ -1,6 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { UserPlus, Shield, Store, Mail, Power, CheckCircle2 } from '@lucide/svelte';
+	import { UserPlus, Shield, Store, Mail, Power, CheckCircle2, Lock, User } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -16,12 +16,19 @@
 	let formData = $state({
 		email: '',
 		full_name: '',
+		password: '',
 		role: 'kasir',
 		branch_id: ''
 	});
 
-	function openInviteModal() {
-		formData = { email: '', full_name: '', role: 'kasir', branch_id: data.branches[0]?.id || '' };
+	function openAddModal() {
+		formData = { 
+			email: '', 
+			full_name: '', 
+			password: '', 
+			role: 'kasir', 
+			branch_id: data.branches[0]?.id || '' 
+		};
 		showModal = true;
 	}
 
@@ -44,9 +51,9 @@
 		<p class="text-[var(--color-stone)] text-sm">Kelola akses Kasir dan Admin Gudang ke cabang-cabang Anda.</p>
 	</div>
 	
-	<Button onclick={openInviteModal}>
+	<Button onclick={openAddModal}>
 		{#snippet iconLeft()}<UserPlus size={18} />{/snippet}
-		Undang Staff
+		Tambah Staff
 	</Button>
 </div>
 
@@ -58,7 +65,7 @@
 
 {#if form?.success}
 	<div class="bg-[var(--color-success-bg)] text-[var(--color-success)] text-sm p-4 rounded-md mb-6 border border-[var(--color-success)]/20 flex items-center gap-2">
-		<CheckCircle2 size={18} /> Undangan berhasil dikirim ke email staff!
+		<CheckCircle2 size={18} /> Akun staff berhasil dibuat! Mereka sekarang bisa langsung login.
 	</div>
 {/if}
 
@@ -123,15 +130,15 @@
 	</div>
 </div>
 
-<!-- Modal Invite -->
+<!-- Modal Tambah Staff -->
 <Modal 
 	bind:open={showModal} 
-	title="Undang Staff Baru"
+	title="Tambah Staff Baru"
 >
-	<form id="invite-form" method="POST" action="?/invite" use:enhance={handleSubmit} class="space-y-4">
+	<form id="add-staff-form" method="POST" action="?/invite" use:enhance={handleSubmit} class="space-y-4">
 		
 		<p class="text-sm text-[var(--color-stone)] mb-4">
-			Staff akan menerima email undangan berisi link untuk mengatur password mereka sendiri.
+			Buat akun staff secara langsung. Silakan berikan email dan password ini kepada staff terkait.
 		</p>
 
 		<Input 
@@ -141,7 +148,9 @@
 			placeholder="Contoh: Budi Santoso" 
 			bind:value={formData.full_name}
 			required
-		/>
+		>
+			{#snippet iconLeft()}<User size={18} />{/snippet}
+		</Input>
 
 		<Input 
 			id="email" 
@@ -153,6 +162,19 @@
 			required
 		>
 			{#snippet iconLeft()}<Mail size={18} />{/snippet}
+		</Input>
+
+		<Input 
+			id="password" 
+			name="password" 
+			type="password"
+			label="Password Sementara" 
+			placeholder="Minimal 6 karakter" 
+			bind:value={formData.password}
+			required
+			minlength="6"
+		>
+			{#snippet iconLeft()}<Lock size={18} />{/snippet}
 		</Input>
 		
 		<Select 
@@ -189,8 +211,8 @@
 
 	{#snippet footer()}
 		<Button variant="ghost" onclick={() => showModal = false}>Batal</Button>
-		<Button form="invite-form" type="submit" disabled={loading}>
-			{loading ? 'Mengirim...' : 'Kirim Undangan'}
+		<Button form="add-staff-form" type="submit" disabled={loading}>
+			{loading ? 'Memproses...' : 'Buat Akun Staff'}
 		</Button>
 	{/snippet}
 </Modal>

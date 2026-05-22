@@ -33,7 +33,7 @@ export const load = async ({ locals: { supabase, safeGetSession } }) => {
 };
 
 export const actions = {
-	invite: async ({ request, locals: { safeGetSession }, url }) => {
+	invite: async ({ request, locals: { safeGetSession } }) => {
 		const { profile } = await safeGetSession();
 		
 		if (profile?.role !== 'owner') {
@@ -42,29 +42,36 @@ export const actions = {
 
 		const formData = await request.formData();
 		const email = formData.get('email');
+		const password = formData.get('password');
 		const role = formData.get('role');
 		const branch_id = formData.get('branch_id');
 		const full_name = formData.get('full_name');
 
-		if (!email || !role || !branch_id || !full_name) {
+		if (!email || !password || !role || !branch_id || !full_name) {
 			return fail(400, { error: 'Semua field harus diisi.' });
 		}
 
-		// 1. Invite user via Supabase Admin API
-		const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-			email.toString(),
-			{ redirectTo: `${url.origin}/set-password` }
-		);
-
-		if (inviteError) {
-			console.error('Error inviting user:', inviteError);
-			if (inviteError.message.includes('User already registered')) {
-				return fail(400, { error: 'Email tersebut sudah terdaftar.' });
-			}
-			return fail(500, { error: 'Gagal mengirim email undangan.' });
+		if (password.toString().length < 6) {
+			return fail(400, { error: 'Password minimal 6 karakter.' });
 		}
 
-		const userId = inviteData.user.id;
+		// 1. Create user directly via Supabase Admin API
+		const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+			email: email.toString(),
+			password: password.toString(),
+			email_confirm: true, // Langsung aktif tanpa verifikasi email
+			user_metadata: { full_name: full_name.toString() }
+		});
+
+		if (createError) {
+			console.error('Error creating user:', createError);
+			if (createError.message.includes('already registered')) {
+				return fail(400, { error: 'Email tersebut sudah terdaftar.' });
+			}
+			return fail(500, { error: 'Gagal membuat akun staff: ' + createError.message });
+		}
+
+		const userId = userData.user.id;
 
 		// 2. Update their profile with the assigned role, branch, and name
 		const { error: profileError } = await supabaseAdmin
@@ -78,9 +85,8 @@ export const actions = {
 			.eq('id', userId);
 
 		if (profileError) {
-			console.error('Error updating profile after invite:', profileError);
-			// We don't fail completely since the invite was sent, but we should notify
-			return fail(500, { error: 'Undangan terkirim, namun gagal mengatur role/cabang. Silakan edit profil secara manual.' });
+			console.error('Error updating profile after creation:', profileError);
+			return fail(500, { error: 'Akun dibuat, namun gagal mengatur role/cabang.' });
 		}
 
 		return { success: true };
