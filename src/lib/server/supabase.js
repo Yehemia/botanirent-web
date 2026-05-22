@@ -37,7 +37,9 @@ export const createSupabaseServerClient = (event) => {
  * Wrap in a Proxy to lazily initialize the client when it's first accessed, preventing
  * startup errors in SvelteKit when static public variables are temporarily empty during dev reload.
  */
+/** @type {any} */
 let adminClient = null;
+/** @type {any} */
 export const supabaseAdmin = new Proxy({}, {
 	get(target, prop) {
 		if (!adminClient) {

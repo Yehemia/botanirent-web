@@ -5,6 +5,7 @@
 	let { form } = $props();
 	let loading = $state(false);
 
+	/** @type {import('@sveltejs/kit').SubmitFunction} */
 	function handleSubmit() {
 		loading = true;
 		return async ({ update }) => {

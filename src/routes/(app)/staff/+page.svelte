@@ -172,7 +172,7 @@
 			placeholder="Minimal 6 karakter" 
 			bind:value={formData.password}
 			required
-			minlength="6"
+			minlength={6}
 		>
 			{#snippet iconLeft()}<Lock size={18} />{/snippet}
 		</Input>
