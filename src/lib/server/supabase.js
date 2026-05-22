@@ -34,14 +34,31 @@ export const createSupabaseServerClient = (event) => {
 /**
  * Creates a Supabase admin client using the service role key.
  * Only use this in server actions where bypassing RLS or managing users is required.
+ * Wrap in a Proxy to lazily initialize the client when it's first accessed, preventing
+ * startup errors in SvelteKit when static public variables are temporarily empty during dev reload.
  */
-export const supabaseAdmin = createClient(
-	PUBLIC_SUPABASE_URL, 
-	PRIVATE_SUPABASE_SERVICE_ROLE_KEY, 
-	{
-		auth: {
-			autoRefreshToken: false,
-			persistSession: false
+let adminClient = null;
+export const supabaseAdmin = new Proxy({}, {
+	get(target, prop) {
+		if (!adminClient) {
+			if (!PUBLIC_SUPABASE_URL || !PRIVATE_SUPABASE_SERVICE_ROLE_KEY) {
+				throw new Error("PUBLIC_SUPABASE_URL or PRIVATE_SUPABASE_SERVICE_ROLE_KEY is missing when trying to access supabaseAdmin.");
+			}
+			adminClient = createClient(
+				PUBLIC_SUPABASE_URL, 
+				PRIVATE_SUPABASE_SERVICE_ROLE_KEY, 
+				{
+					auth: {
+						autoRefreshToken: false,
+						persistSession: false
+					}
+				}
+			);
 		}
+		const val = adminClient[prop];
+		if (typeof val === 'function') {
+			return val.bind(adminClient);
+		}
+		return val;
 	}
-);
+});

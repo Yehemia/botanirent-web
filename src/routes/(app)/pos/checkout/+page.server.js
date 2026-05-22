@@ -37,8 +37,12 @@ export const actions = {
 		try {
 			payload = JSON.parse(payloadRaw.toString());
 		} catch (e) {
-			return fail(400, { error: 'Format data transaksi tidak valid.' });
+			const preview = payloadRaw.toString().substring(0, 200);
+			console.error('[Checkout] Payload JSON parse failed. Raw value preview:', preview);
+			return fail(400, { error: `Format data transaksi tidak valid. Preview: ${preview}` });
 		}
+		
+		console.log('[Checkout] Parsed payload:', JSON.stringify(payload, null, 2));
 		
 		// Injeksi data server-side
 		payload.branch_id = profile.branch_id;

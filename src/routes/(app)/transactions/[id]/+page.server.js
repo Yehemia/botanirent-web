@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 
-export async function load({ locals, params }) {
+export async function load({ locals, params, url }) {
 	const { supabase } = locals;
 	const { session, profile } = await locals.safeGetSession();
 
@@ -9,6 +9,7 @@ export async function load({ locals, params }) {
 	}
 
 	const { id } = params;
+	const isSuccess = url.searchParams.get('success') === 'true';
 
 	// Fetch detail transaksi beserta pelanggannya dan kasirnya
 	const { data: transaction, error } = await supabase
@@ -33,7 +34,16 @@ export async function load({ locals, params }) {
 	// Tambahkan item ke dalam object transaction
 	transaction.items = items || [];
 
+	// Fetch branch info untuk header struk
+	const { data: branch } = await supabase
+		.from('branches')
+		.select('name, address, phone')
+		.eq('id', profile.branch_id)
+		.single();
+
 	return {
-		transaction
+		transaction,
+		branch: branch || { name: 'BotaniRent', address: '', phone: '' },
+		isSuccess
 	};
 }
