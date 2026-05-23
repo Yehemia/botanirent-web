@@ -100,6 +100,7 @@
 	 * @param {any} type
 	 */
 	function addToCart(item, type) {
+		if (type === 'sewa') type = 'rental'; // Normalize 'sewa' to 'rental'
 		const id = item.id;
 		const existingIdx = cart.findIndex((/** @type {any} */ c) => c.id === id && c.type === type);
 		
@@ -231,11 +232,11 @@
 								<h3 class="font-bold text-[var(--color-earth)] text-sm line-clamp-2 mb-1 group-hover:text-[var(--color-forest)] transition-colors">{item.name}</h3>
 								<div class="mt-auto pt-2">
 									{#if item.__displayType === 'sewa'}
-										<span class="font-bold text-[var(--color-forest)]">{formatCurrency(item.rental_price_per_day)}<span class="text-[10px] text-[var(--color-stone)] font-normal">/hr</span></span>
+										<span class="font-bold text-[var(--color-forest)]">{formatCurrency(item.rental_price_per_day)}<span class="text-[10px] text-[var(--color-stone)] font-normal">/siklus</span></span>
 									{:else if item.__displayType === 'retail'}
 										<span class="font-bold text-[var(--color-terracotta)]">{formatCurrency(item.sell_price)}</span>
 									{:else}
-										<span class="font-bold text-[var(--color-forest)]">{formatCurrency(item.package_price)}<span class="text-[10px] text-[var(--color-stone)] font-normal">/hr</span></span>
+										<span class="font-bold text-[var(--color-forest)]">{formatCurrency(item.package_price)}<span class="text-[10px] text-[var(--color-stone)] font-normal">/siklus</span></span>
 									{/if}
 								</div>
 							</div>
@@ -279,7 +280,7 @@
 						<div>
 							<h4 class="font-bold text-[var(--color-earth)] text-sm pr-6 leading-tight">{item.name}</h4>
 							<div class="flex items-center gap-2 mt-1">
-								{#if item.type === 'sewa'}
+								{#if item.type === 'rental'}
 									<span class="text-[10px] bg-[var(--color-info)]/10 text-[var(--color-info)] px-1.5 py-0.5 rounded font-medium">Sewa</span>
 								{:else if item.type === 'retail'}
 									<span class="text-[10px] bg-[var(--color-warning)]/10 text-[var(--color-warning)] px-1.5 py-0.5 rounded font-medium">Jual</span>

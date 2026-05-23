@@ -59,7 +59,7 @@
 		{ icon: BarChart3, label: 'Statistik', href: '/statistics', roles: ['owner'] },
 		{ icon: Store, label: 'Manajemen Cabang', href: '/branches', roles: ['owner'] },
 		{ icon: Users, label: 'Manajemen Staff', href: '/staff', roles: ['owner'] },
-		{ icon: Settings, label: 'Pengaturan Denda', href: '/penalties', roles: ['owner'] },
+		{ icon: Settings, label: 'Pengaturan Sistem', href: '/settings', roles: ['owner'] },
 		{ icon: FileText, label: 'Log Aktivitas', href: '/activity-log', roles: ['owner'] }
 	];
 

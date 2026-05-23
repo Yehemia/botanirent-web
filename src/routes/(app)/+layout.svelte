@@ -29,6 +29,7 @@
 		if (path.includes('/staff')) return 'Manajemen Staff';
 		if (path.includes('/penalties')) return 'Pengaturan Denda';
 		if (path.includes('/activity-log')) return 'Log Aktivitas';
+		if (path.includes('/settings')) return 'Pengaturan Sistem';
 		return 'BotaniRent';
 	});
 </script>

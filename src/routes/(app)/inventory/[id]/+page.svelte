@@ -163,7 +163,7 @@
 										id="rental_price_per_day" 
 										name="rental_price_per_day" 
 										type="number"
-										label="Harga Sewa (per Hari)" 
+										label="Harga Sewa (per Siklus)" 
 										placeholder="misal: 35000" 
 										min="0"
 										required 

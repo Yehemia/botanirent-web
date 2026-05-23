@@ -129,7 +129,7 @@
 								</td>
 								<td class="px-6 py-4">
 									{#if item.category?.type === 'sewa'}
-										<div class="text-[var(--color-forest)] font-medium">{formatCurrency(item.rental_price_per_day)}<span class="text-xs text-[var(--color-stone)] font-normal">/hari</span></div>
+										<div class="text-[var(--color-forest)] font-medium">{formatCurrency(item.rental_price_per_day)}<span class="text-xs text-[var(--color-stone)] font-normal">/siklus</span></div>
 									{:else}
 										<div class="text-[var(--color-terracotta)] font-medium">{formatCurrency(item.sell_price)}</div>
 									{/if}

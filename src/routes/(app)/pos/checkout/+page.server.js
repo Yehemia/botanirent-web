@@ -16,8 +16,18 @@ export async function load({ locals }) {
 		.eq('branch_id', profile.branch_id)
 		.order('full_name');
 
+	// Fetch rental settings
+	const { data: settingsData } = await supabase
+		.from('settings')
+		.select('*')
+		.eq('key', 'rental')
+		.single();
+	
+	const rentalSettings = settingsData?.value || { default_rental_duration_days: 4, late_fee_per_day_per_transaction: 10000 };
+
 	return {
-		customers: customers || []
+		customers: customers || [],
+		rentalSettings
 	};
 }
 

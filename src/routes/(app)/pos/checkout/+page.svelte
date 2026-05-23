@@ -10,6 +10,8 @@
 
 	let { data, form } = $props();
 	let customers = $derived(data.customers);
+	let rentalSettings = $derived(data.rentalSettings);
+	let defaultRentalDuration = $derived(rentalSettings?.default_rental_duration_days || 4);
 
 	/** @type {any[]} */
 	let cart = $state([]);
@@ -23,7 +25,6 @@
 	let customerPhone = $state('');
 	
 	let startDate = $state('');
-	let endDate = $state('');
 	
 	let paidAmount = $state('');
 	let paymentMethod = $state('cash');
@@ -48,7 +49,6 @@
 				
 				// Format to YYYY-MM-DD local time
 				startDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-				endDate = new Date(tomorrow.getTime() - (tomorrow.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 			}
 			isMounted = true;
 		} else {
@@ -56,21 +56,18 @@
 		}
 	});
 
-	let rentalDays = $derived(() => {
-		if (!hasRental || !startDate || !endDate) return 1;
+	// Automatically calculate endDate based on startDate and default duration
+	let endDate = $derived(() => {
+		if (!startDate) return '';
 		const start = new Date(startDate);
-		const end = new Date(endDate);
-		const diffTime = end.getTime() - start.getTime();
-		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-		return diffDays > 0 ? diffDays : 1;
+		const end = new Date(start);
+		end.setDate(end.getDate() + defaultRentalDuration);
+		return new Date(end.getTime() - (end.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 	});
 
 	let subtotal = $derived(() => {
 		return cart.reduce((/** @type {number} */ acc, /** @type {any} */ curr) => {
-			if (curr.type === 'rental' || curr.type === 'package') {
-				return acc + (curr.price * curr.quantity * rentalDays());
-			}
-			return acc + (curr.price * curr.quantity); // retail
+			return acc + (curr.price * curr.quantity);
 		}, 0);
 	});
 
@@ -92,8 +89,8 @@
 			change_amount: changeAmount(),
 			payment_method: paymentMethod,
 			rental_start_date: hasRental ? startDate : null,
-			rental_end_date: hasRental ? endDate : null,
-			rental_days: rentalDays(),
+			rental_end_date: hasRental ? endDate() : null,
+			rental_days: hasRental ? defaultRentalDuration : null,
 			cart: cart.map(c => ({
 				type: c.type,
 				item_id: c.type !== 'package' ? c.id : null,
@@ -101,7 +98,7 @@
 				item_name: c.name,
 				quantity: c.quantity,
 				unit_price: c.price,
-				subtotal: (c.type === 'rental' || c.type === 'package') ? (c.price * c.quantity * rentalDays()) : (c.price * c.quantity)
+				subtotal: (c.price * c.quantity)
 			}))
 		};
 		return JSON.stringify(payload);
@@ -174,14 +171,14 @@
 								<Input 
 									type="date" 
 									id="endDate"
-									label="Tanggal Selesai (Kembali)"
-									bind:value={endDate}
-									min={startDate}
-									required
+									label="Tanggal Selesai (Otomatis)"
+									value={endDate()}
+									readonly
+									class="bg-[var(--color-sand)] text-[var(--color-stone)] cursor-not-allowed"
 								/>
 							</div>
 							<div class="mt-3 text-sm text-[var(--color-stone)] bg-[var(--color-sand)]/50 p-3 rounded-lg border border-[var(--color-border-light)]">
-								Total durasi sewa: <strong class="text-[var(--color-forest)]">{rentalDays()} Hari</strong>
+								Siklus sewa tetap: <strong class="text-[var(--color-forest)]">{defaultRentalDuration} Hari</strong>. Pengembalian maksimal pada tanggal yang tertera. Lebih dari itu dikenakan denda.
 							</div>
 						</Card>
 					{/if}
@@ -236,16 +233,12 @@
 										<p class="text-xs text-[var(--color-stone)] mt-0.5">
 											{item.quantity}x {formatCurrency(item.price)}
 											{#if item.type === 'rental' || item.type === 'package'}
-												<span class="text-[var(--color-forest)] ml-1">x {rentalDays()} hr</span>
+												<span class="text-[var(--color-forest)] ml-1">(/siklus)</span>
 											{/if}
 										</p>
 									</div>
 									<div class="font-bold text-[var(--color-earth)]">
-										{#if item.type === 'rental' || item.type === 'package'}
-											{formatCurrency(item.price * item.quantity * rentalDays())}
-										{:else}
-											{formatCurrency(item.price * item.quantity)}
-										{/if}
+										{formatCurrency(item.price * item.quantity)}
 									</div>
 								</li>
 							{/each}
@@ -292,7 +285,7 @@
 								</div>
 							{/if}
 
-							<Button type="submit" disabled={loading || (paymentMethod !== 'qris' && (parseFloat(paidAmount)||0) < subtotal()) || (hasRental && (!startDate || !endDate))} class="w-full py-4 text-lg">
+							<Button type="submit" disabled={loading || (paymentMethod !== 'qris' && (parseFloat(paidAmount)||0) < subtotal()) || (hasRental && !startDate)} class="w-full py-4 text-lg">
 								{#if loading}
 									Memproses...
 								{:else}
