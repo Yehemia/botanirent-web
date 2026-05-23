@@ -110,6 +110,42 @@ export const actions = {
 			return fail(500, { error: 'Gagal menyimpan data barang.', values: Object.fromEntries(formData) });
 		}
 
+		// Jika kategori sewa, buat unit fisik otomatis
+		if (category.type === 'sewa' && stock_total > 0) {
+			/**
+			 * @param {number} index
+			 * @returns {string}
+			 */
+			const getLetterSuffix = (index) => {
+				let suffix = '';
+				let temp = index;
+				while (temp >= 0) {
+					suffix = String.fromCharCode((temp % 26) + 65) + suffix;
+					temp = Math.floor(temp / 26) - 1;
+				}
+				return suffix;
+			};
+
+			const newAssets = [];
+			for (let i = 0; i < stock_total; i++) {
+				newAssets.push({
+					item_id: newItem.id,
+					asset_code: `${barcode}-${getLetterSuffix(i)}`,
+					status: 'ready'
+				});
+			}
+
+			const { error: assetsError } = await supabase
+				.from('rental_assets')
+				.insert(newAssets);
+
+			if (assetsError) {
+				console.error("Insert assets error:", assetsError);
+				// We won't abort the whole transaction but we will log it. Since the item is created,
+				// they can add/edit stock later to try generating again.
+			}
+		}
+
 		// Log activity (fire and forget)
 		supabase.from('activity_logs').insert({
 			user_id: profile.id,

@@ -10,28 +10,34 @@
 	/** @type {{ data: any, form: any }} */
 	let { data, form } = $props();
 	
+	const initialItem = data.item;
+	const initialForm = form;
+	let item = $derived(data.item);
 	let categories = $derived(data.categories);
 
 	let loading = $state(false);
 	
-	// Default to first category if none selected previously
-	const initialForm = form;
-	const initialData = data;
-	let selectedCategoryId = $state(initialForm?.values?.category_id || (initialData.categories.length > 0 ? initialData.categories[0].id : ''));
+	// Initialize form states using Svelte 5 $state
+	let name = $state(initialForm?.values?.name ?? initialItem.name);
+	let description = $state(initialForm?.values?.description ?? initialItem.description ?? '');
+	let selectedCategoryId = $state(initialForm?.values?.category_id ?? initialItem.category_id);
+	let stock_total = $state(initialForm?.values?.stock_total ?? initialItem.stock_total);
+	let is_active = $state(initialForm?.values?.is_active ?? (initialItem.is_active ? 'true' : 'false'));
+	
+	let rental_price_per_day = $state(initialForm?.values?.rental_price_per_day ?? initialItem.rental_price_per_day ?? '');
+	let sell_price = $state(initialForm?.values?.sell_price ?? initialItem.sell_price ?? '');
 	
 	// Reactively find the selected category to toggle price inputs
 	let selectedCategory = $derived(categories.find((/** @type {any} */ c) => c.id === selectedCategoryId));
 	
 	/** @type {string | null} */
-	let imagePreview = $state(null);
+	let imagePreview = $state(initialItem.image_url || null);
 
 	/** @param {Event & { currentTarget: HTMLInputElement }} e */
 	function handleImageChange(e) {
 		const file = e.currentTarget.files?.[0];
 		if (file) {
 			imagePreview = URL.createObjectURL(file);
-		} else {
-			imagePreview = null;
 		}
 	}
 </script>
@@ -44,8 +50,8 @@
 			<ArrowLeft size={24} />
 		</a>
 		<div>
-			<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)]">Tambah Barang Baru</h1>
-			<p class="text-[var(--color-stone)] mt-1">Barcode akan di-generate otomatis oleh sistem (misal: BTN-XXXXX).</p>
+			<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)]">Edit Barang</h1>
+			<p class="text-[var(--color-stone)] mt-1">Barcode: <span class="font-mono font-bold text-[var(--color-earth)] bg-[var(--color-sand)] px-2 py-0.5 rounded-md">{item.barcode || '-'}</span></p>
 		</div>
 	</div>
 
@@ -64,9 +70,9 @@
 				await update();
 				loading = false;
 				if (result.type === 'success' || result.type === 'redirect') {
-					toast.success('Berhasil menambahkan barang baru!');
+					toast.success('Berhasil menyimpan perubahan!');
 				} else if (result.type === 'error' || result.type === 'failure') {
-					toast.error('Gagal menambahkan barang. Periksa kembali data Anda.');
+					toast.error('Gagal menyimpan perubahan. Periksa kembali data Anda.');
 				}
 			};
 		}}
@@ -119,23 +125,33 @@
 								label="Nama Barang" 
 								placeholder="misal: Tenda Dome 4P Consina" 
 								required 
-								value={form?.values?.name || ''}
+								bind:value={name}
 							/>
 						</div>
 
-						<Select 
-							id="category_id" 
-							name="category_id" 
-							label="Kategori"
-							bind:value={selectedCategoryId}
-						>
-							{#if categories.length === 0}
-								<option value="" disabled>Belum ada kategori di database</option>
-							{/if}
-							{#each categories as cat}
-								<option value={cat.id}>{cat.name} ({cat.type})</option>
-							{/each}
-						</Select>
+						<!-- Kategori & Status Aktif -->
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+							<Select 
+								id="category_id" 
+								name="category_id" 
+								label="Kategori"
+								bind:value={selectedCategoryId}
+							>
+								{#each categories as cat}
+									<option value={cat.id}>{cat.name} ({cat.type})</option>
+								{/each}
+							</Select>
+
+							<Select 
+								id="is_active" 
+								name="is_active" 
+								label="Status Operasional"
+								bind:value={is_active}
+							>
+								<option value="true">Aktif (Tampil di POS)</option>
+								<option value="false">Nonaktif (Sembunyikan dari POS)</option>
+							</Select>
+						</div>
 
 						<!-- Grid untuk Harga dan Stok -->
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -151,7 +167,7 @@
 										placeholder="misal: 35000" 
 										min="0"
 										required 
-										value={form?.values?.rental_price_per_day || ''}
+										bind:value={rental_price_per_day}
 									/>
 									<p class="text-xs text-[var(--color-stone)] mt-1">Hanya angka tanpa titik/koma.</p>
 								{:else if selectedCategory?.type === 'retail'}
@@ -163,7 +179,7 @@
 										placeholder="misal: 150000" 
 										min="0"
 										required 
-										value={form?.values?.sell_price || ''}
+										bind:value={sell_price}
 									/>
 									<p class="text-xs text-[var(--color-stone)] mt-1">Harga jual ke konsumen.</p>
 								{/if}
@@ -179,7 +195,7 @@
 									placeholder="misal: 10" 
 									min="0"
 									required 
-									value={form?.values?.stock_total || '1'}
+									bind:value={stock_total}
 								/>
 								<p class="text-xs text-[var(--color-stone)] mt-1">Total fisik barang di cabang ini.</p>
 							</div>
@@ -194,7 +210,8 @@
 								rows="4" 
 								placeholder="Tuliskan spesifikasi, warna, atau catatan lain terkait barang ini..."
 								class="w-full px-4 py-3 bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)] focus:border-transparent transition-all resize-none"
-							>{form?.values?.description || ''}</textarea>
+								bind:value={description}
+							></textarea>
 						</div>
 
 					</div>
@@ -210,7 +227,7 @@
 						{#if loading}
 							Menyimpan...
 						{:else}
-							<Save size={18} class="mr-2" /> Simpan Barang
+							<Save size={18} class="mr-2" /> Simpan Perubahan
 						{/if}
 					</Button>
 				</div>

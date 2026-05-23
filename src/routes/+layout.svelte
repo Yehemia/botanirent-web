@@ -1,5 +1,6 @@
 <script>
 	import '../app.css';
+	import { Toaster } from 'svelte-sonner';
 
 	let { children } = $props();
 </script>
@@ -10,3 +11,4 @@
 </svelte:head>
 
 {@render children()}
+<Toaster richColors position="bottom-right" />
