@@ -16,8 +16,9 @@ export const actions = {
 		});
 
 		if (error) {
+			console.error('[Forgot Password Error]:', error);
 			return fail(400, {
-				error: 'Gagal mengirim email reset password. Pastikan email terdaftar.'
+				error: `Gagal mengirim email reset password: ${error.message}`
 			});
 		}
 
