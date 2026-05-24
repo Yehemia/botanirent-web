@@ -29,7 +29,7 @@ export async function load({ locals, params, url }) {
 		.from('transaction_items')
 		.select('*')
 		.eq('transaction_id', id)
-		.order('created_at', { ascending: true });
+		.order('id', { ascending: true });
 		
 	// Tambahkan item ke dalam object transaction
 	transaction.items = items || [];

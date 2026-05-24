@@ -11,6 +11,7 @@
 	let { data, form } = $props();
 	let transactions = $derived(data.transactions);
 	let penaltyRules = $derived(data.penaltyRules);
+	let rentalSettings = $derived(data.rentalSettings);
 
 	let searchQuery = $state('');
 	/** @type {any} */
@@ -22,7 +23,6 @@
 	// { itemId: { condition: 'good', actualReturnDate: 'YYYY-MM-DD' } }
 	
 	let loading = $state(false);
-	let successMsg = $state('');
 
 	let filteredTransactions = $derived(
 		transactions.filter((/** @type {any} */ t) => 
@@ -76,7 +76,7 @@
 		let desc = [];
 		const sellPrice = item.item?.sell_price || 0;
 
-		// 1. Denda Kondisi Barang (rusak ringan, rusak berat, hilang)
+		// Denda Kondisi Barang (rusak ringan, rusak berat, hilang)
 		if (rData.condition !== 'good') {
 			const conditionRule = penaltyRules?.find((/** @type {any} */ r) => r.type === rData.condition);
 			if (conditionRule) {
@@ -93,46 +93,72 @@
 			}
 		}
 
-		// 2. Denda Telat (Dinamis dari database penaltyRules)
-		// Denda telat tidak dikenakan jika barang hilang
-		const lateDays = calculateLateDays(item.rental_end_date, rData.actualReturnDate);
-		if (rData.condition !== 'lost' && lateDays > 0) {
-			const lateRule = penaltyRules?.find((/** @type {any} */ r) => r.type === 'late');
-			const lateRate = lateRule ? parseFloat(lateRule.amount) : 10000; // fallback to 10k
-			const latePenalty = lateDays * lateRate;
-			penalty += latePenalty;
-			desc.push(`Telat ${lateDays} hari (${formatCurrency(latePenalty)})`);
-		}
-
 		return { 
-			lateDays: rData.condition === 'lost' ? 0 : lateDays, 
+			lateDays: 0, 
 			penalty, 
 			desc: desc.join(' + ') 
 		};
 	}
 
+	// Hitung hari keterlambatan terlama untuk seluruh transaksi
+	let transactionLateDays = $derived(() => {
+		if (!selectedTrx) return 0;
+		let maxDays = 0;
+		selectedTrx.items.forEach((/** @type {any} */ item) => {
+			const rData = returnData[item.id];
+			if (rData && rData.condition !== 'lost') {
+				const days = calculateLateDays(item.rental_end_date, rData.actualReturnDate);
+				if (days > maxDays) maxDays = days;
+			}
+		});
+		return maxDays;
+	});
+
+	// Denda keterlambatan per transaksi flat
+	let transactionLatePenalty = $derived(() => {
+		const rate = rentalSettings?.late_fee_per_day_per_transaction || 10000;
+		return transactionLateDays() * rate;
+	});
+
 	let totalPenalty = $derived(() => {
 		if (!selectedTrx) return 0;
-		return selectedTrx.items.reduce((/** @type {number} */ acc, /** @type {any} */ item) => acc + calculatePenalty(item).penalty, 0);
+		const damagePenalty = selectedTrx.items.reduce((/** @type {number} */ acc, /** @type {any} */ item) => acc + calculatePenalty(item).penalty, 0);
+		return damagePenalty + transactionLatePenalty();
 	});
 
 	let payloadStr = $derived(() => {
 		if (!selectedTrx) return '';
+		
+		const lateDaysVal = transactionLateDays();
+		const latePenaltyVal = transactionLatePenalty();
+		let latePenaltyApplied = false;
+
 		const payload = selectedTrx.items.map((/** @type {any} */ item) => {
-			const calc = calculatePenalty(item);
+			const cond = returnData[item.id]?.condition || 'good';
+			const actReturnDate = returnData[item.id]?.actualReturnDate || new Date().toISOString().split('T')[0];
+			const damagePenalty = calculatePenalty(item).penalty;
+			
+			let itemLateDays = 0;
+			let itemLatePenalty = 0;
+
+			// Konsolidasikan denda keterlambatan transaksi ke item pertama yang bukan lost
+			if (cond !== 'lost' && !latePenaltyApplied && lateDaysVal > 0) {
+				itemLateDays = lateDaysVal;
+				itemLatePenalty = latePenaltyVal;
+				latePenaltyApplied = true;
+			}
+
 			return {
 				id: item.id,
 				asset_id: item.rental_asset_id,
-				condition: returnData[item.id].condition,
-				actual_return_date: returnData[item.id].actualReturnDate,
-				late_days: calc.lateDays,
-				penalty_amount: calc.penalty
+				condition: cond,
+				actual_return_date: actReturnDate,
+				late_days: itemLateDays,
+				penalty_amount: damagePenalty
 			};
 		});
 		return JSON.stringify(payload);
 	});
-
-
 </script>
 
 <div class="space-y-6 max-w-7xl mx-auto pb-12">
@@ -181,7 +207,12 @@
 								<div class="flex items-center gap-1.5 text-sm text-[var(--color-stone)] mb-1">
 									<User size={14} /> <span class="truncate">{trx.customer_name}</span>
 								</div>
-								<Badge variant="info" class="mt-2 text-[10px]">{trx.items.length} Barang</Badge>
+								<div class="flex items-center gap-1.5 mt-2">
+									<Badge variant="info" class="text-[10px]">{trx.items.length} Barang Sewa</Badge>
+									{#if trx.transaction_type === 'hybrid'}
+										<Badge variant="neutral" class="text-[10px] bg-[var(--color-sand)] text-[var(--color-earth)]">Hybrid</Badge>
+									{/if}
+								</div>
 							</button>
 						{/each}
 					{/if}
@@ -195,7 +226,12 @@
 				<Card padding="md" class="border-2 border-[var(--color-forest)]/20 shadow-md">
 					<div class="border-b border-[var(--color-border)] pb-4 mb-4">
 						<h2 class="text-xl font-bold font-heading text-[var(--color-earth)]">Detail Pengembalian</h2>
-						<p class="text-sm text-[var(--color-stone)]">Kode Transaksi: <span class="font-mono font-bold">{selectedTrx.transaction_code}</span></p>
+						<p class="text-sm text-[var(--color-stone)]">
+							Kode Transaksi: <span class="font-mono font-bold">{selectedTrx.transaction_code}</span>
+							{#if selectedTrx.transaction_type === 'hybrid'}
+								<span class="ml-2"><Badge variant="neutral" class="bg-[var(--color-sand)] text-[var(--color-earth)]">Sewa + Retail (Hybrid)</Badge></span>
+							{/if}
+						</p>
 					</div>
 
 					<form 
@@ -247,12 +283,12 @@
 										</Select>
 									</div>
 
-									<!-- Info Denda -->
+									<!-- Info Denda Kerusakan/Kehilangan Fisik -->
 									{#if penaltyInfo.penalty > 0}
 										<div class="mt-3 flex items-start gap-2 p-2 bg-[var(--color-error-bg)] text-[var(--color-error)] rounded-lg text-sm border border-[var(--color-error)]/20">
 											<AlertTriangle size={16} class="shrink-0 mt-0.5" />
 											<div>
-												<p class="font-bold">Denda: {formatCurrency(penaltyInfo.penalty)}</p>
+												<p class="font-bold">Denda Kerusakan/Kehilangan: {formatCurrency(penaltyInfo.penalty)}</p>
 												<p class="text-xs opacity-90">{penaltyInfo.desc}</p>
 											</div>
 										</div>
@@ -260,6 +296,19 @@
 								</div>
 							{/each}
 						</div>
+
+						<!-- Info Denda Keterlambatan Transaksi (Dihitung Flat Sekali) -->
+						{#if transactionLatePenalty() > 0}
+							<div class="bg-[var(--color-error-bg)] text-[var(--color-error)] p-4 rounded-xl border border-[var(--color-error)]/20 mb-6 flex items-start gap-2.5">
+								<AlertTriangle size={20} class="shrink-0 mt-0.5" />
+								<div>
+									<p class="font-bold text-base">Denda Keterlambatan Transaksi: {formatCurrency(transactionLatePenalty())}</p>
+									<p class="text-xs opacity-90 mt-0.5">
+										Terlambat {transactionLateDays()} hari x {formatCurrency(rentalSettings?.late_fee_per_day_per_transaction || 10000)}/hari (Dihitung sekali per penyewaan).
+									</p>
+								</div>
+							</div>
+						{/if}
 
 						<!-- Footer Submit -->
 						<div class="border-t border-[var(--color-border)] pt-4 flex items-center justify-between">

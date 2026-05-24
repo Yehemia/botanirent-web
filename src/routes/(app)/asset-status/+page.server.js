@@ -63,6 +63,19 @@ export const actions = {
 			return fail(500, { error: 'Gagal mengupdate status aset.' });
 		}
 
+		// Jika status diubah kembali ke 'ready', hapus pemblokiran maintenance di kalender jika ada
+		if (status === 'ready') {
+			const { error: bookingDelErr } = await supabase
+				.from('bookings')
+				.delete()
+				.eq('rental_asset_id', id)
+				.is('transaction_item_id', null);
+				
+			if (bookingDelErr) {
+				console.error("Error deleting maintenance booking on status change:", bookingDelErr);
+			}
+		}
+
 		return { success: true };
 	}
 };

@@ -11,7 +11,7 @@ export async function load({ locals }) {
 	// Ambil semua item sewa yang statusnya masih 'active' (belum dikembalikan)
 	const { data: activeRentals, error } = await supabase
 		.from('transaction_items')
-		.select('*, transaction:transactions!inner(transaction_code, created_at, branch_id, customer:customers(full_name, phone)), item:items(sell_price)')
+		.select('*, transaction:transactions!inner(transaction_code, type, created_at, branch_id, customer:customers(full_name, phone)), item:items(sell_price)')
 		.eq('rental_status', 'active')
 		.eq('transactions.branch_id', profile.branch_id)
 		.order('rental_end_date', { ascending: true });
@@ -30,6 +30,7 @@ export async function load({ locals }) {
 				grouped[trxId] = {
 					transaction_id: trxId,
 					transaction_code: item.transaction.transaction_code,
+					transaction_type: item.transaction.type,
 					customer_name: item.transaction.customer?.full_name || 'Pelanggan Umum',
 					customer_phone: item.transaction.customer?.phone || '-',
 					items: []
@@ -43,9 +44,19 @@ export async function load({ locals }) {
 		.from('penalty_rules')
 		.select('*');
 
+	// Fetch rental settings
+	const { data: settingsData } = await supabase
+		.from('settings')
+		.select('*')
+		.eq('key', 'rental')
+		.single();
+	
+	const rentalSettings = settingsData?.value || { default_rental_duration_days: 4, late_fee_per_day_per_transaction: 10000 };
+
 	return {
 		transactions: Object.values(grouped),
-		penaltyRules: penaltyRules || []
+		penaltyRules: penaltyRules || [],
+		rentalSettings
 	};
 }
 
@@ -62,13 +73,56 @@ export const actions = {
 		const data = JSON.parse(payloadStr.toString());
 		// data: array of { id, condition, late_days, penalty_amount, asset_id }
 
-		// Fetch penalty rules first
+		// Fetch settings for late fee per day per transaction
+		const { data: settingsData } = await supabase
+			.from('settings')
+			.select('*')
+			.eq('key', 'rental')
+			.single();
+		
+		const rentalSettings = settingsData?.value || { default_rental_duration_days: 4, late_fee_per_day_per_transaction: 10000 };
+		const lateRate = parseFloat(rentalSettings.late_fee_per_day_per_transaction) || 10000;
+
+		// Fetch penalty rules for damage/lost
 		const { data: penaltyRules } = await supabase.from('penalty_rules').select('*');
+
+		// 1. Calculate late penalty once per transaction
+		let maxLateDays = 0;
+		let latePenaltyItemId = null;
+
+		for (const item of data) {
+			if (item.condition !== 'lost' && item.late_days > maxLateDays) {
+				maxLateDays = item.late_days;
+			}
+			if (item.condition !== 'lost' && !latePenaltyItemId) {
+				latePenaltyItemId = item.id;
+			}
+		}
 
 		let totalPenalty = 0;
 
+		// Insert transaction-wide late penalty if any
+		if (maxLateDays > 0 && latePenaltyItemId) {
+			const calculatedLateAmount = maxLateDays * lateRate;
+			if (calculatedLateAmount > 0) {
+				const rule = penaltyRules?.find(r => r.type === 'late');
+				await supabase.from('penalties').insert({
+					transaction_item_id: latePenaltyItemId,
+					penalty_rule_id: rule?.id,
+					branch_id: profile.branch_id,
+					type: 'late',
+					late_days: maxLateDays,
+					calculated_amount: calculatedLateAmount,
+					payment_status: 'unpaid',
+					notes: `Keterlambatan transaksi selama ${maxLateDays} hari`
+				});
+				totalPenalty += calculatedLateAmount;
+			}
+		}
+
+		// 2. Loop and process individual items
 		for (const item of data) {
-			// 1. Update status transaction_items
+			// Update status transaction_items
 			let finalRentalStatus = 'returned';
 			if (item.condition === 'lost') finalRentalStatus = 'lost';
 
@@ -76,32 +130,17 @@ export const actions = {
 				rental_status: finalRentalStatus,
 				returned_at: new Date().toISOString(),
 				return_condition: item.condition,
-				return_notes: `Telat: ${item.late_days} hari. Denda: Rp${item.penalty_amount}`
+				return_notes: item.condition === 'lost' 
+					? 'Barang dinyatakan hilang' 
+					: `Kondisi kembali: ${item.condition}`
 			}).eq('id', item.id);
 
-			totalPenalty += item.penalty_amount;
+			// Update calendar booking status to 'completed'
+			await supabase.from('bookings')
+				.update({ status: 'completed' })
+				.eq('transaction_item_id', item.id);
 
-			// 2. Insert into penalties table if there is any penalty calculated
-			// Insert for late penalty
-			if (item.late_days > 0 && item.condition !== 'lost') {
-				const rule = penaltyRules?.find(r => r.type === 'late');
-				const lateRate = rule ? parseFloat(rule.amount) : 10000;
-				const calculatedLateAmount = item.late_days * lateRate;
-				if (calculatedLateAmount > 0) {
-					await supabase.from('penalties').insert({
-						transaction_item_id: item.id,
-						penalty_rule_id: rule?.id,
-						branch_id: profile.branch_id,
-						type: 'late',
-						late_days: item.late_days,
-						calculated_amount: calculatedLateAmount,
-						payment_status: 'unpaid',
-						notes: `Keterlambatan ${item.late_days} hari`
-					});
-				}
-			}
-
-			// Insert for damage/lost penalty
+			// Insert damage/lost penalty per-item if applicable
 			if (item.condition !== 'good') {
 				const rule = penaltyRules?.find(r => r.type === item.condition);
 				if (rule) {
@@ -133,11 +172,12 @@ export const actions = {
 							payment_status: 'unpaid',
 							notes: `Denda ${rule.name}`
 						});
+						totalPenalty += calculatedAmount;
 					}
 				}
 			}
 
-			// 3. Update status fisik (rental_assets)
+			// Update status fisik (rental_assets)
 			let assetStatus = 'ready'; // Good
 			if (item.condition === 'minor_damage' || item.condition === 'major_damage') {
 				assetStatus = 'maintenance';
@@ -162,9 +202,7 @@ export const actions = {
 				entity_type: 'transaction_item',
 				entity_id: item.id,
 				metadata: { 
-					condition: item.condition, 
-					late_days: item.late_days, 
-					penalty_amount: item.penalty_amount 
+					condition: item.condition
 				}
 			});
 		}

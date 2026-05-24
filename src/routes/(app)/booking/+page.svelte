@@ -58,7 +58,7 @@
 
 	// Page state
 	let selectedCategory = $state('all');
-	let selectedItemId = $state('');
+	let selectedItemId = $state('all');
 	let selectedAssetId = $state('all');
 	let viewMode = $state('month'); // 'month' or 'week'
 	let currentDate = $state(new Date());
@@ -90,8 +90,10 @@
 	$effect(() => {
 		const list = filteredItems;
 		if (list.length > 0) {
-			if (!selectedItemId || !list.some(item => item.id === selectedItemId)) {
-				selectedItemId = list[0].id;
+			if (!selectedItemId) {
+				selectedItemId = 'all';
+			} else if (selectedItemId !== 'all' && !list.some(item => item.id === selectedItemId)) {
+				selectedItemId = 'all';
 			}
 		} else {
 			selectedItemId = '';
@@ -100,7 +102,9 @@
 
 	// Get assets for currently selected item
 	let filteredAssets = $derived(
-		assets.filter(asset => asset.item_id === selectedItemId)
+		selectedItemId === 'all'
+			? []
+			: assets.filter(asset => asset.item_id === selectedItemId)
 	);
 
 	// Sync asset selection when item changes
@@ -113,8 +117,11 @@
 
 	// Pre-fill asset selection for maintenance modal
 	$effect(() => {
-		if (filteredAssets.length > 0 && !maintenanceAssetId) {
-			maintenanceAssetId = filteredAssets[0].id;
+		const list = selectedItemId === 'all' ? assets : filteredAssets;
+		if (list.length > 0) {
+			if (!maintenanceAssetId || !list.some(a => a.id === maintenanceAssetId)) {
+				maintenanceAssetId = list[0].id;
+			}
 		}
 	});
 
@@ -185,8 +192,8 @@
 	// Filter bookings based on selected item and asset
 	let activeBookings = $derived.by(() => {
 		return bookings.filter(b => {
-			// Must match selected item
-			if (b.rental_asset?.item?.id !== selectedItemId) return false;
+			// Must match selected item (or all)
+			if (selectedItemId !== 'all' && b.rental_asset?.item?.id !== selectedItemId) return false;
 			
 			// Must match selected asset (or all)
 			if (selectedAssetId !== 'all' && b.rental_asset_id !== selectedAssetId) return false;
@@ -225,10 +232,12 @@
 		const customerName = booking.transaction_item?.transaction?.customer?.full_name || 'Customer';
 		const dayStr = format(day, 'yyyy-MM-dd');
 		
+		const prefix = booking.status === 'completed' ? '[Selesai] ' : '';
+		
 		if (booking.end_date === dayStr) {
-			return `Sewa - ${customerName} (End)`;
+			return `${prefix}Sewa - ${customerName} (End)`;
 		}
-		return `Sewa - ${customerName}`;
+		return `${prefix}Sewa - ${customerName}`;
 	}
 
 	// ----------------------------------------------------
@@ -346,18 +355,15 @@
 					bind:value={selectedItemId}
 					class="w-full bg-white border-[1.5px] border-[var(--color-border)] rounded-md px-3 py-2 text-[14px] font-medium text-[var(--color-earth)] transition-colors cursor-pointer focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)]"
 				>
-					{#if filteredItems.length === 0}
-						<option value="">Tidak ada barang sewa</option>
-					{:else}
-						{#each filteredItems as item (item.id)}
-							<option value={item.id}>{item.name}</option>
-						{/each}
-					{/if}
+					<option value="all">Semua Barang ({filteredItems.length})</option>
+					{#each filteredItems as item (item.id)}
+						<option value={item.id}>{item.name}</option>
+					{/each}
 				</select>
 			</div>
 
 			<!-- Select Asset/Unit Dropdown -->
-			{#if selectedItemId && filteredAssets.length > 0}
+			{#if selectedItemId && selectedItemId !== 'all' && filteredAssets.length > 0}
 				<div class="w-full md:w-48 shrink-0">
 					<select 
 						bind:value={selectedAssetId}
@@ -496,9 +502,11 @@
 											type="button"
 											onclick={(e) => handleBookingClick(booking, e)}
 											class="w-full text-left text-[11px] font-semibold px-2 py-1 rounded truncate border shadow-sm transition-all hover:scale-[1.02] hover:shadow
-												{isMaint 
-													? 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] border-[rgba(232,168,32,0.3)]' 
-													: 'bg-[var(--color-info-bg)] text-[var(--color-info)] border-[rgba(59,130,176,0.3)]'}"
+												{booking.status === 'completed'
+													? 'bg-[var(--color-success-bg)] text-[var(--color-success)] border-[rgba(107,143,78,0.2)] opacity-75'
+													: isMaint 
+														? 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] border-[rgba(232,168,32,0.3)]' 
+														: 'bg-[var(--color-info-bg)] text-[var(--color-info)] border-[rgba(59,130,176,0.3)]'}"
 											title="{getBookingLabel(booking, day)} ({booking.rental_asset?.asset_code})"
 										>
 											{#if selectedAssetId === 'all'}
@@ -561,15 +569,19 @@
 											<div 
 												onclick={(e) => handleBookingClick(booking, e)}
 												class="p-2.5 rounded-lg border shadow-sm cursor-pointer hover:shadow transition-all text-xs font-medium flex flex-col gap-1
-													{isMaint 
-														? 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] border-[rgba(232,168,32,0.3)]' 
-														: 'bg-[var(--color-info-bg)] text-[var(--color-info)] border-[rgba(59,130,176,0.3)]'}"
+													{booking.status === 'completed'
+														? 'bg-[var(--color-success-bg)] text-[var(--color-success)] border-[rgba(107,143,78,0.2)] opacity-75'
+														: isMaint 
+															? 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] border-[rgba(232,168,32,0.3)]' 
+															: 'bg-[var(--color-info-bg)] text-[var(--color-info)] border-[rgba(59,130,176,0.3)]'}"
 											>
 												<div class="font-bold flex items-center justify-between">
 													<span class="font-mono bg-white/60 px-1 py-0.5 rounded text-[10px]">
 														{booking.rental_asset?.asset_code}
 													</span>
-													{#if isMaint}
+													{#if booking.status === 'completed'}
+														<span class="text-[9px] uppercase font-semibold">Done</span>
+													{:else if isMaint}
 														<span class="text-[9px] uppercase font-semibold">Maint</span>
 													{:else}
 														<span class="text-[9px] uppercase font-semibold">Rent</span>
@@ -597,6 +609,10 @@
 				<div class="flex items-center gap-2">
 					<div class="w-3.5 h-3.5 rounded bg-[var(--color-info-bg)] border border-[rgba(59,130,176,0.3)] shadow-inner"></div>
 					<span>Disewa (Aktif)</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<div class="w-3.5 h-3.5 rounded bg-[var(--color-success-bg)] border border-[rgba(107,143,78,0.2)] shadow-inner opacity-75"></div>
+					<span>Selesai (Dikembalikan)</span>
 				</div>
 				<div class="flex items-center gap-2">
 					<div class="w-3.5 h-3.5 rounded bg-[var(--color-warning-bg)] border border-[rgba(232,168,32,0.3)] shadow-inner"></div>
@@ -641,8 +657,8 @@
 				class="w-full bg-white border-[1.5px] border-[var(--color-border)] rounded-md px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:outline-none focus:border-[var(--color-border-focus)] font-mono"
 				required
 			>
-				{#each filteredAssets as asset}
-					<option value={asset.id}>{asset.asset_code} ({asset.status})</option>
+				{#each (selectedItemId === 'all' ? assets : filteredAssets) as asset}
+					<option value={asset.id}>{asset.asset_code} - {asset.item?.name} ({asset.status})</option>
 				{/each}
 			</select>
 		</div>
