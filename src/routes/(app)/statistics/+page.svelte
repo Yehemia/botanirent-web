@@ -186,19 +186,19 @@
 
 	<!-- KPI Cards -->
 	<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-		<Card padding="md" class="border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-forest)] to-emerald-955 text-white border-none shadow-md">
+		<div class="bg-gradient-to-br from-[var(--color-forest)] to-[#1E3710] text-white p-5 rounded-lg shadow-[var(--shadow-sm)] flex flex-col justify-between border-none">
 			<div class="flex justify-between items-start">
 				<div class="flex-grow">
-					<p class="text-white/80 text-sm font-medium mb-1">Total Pendapatan Bersih</p>
-					<h3 class="text-3xl font-bold font-heading">{formatCurrency(metrics.totalRevenue)}</h3>
-					<div class="text-[11px] text-white/70 mt-2 flex flex-col gap-0.5 border-t border-white/10 pt-2">
-						<span class="flex justify-between"><span>Sewa & Retail:</span> <span class="font-bold">{formatCurrency(metrics.totalTxRevenue)}</span></span>
-						<span class="flex justify-between"><span>Denda:</span> <span class="font-bold text-red-200">{formatCurrency(metrics.totalPenaltyRevenue)}</span></span>
+					<p class="text-white/85 text-sm font-medium mb-1">Total Pendapatan Bersih</p>
+					<h3 class="text-3xl font-bold font-heading text-white">{formatCurrency(metrics.totalRevenue)}</h3>
+					<div class="text-[11px] text-white/80 mt-2 flex flex-col gap-0.5 border-t border-white/10 pt-2">
+						<span class="flex justify-between"><span>Sewa & Retail:</span> <span class="font-bold text-white">{formatCurrency(metrics.totalTxRevenue)}</span></span>
+						<span class="flex justify-between"><span>Denda:</span> <span class="font-bold text-amber-300">{formatCurrency(metrics.totalPenaltyRevenue)}</span></span>
 					</div>
 				</div>
-				<div class="p-2.5 bg-white/10 rounded-xl text-[var(--color-amber)] shrink-0 ml-2"><Coins size={24} /></div>
+				<div class="p-2.5 bg-white/10 rounded-xl text-amber-300 shrink-0 ml-2"><Coins size={24} /></div>
 			</div>
-		</Card>
+		</div>
 
 		<Card padding="md" class="border border-[var(--color-border)]">
 			<div class="flex justify-between items-start">
