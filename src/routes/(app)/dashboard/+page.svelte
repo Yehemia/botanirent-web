@@ -213,7 +213,7 @@
 			<!-- KPI Cards Grid -->
 			<div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6">
 				<!-- Total Revenue -->
-				<Card padding="md" class="bg-gradient-to-br from-[var(--color-forest)] to-[#1E3710] text-white border-none shadow-md flex flex-col justify-between">
+				<div class="bg-gradient-to-br from-[var(--color-forest)] to-[#1E3710] text-white p-5 rounded-lg shadow-[var(--shadow-sm)] flex flex-col justify-between border-none">
 					<div class="flex justify-between items-start">
 						<div>
 							<p class="text-white/85 text-xs font-semibold uppercase tracking-wider mb-1">Pendapatan Bulan Ini</p>
@@ -225,7 +225,7 @@
 						<div class="flex justify-between"><span>Sewa & Retail:</span> <span class="font-bold text-white">{formatCurrency(ownerData.revenueData.totalTxRevenueMonth)}</span></div>
 						<div class="flex justify-between"><span>Denda Lunas:</span> <span class="font-bold text-amber-300">{formatCurrency(ownerData.revenueData.totalPenaltyRevenueMonth)}</span></div>
 					</div>
-				</Card>
+				</div>
 
 				<!-- Transactions -->
 				<Card padding="md" class="border border-[var(--color-border)] shadow-sm bg-white flex flex-col justify-between">
