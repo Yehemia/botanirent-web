@@ -70,8 +70,24 @@ export const actions = {
 		const payloadStr = formData.get('payload');
 		if (!payloadStr) return fail(400, { error: 'Payload kosong' });
 
-		const data = JSON.parse(payloadStr.toString());
-		// data: array of { id, condition, late_days, penalty_amount, asset_id }
+		const parsed = JSON.parse(payloadStr.toString());
+		
+		let items = [];
+		let paymentStatus = 'unpaid';
+		let paymentMethod = 'Tunai';
+		let globalNotes = '';
+		let totalLatePenaltyOverridden = null;
+
+		// Mendukung baik format array lama maupun format object baru
+		if (Array.isArray(parsed)) {
+			items = parsed;
+		} else {
+			items = parsed.items || [];
+			paymentStatus = parsed.payment_status || 'unpaid';
+			paymentMethod = parsed.payment_method || 'Tunai';
+			globalNotes = parsed.global_notes || '';
+			totalLatePenaltyOverridden = parsed.total_late_penalty;
+		}
 
 		// Fetch settings for late fee per day per transaction
 		const { data: settingsData } = await supabase
@@ -90,7 +106,7 @@ export const actions = {
 		let maxLateDays = 0;
 		let latePenaltyItemId = null;
 
-		for (const item of data) {
+		for (const item of items) {
 			if (item.condition !== 'lost' && item.late_days > maxLateDays) {
 				maxLateDays = item.late_days;
 			}
@@ -103,36 +119,58 @@ export const actions = {
 
 		// Insert transaction-wide late penalty if any
 		if (maxLateDays > 0 && latePenaltyItemId) {
-			const calculatedLateAmount = maxLateDays * lateRate;
-			if (calculatedLateAmount > 0) {
-				const rule = penaltyRules?.find(r => r.type === 'late');
-				await supabase.from('penalties').insert({
-					transaction_item_id: latePenaltyItemId,
-					penalty_rule_id: rule?.id,
-					branch_id: profile.branch_id,
-					type: 'late',
-					late_days: maxLateDays,
-					calculated_amount: calculatedLateAmount,
-					payment_status: 'unpaid',
-					notes: `Keterlambatan transaksi selama ${maxLateDays} hari`
-				});
-				totalPenalty += calculatedLateAmount;
+			const calculatedLateAmount = totalLatePenaltyOverridden !== null && totalLatePenaltyOverridden !== undefined
+				? totalLatePenaltyOverridden
+				: maxLateDays * lateRate;
+
+			const rule = penaltyRules?.find(r => r.type === 'late');
+			
+			// Buat catatan denda keterlambatan
+			let notesStr = `Keterlambatan transaksi selama ${maxLateDays} hari.`;
+			if (calculatedLateAmount === 0) {
+				notesStr += ` (Denda keterlambatan dibebaskan)`;
+			} else if (totalLatePenaltyOverridden !== null && totalLatePenaltyOverridden !== undefined) {
+				notesStr += ` (Denda disesuaikan manual dari ${maxLateDays * lateRate})`;
 			}
+			if (paymentStatus === 'paid') {
+				notesStr += ` [Lunas via ${paymentMethod}]`;
+			}
+			if (globalNotes) {
+				notesStr += ` Catatan: ${globalNotes}`;
+			}
+
+			await supabase.from('penalties').insert({
+				transaction_item_id: latePenaltyItemId,
+				penalty_rule_id: rule?.id,
+				branch_id: profile.branch_id,
+				type: 'late',
+				late_days: maxLateDays,
+				calculated_amount: calculatedLateAmount,
+				payment_status: calculatedLateAmount === 0 ? 'paid' : paymentStatus,
+				paid_at: (paymentStatus === 'paid' || calculatedLateAmount === 0) ? new Date().toISOString() : null,
+				notes: notesStr
+			});
+			totalPenalty += calculatedLateAmount;
 		}
 
 		// 2. Loop and process individual items
-		for (const item of data) {
+		for (const item of items) {
 			// Update status transaction_items
 			let finalRentalStatus = 'returned';
 			if (item.condition === 'lost') finalRentalStatus = 'lost';
+
+			let returnNotes = item.condition === 'lost' 
+				? 'Barang dinyatakan hilang' 
+				: `Kondisi kembali: ${item.condition}`;
+			if (item.notes) {
+				returnNotes += ` (${item.notes})`;
+			}
 
 			await supabase.from('transaction_items').update({
 				rental_status: finalRentalStatus,
 				returned_at: new Date().toISOString(),
 				return_condition: item.condition,
-				return_notes: item.condition === 'lost' 
-					? 'Barang dinyatakan hilang' 
-					: `Kondisi kembali: ${item.condition}`
+				return_notes: returnNotes
 			}).eq('id', item.id);
 
 			// Update calendar booking status to 'completed'
@@ -145,35 +183,49 @@ export const actions = {
 				const rule = penaltyRules?.find(r => r.type === item.condition);
 				if (rule) {
 					let calculatedAmount = 0;
-					const amount = parseFloat(rule.amount);
 					
-					// Fetch sell price
-					const { data: itemData } = await supabase
-						.from('transaction_items')
-						.select('items(sell_price)')
-						.eq('id', item.id)
-						.single();
-					const itemsVal = /** @type {any} */ (itemData?.items);
-					const sellPrice = itemsVal?.sell_price || (Array.isArray(itemsVal) ? itemsVal[0]?.sell_price : 0) || 0;
+					if (item.damage_penalty_amount !== undefined && item.damage_penalty_amount !== null) {
+						calculatedAmount = item.damage_penalty_amount;
+					} else {
+						const amount = parseFloat(rule.amount);
+						// Fetch sell price
+						const { data: itemData } = await supabase
+							.from('transaction_items')
+							.select('items(sell_price)')
+							.eq('id', item.id)
+							.single();
+						const itemsVal = /** @type {any} */ (itemData?.items);
+						const sellPrice = itemsVal?.sell_price || (Array.isArray(itemsVal) ? itemsVal[0]?.sell_price : 0) || 0;
 
-					if (rule.calculation_method === 'flat') {
-						calculatedAmount = amount;
-					} else if (rule.calculation_method === 'percentage') {
-						calculatedAmount = (amount / 100) * sellPrice;
+						if (rule.calculation_method === 'flat') {
+							calculatedAmount = amount;
+						} else if (rule.calculation_method === 'percentage') {
+							calculatedAmount = (amount / 100) * sellPrice;
+						}
 					}
 
-					if (calculatedAmount > 0) {
-						await supabase.from('penalties').insert({
-							transaction_item_id: item.id,
-							penalty_rule_id: rule.id,
-							branch_id: profile.branch_id,
-							type: item.condition,
-							calculated_amount: calculatedAmount,
-							payment_status: 'unpaid',
-							notes: `Denda ${rule.name}`
-						});
-						totalPenalty += calculatedAmount;
+					let itemNotesStr = `Denda ${rule.name}.`;
+					if (item.notes) {
+						itemNotesStr += ` Detail: ${item.notes}`;
 					}
+					if (calculatedAmount === 0) {
+						itemNotesStr += ` (Denda kerusakan dibebaskan)`;
+					}
+					if (paymentStatus === 'paid') {
+						itemNotesStr += ` [Lunas via ${paymentMethod}]`;
+					}
+
+					await supabase.from('penalties').insert({
+						transaction_item_id: item.id,
+						penalty_rule_id: rule.id,
+						branch_id: profile.branch_id,
+						type: item.condition,
+						calculated_amount: calculatedAmount,
+						payment_status: calculatedAmount === 0 ? 'paid' : paymentStatus,
+						paid_at: (paymentStatus === 'paid' || calculatedAmount === 0) ? new Date().toISOString() : null,
+						notes: itemNotesStr
+					});
+					totalPenalty += calculatedAmount;
 				}
 			}
 

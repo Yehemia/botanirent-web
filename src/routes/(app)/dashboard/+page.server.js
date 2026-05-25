@@ -57,16 +57,27 @@ export async function load({ locals }) {
 		// Kita query semua transaksi sejak awal bulan ATAU sejak 7 hari lalu (ambil yang paling tua)
 		const queryDate = startOfMonth < sevenDaysAgo ? startOfMonth : sevenDaysAgo;
 
-		const { data: allTrx } = await supabase
-			.from('transactions')
-			.select('created_at, total_amount, payment_status')
-			.gte('created_at', queryDate.toISOString());
+		const [allTrxRes, allPenaltiesRes] = await Promise.all([
+			supabase
+				.from('transactions')
+				.select('created_at, total_amount, payment_status')
+				.gte('created_at', queryDate.toISOString()),
+			supabase
+				.from('penalties')
+				.select('created_at, calculated_amount, payment_status')
+				.eq('payment_status', 'paid')
+				.gte('created_at', queryDate.toISOString())
+		]);
+
+		const allTrx = allTrxRes.data;
+		const allPenalties = allPenaltiesRes.data;
 		
-		let totalRevenueMonth = 0;
+		let totalTxRevenueMonth = 0;
+		let totalPenaltyRevenueMonth = 0;
 		let successfulTrxCountMonth = 0;
 
 		// Siapkan array 7 hari untuk chart
-		/** @type {Array<{date: string, label: string, revenue: number}>} */
+		/** @type {Array<{date: string, label: string, revenue: number, penalty: number}>} */
 		const last7Days = [];
 		for (let i = 6; i >= 0; i--) {
 			const d = new Date();
@@ -74,7 +85,8 @@ export async function load({ locals }) {
 			last7Days.push({
 				date: d.toISOString().split('T')[0], // YYYY-MM-DD local timezone approximation
 				label: new Intl.DateTimeFormat('id-ID', { weekday: 'short', day: 'numeric' }).format(d),
-				revenue: 0
+				revenue: 0,
+				penalty: 0
 			});
 		}
 
@@ -85,7 +97,7 @@ export async function load({ locals }) {
 					
 					// Jika transaksi terjadi bulan ini
 					if (trxDateObj >= startOfMonth) {
-						totalRevenueMonth += t.total_amount;
+						totalTxRevenueMonth += Number(t.total_amount) || 0;
 						successfulTrxCountMonth++;
 					}
 
@@ -93,20 +105,42 @@ export async function load({ locals }) {
 					const tDateStr = new Date(trxDateObj.getTime() - (trxDateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 					const chartItem = last7Days.find(d => d.date === tDateStr);
 					if (chartItem) {
-						chartItem.revenue += t.total_amount;
+						chartItem.revenue += Number(t.total_amount) || 0;
 					}
 				}
 			});
 		}
 
+		if (allPenalties) {
+			allPenalties.forEach(p => {
+				const penaltyDateObj = new Date(p.created_at);
+				const amount = Number(p.calculated_amount) || 0;
+
+				// Jika denda terjadi bulan ini
+				if (penaltyDateObj >= startOfMonth) {
+					totalPenaltyRevenueMonth += amount;
+				}
+
+				// Coba masukkan ke data Chart jika masuk dalam 7 hari terakhir
+				const pDateStr = new Date(penaltyDateObj.getTime() - (penaltyDateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+				const chartItem = last7Days.find(d => d.date === pDateStr);
+				if (chartItem) {
+					chartItem.penalty += amount;
+				}
+			});
+		}
+
 		revenueData = {
-			totalRevenueMonth,
+			totalRevenueMonth: totalTxRevenueMonth + totalPenaltyRevenueMonth,
+			totalTxRevenueMonth,
+			totalPenaltyRevenueMonth,
 			successfulTrxCountMonth
 		};
 		
 		chartData = {
 			labels: last7Days.map(d => d.label),
-			data: last7Days.map(d => d.revenue)
+			revenueData: last7Days.map(d => d.revenue),
+			penaltyData: last7Days.map(d => d.penalty)
 		};
 	}
 

@@ -53,13 +53,15 @@
 >
 	<!-- Left: Toggle & Breadcrumb/Title -->
 	<div class="flex items-center gap-3">
-		<button 
-			class="p-2 text-[var(--color-stone)] hover:bg-[var(--color-sand)] hover:text-[var(--color-earth)] rounded-lg transition-all duration-200 cursor-pointer active:scale-95 shrink-0"
-			onclick={toggleSidebar}
-			aria-label="Toggle Sidebar"
-		>
-			<Menu size={18} />
-		</button>
+		{#if sidebarExpanded}
+			<button 
+				class="p-2 text-[var(--color-stone)] hover:bg-[var(--color-sand)] hover:text-[var(--color-earth)] rounded-lg transition-all duration-200 cursor-pointer active:scale-95 shrink-0"
+				onclick={toggleSidebar}
+				aria-label="Toggle Sidebar"
+			>
+				<Menu size={18} />
+			</button>
+		{/if}
 		
 		<!-- Breadcrumbs Navigation -->
 		<div class="hidden sm:flex items-center gap-1.5 text-xs font-medium text-[var(--color-stone)] overflow-hidden">

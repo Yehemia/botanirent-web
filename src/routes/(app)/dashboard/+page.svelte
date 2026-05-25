@@ -54,10 +54,18 @@
 			labels: chartData.labels,
 			datasets: [
 				{
-					label: 'Pendapatan (Rp)',
-					data: chartData.data,
+					label: 'Sewa & Retail',
+					data: chartData.revenueData,
 					backgroundColor: 'rgba(44, 76, 59, 0.8)', // forest color
 					borderColor: 'rgba(44, 76, 59, 1)',
+					borderWidth: 1,
+					borderRadius: 4
+				},
+				{
+					label: 'Denda',
+					data: chartData.penaltyData,
+					backgroundColor: 'rgba(185, 28, 28, 0.8)', // red-700
+					borderColor: 'rgba(185, 28, 28, 1)',
 					borderWidth: 1,
 					borderRadius: 4
 				}
@@ -69,7 +77,14 @@
 		responsive: true,
 		maintainAspectRatio: false,
 		plugins: {
-			legend: { display: false },
+			legend: { 
+				display: true,
+				position: /** @type {'top'} */ ('top'),
+				labels: {
+					boxWidth: 12,
+					font: { size: 11, weight: /** @type {'bold'} */ ('bold') }
+				}
+			},
 			tooltip: {
 				callbacks: {
 					/** @param {any} context */
@@ -85,7 +100,9 @@
 			}
 		},
 		scales: {
+			x: { stacked: true },
 			y: {
+				stacked: true,
 				beginAtZero: true,
 				ticks: {
 					/** @param {any} value */
@@ -116,13 +133,17 @@
 	<!-- Owner KPI Cards -->
 	{#if role === 'owner' && revenueData}
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-			<Card padding="md" class="bg-gradient-to-br from-[var(--color-forest)] to-emerald-900 text-white border-none">
+			<Card padding="md" class="bg-gradient-to-br from-[var(--color-forest)] to-emerald-900 text-white border-none shadow-md">
 				<div class="flex justify-between items-start">
-					<div>
+					<div class="flex-grow">
 						<p class="text-white/80 text-sm font-medium mb-1">Pendapatan Bulan Ini</p>
 						<h3 class="text-3xl font-bold font-heading">{formatCurrency(revenueData.totalRevenueMonth)}</h3>
+						<div class="text-[11px] text-white/70 mt-2 flex flex-col gap-0.5 border-t border-white/10 pt-2">
+							<span class="flex justify-between"><span>Sewa & Retail:</span> <span class="font-bold">{formatCurrency(revenueData.totalTxRevenueMonth)}</span></span>
+							<span class="flex justify-between"><span>Denda:</span> <span class="font-bold text-red-200">{formatCurrency(revenueData.totalPenaltyRevenueMonth)}</span></span>
+						</div>
 					</div>
-					<div class="p-2 bg-white/20 rounded-lg"><TrendingUp size={24} /></div>
+					<div class="p-2 bg-white/20 rounded-lg shrink-0 ml-2"><TrendingUp size={24} /></div>
 				</div>
 			</Card>
 

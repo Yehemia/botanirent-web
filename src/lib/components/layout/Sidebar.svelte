@@ -41,18 +41,18 @@
 		{ icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', roles: ['owner', 'kasir', 'gudang'] },
 
 		// --- KASIR ---
-		{ section: 'KASIR', roles: ['kasir', 'owner'] },
-		{ icon: MonitorSmartphone, label: 'POS', href: '/pos', roles: ['kasir', 'owner'] },
-		{ icon: Users, label: 'Data Penyewa', href: '/customers', roles: ['kasir', 'owner'] },
-		{ icon: CalendarDays, label: 'Kalender Booking', href: '/booking', roles: ['kasir', 'owner', 'gudang'] },
-		{ icon: RotateCcw, label: 'Pengembalian', href: '/returns', roles: ['kasir', 'owner'] },
-		{ icon: History, label: 'Riwayat', href: '/transactions', roles: ['kasir', 'owner'] },
+		{ section: 'KASIR', roles: ['kasir'] },
+		{ icon: MonitorSmartphone, label: 'POS', href: '/pos', roles: ['kasir'] },
+		{ icon: Users, label: 'Data Penyewa', href: '/customers', roles: ['kasir'] },
+		{ icon: CalendarDays, label: 'Kalender Booking', href: '/booking', roles: ['kasir', 'gudang'] },
+		{ icon: RotateCcw, label: 'Pengembalian', href: '/returns', roles: ['kasir'] },
+		{ icon: History, label: 'Riwayat', href: '/transactions', roles: ['kasir'] },
 
 		// --- GUDANG ---
-		{ section: 'GUDANG', roles: ['gudang', 'owner'] },
-		{ icon: Package, label: 'Inventaris', href: '/inventory', roles: ['gudang', 'owner'] },
-		{ icon: Boxes, label: 'Paket Bundling', href: '/packages', roles: ['gudang', 'owner'] },
-		{ icon: Wrench, label: 'Status Aset', href: '/asset-status', roles: ['gudang', 'owner'] },
+		{ section: 'GUDANG', roles: ['gudang'] },
+		{ icon: Package, label: 'Inventaris', href: '/inventory', roles: ['gudang'] },
+		{ icon: Boxes, label: 'Paket Bundling', href: '/packages', roles: ['gudang'] },
+		{ icon: Wrench, label: 'Status Aset', href: '/asset-status', roles: ['gudang'] },
 
 		// --- OWNER ---
 		{ section: 'OWNER', roles: ['owner'] },
@@ -74,7 +74,12 @@
 	style="width: {expanded ? '260px' : '72px'};"
 >
 	<!-- Logo Area -->
-	<div class="h-16 flex items-center px-5 shrink-0 bg-black/15 border-b border-white/5 group cursor-pointer">
+	<button 
+		class="h-16 flex items-center px-5 shrink-0 bg-black/15 border-b border-white/5 group cursor-pointer w-full text-left focus:outline-none border-none"
+		onclick={() => expanded = !expanded}
+		title={expanded ? "Sembunyikan Menu" : "Tampilkan Menu"}
+		aria-label="Toggle Sidebar"
+	>
 		<div class="flex items-center gap-3 w-full overflow-hidden">
 			<!-- Logo Image -->
 			<img 
@@ -91,7 +96,7 @@
 				/>
 			{/if}
 		</div>
-	</div>
+	</button>
 
 	<!-- Navigation Links -->
 	<div class="flex-1 overflow-y-auto py-4 scrollbar-hide">

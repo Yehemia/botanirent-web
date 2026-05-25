@@ -49,7 +49,7 @@
 			labels: trend.labels,
 			datasets: [
 				{
-					label: 'Pendapatan Bulanan (Rp)',
+					label: 'Total Pendapatan (Rp)',
 					data: trend.data,
 					backgroundColor: 'rgba(45, 80, 22, 0.85)', // Forest
 					borderColor: 'rgba(45, 80, 22, 1)',
@@ -66,10 +66,18 @@
 			labels: branchStats.map((/** @type {any} */ b) => b.name),
 			datasets: [
 				{
-					label: 'Pendapatan (Rp)',
-					data: branchStats.map((/** @type {any} */ b) => b.revenue),
+					label: 'Sewa & Retail',
+					data: branchStats.map((/** @type {any} */ b) => b.revenue - (b.penalty_revenue || 0)),
 					backgroundColor: 'rgba(212, 168, 67, 0.85)', // Amber
 					borderColor: 'rgba(212, 168, 67, 1)',
+					borderWidth: 1.5,
+					borderRadius: 6
+				},
+				{
+					label: 'Denda',
+					data: branchStats.map((/** @type {any} */ b) => b.penalty_revenue || 0),
+					backgroundColor: 'rgba(185, 28, 28, 0.85)', // Red
+					borderColor: 'rgba(185, 28, 28, 1)',
 					borderWidth: 1.5,
 					borderRadius: 6
 				}
@@ -80,18 +88,20 @@
 	// Config for Category Doughnut Chart
 	let typeChartData = $derived(() => {
 		return {
-			labels: ['Rental', 'Retail', 'Package'],
+			labels: ['Rental', 'Retail', 'Package', 'Denda'],
 			datasets: [
 				{
 					data: [
 						typeBreakdown.rental.revenue,
 						typeBreakdown.retail.revenue,
-						typeBreakdown.package.revenue
+						typeBreakdown.package.revenue,
+						typeBreakdown.penalty.revenue
 					],
 					backgroundColor: [
 						'rgba(45, 80, 22, 0.85)',   // Forest (Rental)
 						'rgba(212, 168, 67, 0.85)',  // Amber (Retail)
-						'rgba(200, 90, 58, 0.85)'    // Terracotta (Package)
+						'rgba(200, 90, 58, 0.85)',   // Terracotta (Package)
+						'rgba(185, 28, 28, 0.85)'    // Red (Denda)
 					],
 					borderWidth: 1
 				}
@@ -103,7 +113,11 @@
 		responsive: true,
 		maintainAspectRatio: false,
 		plugins: {
-			legend: { display: false },
+			legend: { 
+				display: true, 
+				position: /** @type {'top'} */ ('top'),
+				labels: { boxWidth: 12, font: { size: 10, weight: /** @type {'bold'} */ ('bold') } }
+			},
 			tooltip: {
 				callbacks: {
 					/** @param {any} context */
@@ -119,7 +133,9 @@
 			}
 		},
 		scales: {
+			x: { stacked: true },
 			y: {
+				stacked: true,
 				beginAtZero: true,
 				ticks: {
 					/** @param {any} value */
@@ -170,14 +186,17 @@
 
 	<!-- KPI Cards -->
 	<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-		<Card padding="md" class="border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-forest)] to-emerald-950 text-white border-none">
+		<Card padding="md" class="border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-forest)] to-emerald-955 text-white border-none shadow-md">
 			<div class="flex justify-between items-start">
-				<div>
+				<div class="flex-grow">
 					<p class="text-white/80 text-sm font-medium mb-1">Total Pendapatan Bersih</p>
 					<h3 class="text-3xl font-bold font-heading">{formatCurrency(metrics.totalRevenue)}</h3>
-					<p class="text-xs text-white/60 mt-2">Dari seluruh transaksi yang berstatus lunas</p>
+					<div class="text-[11px] text-white/70 mt-2 flex flex-col gap-0.5 border-t border-white/10 pt-2">
+						<span class="flex justify-between"><span>Sewa & Retail:</span> <span class="font-bold">{formatCurrency(metrics.totalTxRevenue)}</span></span>
+						<span class="flex justify-between"><span>Denda:</span> <span class="font-bold text-red-200">{formatCurrency(metrics.totalPenaltyRevenue)}</span></span>
+					</div>
 				</div>
-				<div class="p-2.5 bg-white/10 rounded-xl text-[var(--color-amber)]"><Coins size={24} /></div>
+				<div class="p-2.5 bg-white/10 rounded-xl text-[var(--color-amber)] shrink-0 ml-2"><Coins size={24} /></div>
 			</div>
 		</Card>
 

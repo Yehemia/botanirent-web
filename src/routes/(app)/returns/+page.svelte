@@ -20,9 +20,16 @@
 	// Form state per item inside selectedTrx
 	/** @type {Record<string, any>} */
 	let returnData = $state({}); 
-	// { itemId: { condition: 'good', actualReturnDate: 'YYYY-MM-DD' } }
+	// { itemId: { condition: 'good', actualReturnDate: 'YYYY-MM-DD', damagePenaltyOverride: null, notes: '' } }
 	
 	let loading = $state(false);
+
+	// Global penalty state
+	/** @type {number | null} */
+	let latePenaltyOverride = $state(null);
+	let paymentStatus = $state('paid');
+	let paymentMethod = $state('Tunai');
+	let globalNotes = $state('');
 
 	let filteredTransactions = $derived(
 		transactions.filter((/** @type {any} */ t) => 
@@ -42,10 +49,18 @@
 		trx.items.forEach((/** @type {any} */ item) => {
 			initData[item.id] = {
 				condition: 'good',
-				actualReturnDate: today
+				actualReturnDate: today,
+				damagePenaltyOverride: null,
+				notes: ''
 			};
 		});
 		returnData = initData;
+		
+		// Reset global overrides
+		latePenaltyOverride = null;
+		paymentStatus = 'paid';
+		paymentMethod = 'Tunai';
+		globalNotes = '';
 	}
 
 	/**
@@ -67,41 +82,34 @@
 	}
 
 	/** @param {any} item */
-	function calculatePenalty(item) {
+	function getCalculatedDamagePenalty(item) {
 		const rData = returnData[item.id];
-		if (!rData) return { lateDays: 0, penalty: 0, desc: '' };
+		if (!rData || rData.condition === 'good') return 0;
 
-		let penalty = 0;
-		/** @type {string[]} */
-		let desc = [];
+		const conditionRule = penaltyRules?.find((/** @type {any} */ r) => r.type === rData.condition);
+		if (!conditionRule) return 0;
+
 		const sellPrice = item.item?.sell_price || 0;
-
-		// Denda Kondisi Barang (rusak ringan, rusak berat, hilang)
-		if (rData.condition !== 'good') {
-			const conditionRule = penaltyRules?.find((/** @type {any} */ r) => r.type === rData.condition);
-			if (conditionRule) {
-				let damagePenalty = 0;
-				const rate = parseFloat(conditionRule.amount);
-				if (conditionRule.calculation_method === 'flat') {
-					damagePenalty = rate;
-					desc.push(`${conditionRule.name} (${formatCurrency(damagePenalty)})`);
-				} else if (conditionRule.calculation_method === 'percentage') {
-					damagePenalty = (rate / 100) * sellPrice;
-					desc.push(`${conditionRule.name} (${rate}% dari harga jual ${formatCurrency(sellPrice)} = ${formatCurrency(damagePenalty)})`);
-				}
-				penalty += damagePenalty;
-			}
+		const rate = parseFloat(conditionRule.amount);
+		if (conditionRule.calculation_method === 'flat') {
+			return rate;
+		} else if (conditionRule.calculation_method === 'percentage') {
+			return (rate / 100) * sellPrice;
 		}
+		return 0;
+	}
 
-		return { 
-			lateDays: 0, 
-			penalty, 
-			desc: desc.join(' + ') 
-		};
+	/** @param {any} item */
+	function getItemDamagePenalty(item) {
+		const rData = returnData[item.id];
+		if (!rData) return 0;
+		return rData.damagePenaltyOverride !== null 
+			? rData.damagePenaltyOverride 
+			: getCalculatedDamagePenalty(item);
 	}
 
 	// Hitung hari keterlambatan terlama untuk seluruh transaksi
-	let transactionLateDays = $derived(() => {
+	let calculatedLateDays = $derived(() => {
 		if (!selectedTrx) return 0;
 		let maxDays = 0;
 		selectedTrx.items.forEach((/** @type {any} */ item) => {
@@ -114,29 +122,35 @@
 		return maxDays;
 	});
 
-	// Denda keterlambatan per transaksi flat
-	let transactionLatePenalty = $derived(() => {
+	// Denda keterlambatan per transaksi flat (default)
+	let calculatedLatePenalty = $derived(() => {
 		const rate = rentalSettings?.late_fee_per_day_per_transaction || 10000;
-		return transactionLateDays() * rate;
+		return calculatedLateDays() * rate;
 	});
+
+	// Denda keterlambatan terhitung (setelah override)
+	let currentLatePenalty = $derived(
+		latePenaltyOverride !== null ? latePenaltyOverride : calculatedLatePenalty()
+	);
 
 	let totalPenalty = $derived(() => {
 		if (!selectedTrx) return 0;
-		const damagePenalty = selectedTrx.items.reduce((/** @type {number} */ acc, /** @type {any} */ item) => acc + calculatePenalty(item).penalty, 0);
-		return damagePenalty + transactionLatePenalty();
+		const damageTotal = selectedTrx.items.reduce((/** @type {number} */ acc, /** @type {any} */ item) => acc + getItemDamagePenalty(item), 0);
+		return damageTotal + currentLatePenalty;
 	});
 
 	let payloadStr = $derived(() => {
 		if (!selectedTrx) return '';
 		
-		const lateDaysVal = transactionLateDays();
-		const latePenaltyVal = transactionLatePenalty();
+		const lateDaysVal = calculatedLateDays();
+		const latePenaltyVal = currentLatePenalty;
 		let latePenaltyApplied = false;
 
-		const payload = selectedTrx.items.map((/** @type {any} */ item) => {
+		const payloadItems = selectedTrx.items.map((/** @type {any} */ item) => {
 			const cond = returnData[item.id]?.condition || 'good';
 			const actReturnDate = returnData[item.id]?.actualReturnDate || new Date().toISOString().split('T')[0];
-			const damagePenalty = calculatePenalty(item).penalty;
+			const damagePenalty = getItemDamagePenalty(item);
+			const itemNotes = returnData[item.id]?.notes || '';
 			
 			let itemLateDays = 0;
 			let itemLatePenalty = 0;
@@ -154,10 +168,18 @@
 				condition: cond,
 				actual_return_date: actReturnDate,
 				late_days: itemLateDays,
-				penalty_amount: damagePenalty
+				damage_penalty_amount: damagePenalty,
+				notes: itemNotes
 			};
 		});
-		return JSON.stringify(payload);
+
+		return JSON.stringify({
+			items: payloadItems,
+			payment_status: paymentStatus,
+			payment_method: paymentMethod,
+			global_notes: globalNotes,
+			total_late_penalty: latePenaltyVal
+		});
 	});
 </script>
 
@@ -252,7 +274,8 @@
 
 						<div class="space-y-4 mb-6 max-h-[500px] overflow-y-auto pr-2">
 							{#each selectedTrx.items as item (item.id)}
-								{@const penaltyInfo = calculatePenalty(item)}
+								{@const calculatedDamagePenalty = getCalculatedDamagePenalty(item)}
+								{@const currentDamagePenalty = getItemDamagePenalty(item)}
 								<div class="bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl p-4">
 									<div class="flex justify-between items-start mb-3">
 										<div>
@@ -283,13 +306,46 @@
 										</Select>
 									</div>
 
-									<!-- Info Denda Kerusakan/Kehilangan Fisik -->
-									{#if penaltyInfo.penalty > 0}
-										<div class="mt-3 flex items-start gap-2 p-2 bg-[var(--color-error-bg)] text-[var(--color-error)] rounded-lg text-sm border border-[var(--color-error)]/20">
-											<AlertTriangle size={16} class="shrink-0 mt-0.5" />
+									<!-- Input Manual Denda & Catatan Kerusakan jika tidak Baik -->
+									{#if returnData[item.id].condition !== 'good'}
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 p-3 bg-[var(--color-error)]/5 rounded-lg border border-[var(--color-error)]/10">
 											<div>
-												<p class="font-bold">Denda Kerusakan/Kehilangan: {formatCurrency(penaltyInfo.penalty)}</p>
-												<p class="text-xs opacity-90">{penaltyInfo.desc}</p>
+												<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+													Denda Kerusakan (Rp)
+													<input 
+														type="number" 
+														class="w-full mt-1 px-3 py-1.5 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+														value={currentDamagePenalty}
+														oninput={(e) => {
+															const val = e.currentTarget.value;
+															returnData[item.id].damagePenaltyOverride = val === '' ? null : parseFloat(val);
+														}}
+														placeholder="Masukkan nominal denda"
+													/>
+												</label>
+												<span class="text-[10px] text-[var(--color-stone)] mt-0.5 block">
+													Default aturan: {formatCurrency(calculatedDamagePenalty)}
+													{#if returnData[item.id].damagePenaltyOverride !== null}
+														<button 
+															type="button" 
+															class="text-[var(--color-forest)] font-semibold hover:underline ml-1"
+															onclick={() => returnData[item.id].damagePenaltyOverride = null}
+														>
+															(Reset)
+														</button>
+													{/if}
+												</span>
+											</div>
+											<div>
+												<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+													Catatan Kerusakan
+													<input 
+														type="text" 
+														class="w-full mt-1 px-3 py-1.5 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+														bind:value={returnData[item.id].notes}
+														placeholder="Misal: frame patah 1 ruas, kain robek"
+													/>
+												</label>
 											</div>
 										</div>
 									{/if}
@@ -297,15 +353,98 @@
 							{/each}
 						</div>
 
-						<!-- Info Denda Keterlambatan Transaksi (Dihitung Flat Sekali) -->
-						{#if transactionLatePenalty() > 0}
-							<div class="bg-[var(--color-error-bg)] text-[var(--color-error)] p-4 rounded-xl border border-[var(--color-error)]/20 mb-6 flex items-start gap-2.5">
-								<AlertTriangle size={20} class="shrink-0 mt-0.5" />
-								<div>
-									<p class="font-bold text-base">Denda Keterlambatan Transaksi: {formatCurrency(transactionLatePenalty())}</p>
-									<p class="text-xs opacity-90 mt-0.5">
-										Terlambat {transactionLateDays()} hari x {formatCurrency(rentalSettings?.late_fee_per_day_per_transaction || 10000)}/hari (Dihitung sekali per penyewaan).
-									</p>
+						<!-- Info & Kustomisasi Denda Keterlambatan Transaksi -->
+						{#if calculatedLatePenalty() > 0 || latePenaltyOverride !== null}
+							<div class="bg-[var(--color-error)]/5 text-[var(--color-earth)] p-4 rounded-xl border border-[var(--color-border)]/50 mb-6">
+								<div class="flex items-start gap-2.5">
+									<AlertTriangle size={20} class="text-[var(--color-error)] shrink-0 mt-0.5" />
+									<div class="flex-1">
+										<p class="font-bold text-base text-[var(--color-error)]">Denda Keterlambatan Transaksi</p>
+										<p class="text-xs text-[var(--color-stone)] mt-0.5">
+											Terlambat {calculatedLateDays()} hari x {formatCurrency(rentalSettings?.late_fee_per_day_per_transaction || 10000)}/hari (Dihitung sekali per penyewaan).
+										</p>
+										
+										<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 max-w-md">
+											<div>
+												<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+													Nominal Denda Keterlambatan (Rp)
+													<input 
+														type="number" 
+														class="w-full mt-1 px-3 py-1.5 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+														value={currentLatePenalty}
+														oninput={(e) => {
+															const val = e.currentTarget.value;
+															latePenaltyOverride = val === '' ? null : parseFloat(val);
+														}}
+														placeholder="Nominal denda keterlambatan"
+													/>
+												</label>
+												<span class="text-[10px] text-[var(--color-stone)] mt-0.5 block">
+													Default aturan: {formatCurrency(calculatedLatePenalty())}
+													{#if latePenaltyOverride !== null}
+														<button 
+															type="button" 
+															class="text-[var(--color-forest)] font-semibold hover:underline ml-1"
+															onclick={() => latePenaltyOverride = null}
+														>
+															(Reset)
+														</button>
+													{/if}
+												</span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						{/if}
+
+						<!-- Seksi Pembayaran Denda (Jika ada denda) -->
+						{#if totalPenalty() > 0}
+							<div class="bg-[var(--color-sand-light)] border border-[var(--color-border)] rounded-xl p-4 mb-6">
+								<h3 class="font-bold text-[var(--color-earth)] mb-3 text-sm flex items-center gap-1.5">
+									💳 Pembayaran Denda
+								</h3>
+								<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+									<div>
+										<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+											Status Pembayaran Denda
+											<select 
+												class="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+												bind:value={paymentStatus}
+											>
+												<option value="paid">Lunas (Bayar Sekarang)</option>
+												<option value="unpaid">Belum Lunas (Bayar Nanti)</option>
+											</select>
+										</label>
+									</div>
+									
+									{#if paymentStatus === 'paid'}
+										<div>
+											<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+												Metode Pembayaran
+												<select 
+													class="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+													bind:value={paymentMethod}
+												>
+													<option value="Tunai">Tunai / Cash</option>
+													<option value="QRIS">QRIS</option>
+													<option value="Transfer">Transfer Bank</option>
+												</select>
+											</label>
+										</div>
+									{/if}
+									
+									<div class={paymentStatus === 'paid' ? 'col-span-1' : 'col-span-2'}>
+										<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+											Catatan Tambahan
+											<input 
+												type="text" 
+												class="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+												bind:value={globalNotes}
+												placeholder="Misal: Diberi keringanan denda..."
+											/>
+										</label>
+									</div>
 								</div>
 							</div>
 						{/if}

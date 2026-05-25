@@ -21,34 +21,43 @@ export async function load({ locals }) {
 	const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
 	// 2. Fetch Paid Transactions
-	const { data: transactions, error: txError } = await supabase
-		.from('transactions')
-		.select('id, branch_id, type, total_amount, created_at')
-		.eq('payment_status', 'paid');
+	// 2.5 Fetch Paid Penalties
+	const [txRes, penaltiesRes, itemsRes] = await Promise.all([
+		supabase
+			.from('transactions')
+			.select('id, branch_id, type, total_amount, created_at')
+			.eq('payment_status', 'paid'),
+		supabase
+			.from('penalties')
+			.select('id, branch_id, type, calculated_amount, created_at')
+			.eq('payment_status', 'paid'),
+		supabase
+			.from('transaction_items')
+			.select('transaction_id, item_name, type, quantity, subtotal')
+	]);
 
-	if (txError) console.error('Fetch transactions error:', txError);
+	const txList = txRes.data || [];
+	const penaltyList = penaltiesRes.data || [];
+	const itemList = itemsRes.data || [];
 
-	// 3. Fetch Transaction Items
-	const { data: txItems, error: itemsError } = await supabase
-		.from('transaction_items')
-		.select('transaction_id, item_name, type, quantity, subtotal');
-
-	if (itemsError) console.error('Fetch tx items error:', itemsError);
+	if (txRes.error) console.error('Fetch transactions error:', txRes.error);
+	if (penaltiesRes.error) console.error('Fetch penalties error:', penaltiesRes.error);
+	if (itemsRes.error) console.error('Fetch tx items error:', itemsRes.error);
 
 	// --- Aggregation Logic (JS) ---
-	const txList = transactions || [];
-	const itemList = txItems || [];
 
 	// Main Metrics
-	const totalRevenue = txList.reduce((acc, t) => acc + Number(t.total_amount), 0);
+	const totalTxRevenue = txList.reduce((acc, t) => acc + Number(t.total_amount), 0);
+	const totalPenaltyRevenue = penaltyList.reduce((acc, p) => acc + Number(p.calculated_amount), 0);
+	const totalRevenue = totalTxRevenue + totalPenaltyRevenue;
 	const totalTxCount = txList.length;
-	const avgTxValue = totalTxCount > 0 ? totalRevenue / totalTxCount : 0;
+	const avgTxValue = totalTxCount > 0 ? totalTxRevenue / totalTxCount : 0;
 
 	// Revenue and transaction count per branch
-	/** @type {Record<string, { name: string, revenue: number, count: number }>} */
+	/** @type {Record<string, { name: string, revenue: number, count: number, penalty_revenue: number }>} */
 	const branchStats = {};
 	branchMap.forEach((name, id) => {
-		branchStats[id] = { name, revenue: 0, count: 0 };
+		branchStats[id] = { name, revenue: 0, count: 0, penalty_revenue: 0 };
 	});
 
 	txList.forEach(t => {
@@ -60,8 +69,16 @@ export async function load({ locals }) {
 			branchStats[t.branch_id] = {
 				name: 'Cabang Unknown',
 				revenue: Number(t.total_amount),
-				count: 1
+				count: 1,
+				penalty_revenue: 0
 			};
+		}
+	});
+
+	penaltyList.forEach(p => {
+		if (branchStats[p.branch_id]) {
+			branchStats[p.branch_id].revenue += Number(p.calculated_amount);
+			branchStats[p.branch_id].penalty_revenue += Number(p.calculated_amount);
 		}
 	});
 
@@ -81,11 +98,12 @@ export async function load({ locals }) {
 		.sort((a, b) => b.quantity - a.quantity)
 		.slice(0, 5);
 
-	// Type breakdown (retail, rental, package)
+	// Type breakdown (retail, rental, package, penalty)
 	const typeBreakdown = {
 		retail: { count: 0, revenue: 0 },
 		rental: { count: 0, revenue: 0 },
-		package: { count: 0, revenue: 0 }
+		package: { count: 0, revenue: 0 },
+		penalty: { count: penaltyList.length, revenue: totalPenaltyRevenue }
 	};
 
 	itemList.forEach(item => {
@@ -122,12 +140,22 @@ export async function load({ locals }) {
 		}
 	});
 
+	penaltyList.forEach(p => {
+		const dateObj = new Date(p.created_at);
+		const key = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+		if (monthlyRevenue[key] !== undefined) {
+			monthlyRevenue[key] += Number(p.calculated_amount);
+		}
+	});
+
 	const trendData = trendLabels.map(t => monthlyRevenue[t.key]);
 	const trendLabelStrings = trendLabels.map(t => t.label);
 
 	return {
 		metrics: {
 			totalRevenue,
+			totalTxRevenue,
+			totalPenaltyRevenue,
 			totalTxCount,
 			avgTxValue
 		},
