@@ -92,6 +92,29 @@
 						/>
 					</div>
 				</div>
+
+				<!-- Target Pendapatan Bulanan -->
+				<div class="bg-[var(--color-sand-lightest)] p-4 rounded-xl border border-[var(--color-border-light)]">
+					<div class="mb-4">
+						<h3 class="font-semibold text-[var(--color-earth)] text-lg mb-1 flex items-center gap-2">
+							📈 Target Pendapatan Bulanan
+						</h3>
+						<p class="text-sm text-[var(--color-stone)]">
+							Target omzet bulanan cabang/toko yang akan ditampilkan sebagai progress bar di dashboard utama Owner.
+						</p>
+					</div>
+					<div class="max-w-xs">
+						<Input 
+							type="number"
+							id="monthly_revenue_target"
+							name="monthly_revenue_target"
+							label="Target Pendapatan (Rp) / Bulan"
+							value={rentalSettings.monthly_revenue_target || 20000000}
+							min="0"
+							required
+						/>
+					</div>
+				</div>
 			</div>
 
 			<div class="flex justify-end mt-8 pt-4 border-t border-[var(--color-border)]">

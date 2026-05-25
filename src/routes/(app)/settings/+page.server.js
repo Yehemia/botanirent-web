@@ -21,7 +21,11 @@ export async function load({ locals }) {
 		.eq('key', 'rental')
 		.single();
 	
-	const rentalSettings = settingsData?.value || { default_rental_duration_days: 4, late_fee_per_day_per_transaction: 10000 };
+	const rentalSettings = settingsData?.value || { 
+		default_rental_duration_days: 4, 
+		late_fee_per_day_per_transaction: 10000,
+		monthly_revenue_target: 20000000
+	};
 
 	return {
 		rentalSettings
@@ -38,10 +42,12 @@ export const actions = {
 		const formData = await request.formData();
 		const duration = parseInt(formData.get('default_rental_duration_days')?.toString() || '4', 10);
 		const lateFee = parseFloat(formData.get('late_fee_per_day_per_transaction')?.toString() || '0');
+		const target = parseFloat(formData.get('monthly_revenue_target')?.toString() || '20000000');
 
 		const value = {
 			default_rental_duration_days: duration,
-			late_fee_per_day_per_transaction: lateFee
+			late_fee_per_day_per_transaction: lateFee,
+			monthly_revenue_target: target
 		};
 
 		const { error } = await supabase

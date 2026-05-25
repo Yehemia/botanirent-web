@@ -62,7 +62,8 @@ export async function load({ locals }) {
 			staffCountRes,
 			branchCountRes,
 			customerCountRes,
-			recentLogsRes
+			recentLogsRes,
+			settingsRes
 		] = await Promise.all([
 			supabase
 				.from('transactions')
@@ -86,11 +87,24 @@ export async function load({ locals }) {
 				.from('activity_logs')
 				.select('*, profile:profiles(full_name, role), branch:branches(name)')
 				.order('created_at', { ascending: false })
-				.limit(5)
+				.limit(5),
+			supabase
+				.from('settings')
+				.select('*')
+				.eq('key', 'rental')
+				.single()
 		]);
 
 		const allTrx = allTrxRes.data;
 		const allPenalties = allPenaltiesRes.data;
+		const settingsData = settingsRes.data;
+		
+		const rentalSettings = settingsData?.value || { 
+			default_rental_duration_days: 4, 
+			late_fee_per_day_per_transaction: 10000,
+			monthly_revenue_target: 20000000 
+		};
+		const monthlyRevenueTarget = Number(rentalSettings.monthly_revenue_target) || 20000000;
 		
 		let totalTxRevenueMonth = 0;
 		let totalPenaltyRevenueMonth = 0;
@@ -151,7 +165,8 @@ export async function load({ locals }) {
 				totalRevenueMonth: totalTxRevenueMonth + totalPenaltyRevenueMonth,
 				totalTxRevenueMonth,
 				totalPenaltyRevenueMonth,
-				successfulTrxCountMonth
+				successfulTrxCountMonth,
+				monthlyRevenueTarget
 			},
 			chartData: {
 				labels: last7Days.map(d => d.label),

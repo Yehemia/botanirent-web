@@ -60,7 +60,7 @@
 	let gudangData = $derived(data.gudangData);
 
 	// Owner targets
-	const monthlyTarget = 20000000; // Rp 20.000.000 target
+	let monthlyTarget = $derived(ownerData?.revenueData?.monthlyRevenueTarget || 20000000);
 	let targetProgress = $derived(
 		ownerData ? Math.min(Math.round((ownerData.revenueData.totalRevenueMonth / monthlyTarget) * 100), 100) : 0
 	);
