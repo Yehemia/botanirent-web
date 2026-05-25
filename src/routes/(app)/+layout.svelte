@@ -49,6 +49,7 @@
 			{sidebarExpanded} 
 			title={pageTitle()}
 			userProfile={data.profile}
+			branch={data.branch}
 			{toggleSidebar}
 		/>
 		

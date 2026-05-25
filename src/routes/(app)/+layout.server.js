@@ -7,9 +7,22 @@ export const load = async ({ locals }) => {
 		throw redirect(303, '/login');
 	}
 
+	let branch = null;
+	if (profile?.branch_id) {
+		const { data } = await locals.supabase
+			.from('branches')
+			.select('name')
+			.eq('id', profile.branch_id)
+			.single();
+		if (data) {
+			branch = data;
+		}
+	}
+
 	return {
 		session,
 		user,
-		profile
+		profile,
+		branch
 	};
 };

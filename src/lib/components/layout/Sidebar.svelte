@@ -70,16 +70,25 @@
 </script>
 
 <aside 
-	class="bg-[var(--color-forest)] text-white transition-all duration-250 flex flex-col h-screen fixed left-0 top-0 z-40 overflow-hidden"
+	class="bg-gradient-to-b from-[#182C0D] to-[#254514] border-r border-[#385624]/30 text-white transition-all duration-250 flex flex-col h-screen fixed left-0 top-0 z-40 overflow-hidden select-none"
 	style="width: {expanded ? '260px' : '72px'};"
 >
 	<!-- Logo Area -->
-	<div class="h-16 flex items-center px-5 shrink-0 bg-black/10">
-		<div class="flex items-center gap-3 w-full overflow-hidden text-[var(--color-amber)]">
-			<!-- Simple leaf/tent icon placeholder -->
-			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M12 2L2 22h20L12 2z"/><path d="M12 22V12"/></svg>
+	<div class="h-16 flex items-center px-5 shrink-0 bg-black/15 border-b border-white/5 group cursor-pointer">
+		<div class="flex items-center gap-3 w-full overflow-hidden">
+			<!-- Logo Image -->
+			<img 
+				src="/logo.svg" 
+				alt="Logo BotaniRent" 
+				class="w-7 h-7 shrink-0 object-contain transition-transform duration-300 group-hover:scale-105" 
+			/>
 			{#if expanded}
-				<span class="font-heading font-bold text-xl tracking-wide whitespace-nowrap">BotaniRent</span>
+				<!-- Wordmark Image (using brightness-0 invert for readability on dark background) -->
+				<img 
+					src="/wordmark.svg" 
+					alt="BotaniRent" 
+					class="h-6 object-contain brightness-0 invert transition-opacity duration-300" 
+				/>
 			{/if}
 		</div>
 	</div>
@@ -90,33 +99,35 @@
 			{#each visibleItems as item (item.label || item.section)}
 				{#if item.section}
 					{#if expanded}
-						<div class="px-5 mt-4 mb-2">
-							<span class="text-[11px] uppercase tracking-wider text-white/50 font-semibold">{item.section}</span>
+						<div class="px-5 mt-5 mb-1.5 flex items-center">
+							<span class="text-[10px] uppercase tracking-[0.15em] text-white/30 font-bold font-heading">{item.section}</span>
 						</div>
 					{:else}
-						<div class="h-px bg-white/10 mx-4 my-2"></div>
+						<div class="h-px bg-white/5 mx-4 my-3"></div>
 					{/if}
 				{:else}
 					{@const active = isActive(item.href || '')}
 					<!-- eslint-disable-next-line -->
 					<a 
 						href="{base}{item.href}"
-						class="flex items-center px-5 py-3 mx-2 rounded-lg transition-colors group relative
+						class="flex items-center h-11 rounded-xl transition-all duration-200 group relative border border-transparent
+							{expanded ? 'px-4 mx-3' : 'justify-center mx-3'}
 							{active 
-								? 'bg-white/15 text-white' 
-								: 'text-white/70 hover:bg-white/10 hover:text-white'}"
+								? 'bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] border-white/5' 
+								: 'text-white/60 hover:bg-white/5 hover:text-white'}"
 						title={!expanded ? item.label : undefined}
 					>
-						{#if active && expanded}
-							<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--color-amber)] rounded-r-md"></div>
+						{#if active}
+							<div class="absolute left-1.5 top-2.5 bottom-2.5 w-1 bg-[var(--color-amber)] rounded-full"></div>
 						{/if}
 						
 						{#if item.icon}
-							{@const Icon = item.icon}<Icon size={20} class="shrink-0 {active ? 'text-[var(--color-amber)]' : ''}" />
+							{@const Icon = item.icon}
+							<Icon size={20} class="shrink-0 transition-transform duration-200 group-hover:scale-105 {active ? 'text-[var(--color-amber)]' : 'text-white/60 group-hover:text-white'}" />
 						{/if}
 						
 						{#if expanded}
-							<span class="ml-3 text-[14px] font-medium whitespace-nowrap">{item.label}</span>
+							<span class="ml-3 text-[13.5px] font-medium whitespace-nowrap transition-colors duration-200">{item.label}</span>
 						{/if}
 					</a>
 				{/if}
@@ -125,24 +136,44 @@
 	</div>
 
 	<!-- User Area -->
-	<div class="p-4 bg-black/20 shrink-0">
-		<div class="flex items-center gap-3 overflow-hidden">
-			<div class="w-10 h-10 rounded-full bg-[var(--color-sage)] flex items-center justify-center text-white shrink-0 font-bold uppercase">
-				{userProfile?.full_name?.charAt(0) || 'U'}
-			</div>
-			{#if expanded}
-				<div class="flex-col min-w-0 flex-1">
-					<p class="text-sm font-medium text-white truncate">{userProfile?.full_name}</p>
-					<p class="text-xs text-white/70 truncate capitalize">{userProfile?.role}</p>
+	{#if expanded}
+		<div class="p-3 mx-3 mb-4 rounded-xl bg-white/5 border border-white/10 shrink-0 backdrop-blur-sm shadow-inner transition-all duration-200">
+			<div class="flex items-center gap-3 overflow-hidden">
+				<div class="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--color-sage)] to-[var(--color-forest-light)] flex items-center justify-center text-white shrink-0 font-bold text-sm uppercase border border-white/15 shadow-sm">
+					{userProfile?.full_name?.charAt(0) || 'U'}
 				</div>
-				<form action="/logout" method="POST">
-					<button class="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors">
-						<LogOut size={18} />
+				<div class="flex flex-col min-w-0 flex-1">
+					<p class="text-xs font-semibold text-white truncate leading-tight">{userProfile?.full_name || 'User'}</p>
+					<p class="text-[10px] text-white/50 truncate capitalize mt-0.5 leading-none">{userProfile?.role || 'Guest'}</p>
+				</div>
+				<form action="/logout" method="POST" class="m-0 shrink-0">
+					<button 
+						class="p-1.5 text-white/40 hover:text-[var(--color-terracotta)] hover:bg-white/10 rounded-lg transition-all duration-200 cursor-pointer"
+						title="Keluar"
+					>
+						<LogOut size={16} />
 					</button>
 				</form>
-			{/if}
+			</div>
 		</div>
-	</div>
+	{:else}
+		<div class="mb-4 flex flex-col items-center gap-3 shrink-0 transition-all duration-200">
+			<div 
+				class="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--color-sage)] to-[var(--color-forest-light)] flex items-center justify-center text-white font-bold text-sm uppercase border border-white/15 shadow-md cursor-pointer hover:scale-105 transition-transform"
+				title="{userProfile?.full_name || 'User'} ({userProfile?.role || 'Guest'})"
+			>
+				{userProfile?.full_name?.charAt(0) || 'U'}
+			</div>
+			<form action="/logout" method="POST" class="m-0">
+				<button 
+					class="p-2 text-white/40 hover:text-[var(--color-terracotta)] hover:bg-white/10 rounded-lg transition-all duration-200 cursor-pointer"
+					title="Keluar"
+				>
+					<LogOut size={18} />
+				</button>
+			</form>
+		</div>
+	{/if}
 </aside>
 
 <style>

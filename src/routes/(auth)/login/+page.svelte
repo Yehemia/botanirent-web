@@ -23,10 +23,8 @@
 		<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
 		
 		<div class="relative z-10 flex flex-col items-center text-center px-10">
-			<!-- Logo Text as Placeholder for Image -->
-			<div class="w-32 h-32 rounded-full bg-[var(--color-forest)] border-4 border-white/20 shadow-xl flex items-center justify-center mb-8">
-				<span class="text-4xl font-bold text-white font-heading">BR</span>
-			</div>
+			<!-- Logo Image -->
+			<img src="/logo.svg" alt="Logo BotaniRent" class="w-32 h-32 object-contain mb-8 filter drop-shadow-lg" />
 			
 			<h2 class="text-4xl font-bold font-heading text-white mb-4">BotaniRent Outdoor</h2>
 			<p class="text-white/80 text-lg max-w-md">
@@ -63,9 +61,7 @@
 			<!-- Header -->
 			<div class="text-center md:text-left space-y-3">
 				<!-- Mobile Logo -->
-				<div class="md:hidden w-16 h-16 rounded-full bg-[var(--color-forest)] flex items-center justify-center mx-auto mb-6">
-					<span class="text-xl font-bold text-white font-heading">BR</span>
-				</div>
+				<img src="/logo.svg" alt="Logo BotaniRent" class="md:hidden w-16 h-16 object-contain mx-auto mb-6" />
 				<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)] tracking-tight">Login BotaniRent</h1>
 				<p class="text-[var(--color-stone)] text-sm">Selamat datang kembali! Silakan masukkan kredensial Anda.</p>
 			</div>
