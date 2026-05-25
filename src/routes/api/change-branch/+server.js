@@ -12,14 +12,13 @@ export const POST = async ({ request, locals }) => {
 	}
 
 	const { branchId } = await request.json();
-	if (!branchId) {
-		throw error(400, 'Branch ID is required');
-	}
+	// If branchId is empty string or not provided, we set it to null to represent "Semua Cabang"
+	const targetBranchId = branchId || null;
 
 	// Update the profile's branch_id in Supabase
 	const { error: updateError } = await locals.supabase
 		.from('profiles')
-		.update({ branch_id: branchId })
+		.update({ branch_id: targetBranchId })
 		.eq('id', profile.id);
 
 	if (updateError) {
