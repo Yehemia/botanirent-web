@@ -11,4 +11,4 @@
 </svelte:head>
 
 {@render children()}
-<Toaster richColors position="bottom-right" />
+<Toaster richColors position="top-center" />
