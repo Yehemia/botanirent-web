@@ -1,6 +1,6 @@
 <script>
 	import { page } from '$app/stores';
-	import { Menu, Bell, ChevronRight, Home, ChevronDown } from '@lucide/svelte';
+	import { Menu, Bell, ChevronRight, Home, ChevronDown, Settings, LogOut } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 
 	/**
@@ -78,7 +78,23 @@
 			toast.error('Terjadi kesalahan saat mengubah cabang.');
 		}
 	}
+
+	let dropdownOpen = $state(false);
+
+	/**
+	 * @param {MouseEvent} event
+	 */
+	function toggleDropdown(event) {
+		event.stopPropagation();
+		dropdownOpen = !dropdownOpen;
+	}
+
+	function closeDropdown() {
+		dropdownOpen = false;
+	}
 </script>
+
+<svelte:window onclick={closeDropdown} />
 
 <header 
 	class="h-16 bg-white/80 backdrop-blur-md border-b border-[var(--color-border-light)]/60 shadow-sm flex items-center justify-between px-6 sticky top-0 z-30 transition-all duration-250 select-none"
@@ -154,16 +170,68 @@
 		<div class="h-6 w-px bg-[var(--color-border-light)] mx-1"></div>
 
 		<!-- User Dropdown Trigger -->
-		<button class="flex items-center gap-2 hover:bg-[var(--color-sand)] p-1 pr-2.5 rounded-full border border-transparent hover:border-[var(--color-border-light)] transition-all duration-200 cursor-pointer group shadow-sm bg-white">
-			<!-- Avatar with gradient/border -->
-			<div class="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--color-forest-light)] to-[var(--color-forest)] text-white flex items-center justify-center text-xs font-bold uppercase shadow-sm border border-white/20 transition-transform group-hover:scale-105 duration-200">
-				{userProfile?.full_name?.charAt(0) || 'U'}
-			</div>
-			<div class="hidden md:block text-left max-w-[120px]">
-				<p class="text-[12px] font-bold text-[var(--color-earth)] leading-tight truncate">{userProfile?.full_name || 'User'}</p>
-				<p class="text-[10px] text-[var(--color-stone)] capitalize leading-none mt-0.5">{userProfile?.role || 'Guest'}</p>
-			</div>
-			<ChevronDown size={14} class="text-[var(--color-stone)] transition-transform duration-200 group-hover:translate-y-0.5 shrink-0" />
-		</button>
+		<div class="relative">
+			<button 
+				onclick={toggleDropdown}
+				class="flex items-center gap-2 hover:bg-[var(--color-sand)] p-1 pr-2.5 rounded-full border border-transparent hover:border-[var(--color-border-light)] transition-all duration-200 cursor-pointer group shadow-sm bg-white"
+			>
+				<!-- Avatar with gradient/border -->
+				<div class="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--color-forest-light)] to-[var(--color-forest)] text-white flex items-center justify-center text-xs font-bold uppercase shadow-sm border border-white/20 transition-transform group-hover:scale-105 duration-200">
+					{userProfile?.full_name?.charAt(0) || 'U'}
+				</div>
+				<div class="hidden md:block text-left max-w-[120px]">
+					<p class="text-[12px] font-bold text-[var(--color-earth)] leading-tight truncate">{userProfile?.full_name || 'User'}</p>
+					<p class="text-[10px] text-[var(--color-stone)] capitalize leading-none mt-0.5">{userProfile?.role || 'Guest'}</p>
+				</div>
+				<ChevronDown size={14} class="text-[var(--color-stone)] transition-transform duration-200 group-hover:translate-y-0.5 shrink-0 {dropdownOpen ? 'rotate-180' : ''}" />
+			</button>
+
+			<!-- Dropdown Menu -->
+			{#if dropdownOpen}
+				<div 
+					role="menu"
+					tabindex="-1"
+					class="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-[var(--color-border-light)] shadow-xl py-2 z-50 animate-fade-in"
+					onclick={(e) => e.stopPropagation()}
+					onkeydown={(e) => e.stopPropagation()}
+				>
+					<!-- Header: User Info -->
+					<div class="px-4 py-2.5 border-b border-[var(--color-border-light)]/60">
+						<p class="text-xs text-[var(--color-stone)]">Masuk sebagai</p>
+						<p class="font-bold text-sm text-[var(--color-earth)] truncate">{userProfile?.full_name || 'User'}</p>
+						<p class="text-[10px] text-[var(--color-stone)] capitalize mt-0.5 font-semibold bg-[var(--color-sand)] px-2 py-0.5 rounded-full w-fit">
+							{userProfile?.role || 'Guest'}
+						</p>
+					</div>
+
+					<!-- Body: Links -->
+					<div class="p-1">
+						<a 
+							href="/settings" 
+							class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-[var(--color-stone)] hover:bg-[var(--color-sand)] hover:text-[var(--color-earth)] transition-colors"
+							onclick={closeDropdown}
+						>
+							<Settings size={16} />
+							<span>Pengaturan Sistem</span>
+						</a>
+					</div>
+
+					<div class="border-t border-[var(--color-border-light)]/60 my-1"></div>
+
+					<!-- Footer: Logout -->
+					<div class="p-1">
+						<form action="/logout" method="POST" class="m-0 w-full">
+							<button 
+								type="submit" 
+								class="flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-[var(--color-error)] hover:bg-[var(--color-error-bg)] transition-colors cursor-pointer"
+							>
+								<LogOut size={16} />
+								<span>Keluar Aplikasi</span>
+							</button>
+						</form>
+					</div>
+				</div>
+			{/if}
+		</div>
 	</div>
 </header>
