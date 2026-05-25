@@ -2,7 +2,7 @@ export async function load({ locals }) {
 	const { supabase } = locals;
 	const { session, profile } = await locals.safeGetSession();
 
-	if (!session || !profile?.branch_id) {
+	if (!session || !profile) {
 		return { items: [], categories: [] };
 	}
 
@@ -17,11 +17,16 @@ export async function load({ locals }) {
 	}
 
 	// Ambil items beserta nama kategorinya
-	const { data: items, error: itemError } = await supabase
+	let query = supabase
 		.from('items')
 		.select('*, category:categories(name, type)')
-		.eq('branch_id', profile.branch_id)
 		.order('created_at', { ascending: false });
+
+	if (profile.branch_id) {
+		query = query.eq('branch_id', profile.branch_id);
+	}
+
+	const { data: items, error: itemError } = await query;
 
 	if (itemError) {
 		console.error("Error loading items:", itemError);

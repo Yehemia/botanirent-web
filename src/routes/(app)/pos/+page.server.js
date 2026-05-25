@@ -8,6 +8,17 @@ export async function load({ locals }) {
 		throw redirect(303, '/login');
 	}
 
+	// If no branch_id is set (Semua Cabang), return empty datasets but flag it
+	if (!profile.branch_id) {
+		return {
+			categories: [],
+			items: [],
+			packages: [],
+			customers: [],
+			currentBranchId: null
+		};
+	}
+
 	// 1. Ambil kategori
 	const { data: categories } = await supabase
 		.from('categories')
@@ -41,6 +52,7 @@ export async function load({ locals }) {
 		categories: categories || [],
 		items: items || [],
 		packages: packages || [],
-		customers: customers || []
+		customers: customers || [],
+		currentBranchId: profile.branch_id
 	};
 }

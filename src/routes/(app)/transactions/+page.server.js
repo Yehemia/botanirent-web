@@ -13,8 +13,11 @@ export async function load({ locals, url }) {
 	let query = supabase
 		.from('transactions')
 		.select('*, customer:customers(full_name), cashier:profiles(full_name)')
-		.eq('branch_id', profile.branch_id)
 		.order('created_at', { ascending: false });
+
+	if (profile.branch_id) {
+		query = query.eq('branch_id', profile.branch_id);
+	}
 
 	if (search) {
 		// Menggunakan pencarian berdasarkan kode transaksi

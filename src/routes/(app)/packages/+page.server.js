@@ -9,11 +9,16 @@ export async function load({ locals }) {
 	}
 
 	// Fetch packages with the count of items inside them
-	const { data: packages, error } = await supabase
+	let query = supabase
 		.from('packages')
 		.select('*, package_items(count)')
-		.eq('branch_id', profile.branch_id)
 		.order('created_at', { ascending: false });
+
+	if (profile.branch_id) {
+		query = query.eq('branch_id', profile.branch_id);
+	}
+
+	const { data: packages, error } = await query;
 
 	if (error) {
 		console.error("Error fetching packages:", error);

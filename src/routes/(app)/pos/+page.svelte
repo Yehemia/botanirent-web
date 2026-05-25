@@ -155,7 +155,21 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div class="h-[calc(100vh-4rem)] -mt-6 -mx-8 flex overflow-hidden">
+{#if !data.currentBranchId}
+	<div class="h-[calc(100vh-4rem)] -mt-6 -mx-8 flex flex-col items-center justify-center bg-[var(--color-sand-lightest)] p-6 text-center z-20 w-[calc(100%+4rem)]">
+		<div class="bg-white p-8 rounded-3xl border border-[var(--color-border)] shadow-xl max-w-md flex flex-col items-center">
+			<div class="w-16 h-16 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] flex items-center justify-center mb-6">
+				<ShoppingCart size={32} />
+			</div>
+			<h2 class="text-2xl font-bold font-heading text-[var(--color-earth)] mb-3">Pilih Cabang Terlebih Dahulu</h2>
+			<p class="text-sm text-[var(--color-stone)] mb-6 leading-relaxed">
+				Anda saat ini berada di tampilan <strong>Semua Cabang</strong>. Transaksi penjualan (POS) hanya dapat dilakukan pada cabang tertentu. 
+				Silakan pilih salah satu cabang aktif pada menu dropdown <strong>Cabang</strong> di bagian atas (TopBar) untuk memulai transaksi.
+			</p>
+		</div>
+	</div>
+{:else}
+	<div class="h-[calc(100vh-4rem)] -mt-6 -mx-8 flex overflow-hidden">
 	
 	<!-- BAGIAN KIRI: KATALOG BARANG (70%) -->
 	<div class="w-[65%] flex flex-col bg-[var(--color-sand-lightest)] border-r border-[var(--color-border)] relative">
@@ -334,3 +348,4 @@
 		</div>
 	</div>
 </div>
+{/if}

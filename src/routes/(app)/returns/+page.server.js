@@ -9,12 +9,17 @@ export async function load({ locals }) {
 	}
 
 	// Ambil semua item sewa yang statusnya masih 'active' (belum dikembalikan)
-	const { data: activeRentals, error } = await supabase
+	let query = supabase
 		.from('transaction_items')
 		.select('*, transaction:transactions!inner(transaction_code, type, created_at, branch_id, customer:customers(full_name, phone)), item:items(sell_price)')
 		.eq('rental_status', 'active')
-		.eq('transactions.branch_id', profile.branch_id)
 		.order('rental_end_date', { ascending: true });
+
+	if (profile.branch_id) {
+		query = query.eq('transactions.branch_id', profile.branch_id);
+	}
+
+	const { data: activeRentals, error } = await query;
 
 	if (error) {
 		console.error("Error fetching active rentals:", error);

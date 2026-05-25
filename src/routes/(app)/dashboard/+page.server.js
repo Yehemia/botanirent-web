@@ -14,7 +14,7 @@ export async function load({ locals }) {
 
 	// 1. Kumpulkan Status Aset Fisik
 	let assetsQuery = supabase.from('rental_assets').select('status, item:items!inner(branch_id)');
-	if (!isOwner) {
+	if (branchId) {
 		assetsQuery = assetsQuery.eq('items.branch_id', branchId);
 	}
 	const { data: assets } = await assetsQuery;
@@ -35,7 +35,7 @@ export async function load({ locals }) {
 		.order('created_at', { ascending: false })
 		.limit(5);
 	
-	if (!isOwner) {
+	if (branchId) {
 		trxQuery = trxQuery.eq('branch_id', branchId);
 	}
 	const { data: recentTransactions } = await trxQuery;
@@ -55,6 +55,46 @@ export async function load({ locals }) {
 
 		const queryDate = startOfMonth < sevenDaysAgo ? startOfMonth : sevenDaysAgo;
 
+		let trxsQuery = supabase
+			.from('transactions')
+			.select('created_at, total_amount, payment_status')
+			.gte('created_at', queryDate.toISOString());
+		if (branchId) {
+			trxsQuery = trxsQuery.eq('branch_id', branchId);
+		}
+
+		let penaltiesQuery = supabase
+			.from('penalties')
+			.select('created_at, calculated_amount, payment_status')
+			.eq('payment_status', 'paid')
+			.gte('created_at', queryDate.toISOString());
+		if (branchId) {
+			penaltiesQuery = penaltiesQuery.eq('branch_id', branchId);
+		}
+
+		let staffQuery = supabase
+			.from('profiles')
+			.select('*', { count: 'exact', head: true });
+		if (branchId) {
+			staffQuery = staffQuery.eq('branch_id', branchId);
+		}
+
+		let customerQuery = supabase
+			.from('customers')
+			.select('*', { count: 'exact', head: true });
+		if (branchId) {
+			customerQuery = customerQuery.eq('branch_id', branchId);
+		}
+
+		let logsQuery = supabase
+			.from('activity_logs')
+			.select('*, profile:profiles(full_name, role), branch:branches(name)')
+			.order('created_at', { ascending: false })
+			.limit(5);
+		if (branchId) {
+			logsQuery = logsQuery.eq('branch_id', branchId);
+		}
+
 		// Jalankan query paralel untuk optimasi
 		const [
 			allTrxRes,
@@ -65,29 +105,14 @@ export async function load({ locals }) {
 			recentLogsRes,
 			settingsRes
 		] = await Promise.all([
-			supabase
-				.from('transactions')
-				.select('created_at, total_amount, payment_status')
-				.gte('created_at', queryDate.toISOString()),
-			supabase
-				.from('penalties')
-				.select('created_at, calculated_amount, payment_status')
-				.eq('payment_status', 'paid')
-				.gte('created_at', queryDate.toISOString()),
-			supabase
-				.from('profiles')
-				.select('*', { count: 'exact', head: true }),
+			trxsQuery,
+			penaltiesQuery,
+			staffQuery,
 			supabase
 				.from('branches')
 				.select('*', { count: 'exact', head: true }),
-			supabase
-				.from('customers')
-				.select('*', { count: 'exact', head: true }),
-			supabase
-				.from('activity_logs')
-				.select('*, profile:profiles(full_name, role), branch:branches(name)')
-				.order('created_at', { ascending: false })
-				.limit(5),
+			customerQuery,
+			logsQuery,
 			supabase
 				.from('settings')
 				.select('*')

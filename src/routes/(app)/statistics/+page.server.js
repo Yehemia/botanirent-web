@@ -22,15 +22,24 @@ export async function load({ locals }) {
 
 	// 2. Fetch Paid Transactions
 	// 2.5 Fetch Paid Penalties
+	let txQuery = supabase
+		.from('transactions')
+		.select('id, branch_id, type, total_amount, created_at')
+		.eq('payment_status', 'paid');
+	
+	let penaltiesQuery = supabase
+		.from('penalties')
+		.select('id, branch_id, type, calculated_amount, created_at')
+		.eq('payment_status', 'paid');
+
+	if (profile.branch_id) {
+		txQuery = txQuery.eq('branch_id', profile.branch_id);
+		penaltiesQuery = penaltiesQuery.eq('branch_id', profile.branch_id);
+	}
+
 	const [txRes, penaltiesRes, itemsRes] = await Promise.all([
-		supabase
-			.from('transactions')
-			.select('id, branch_id, type, total_amount, created_at')
-			.eq('payment_status', 'paid'),
-		supabase
-			.from('penalties')
-			.select('id, branch_id, type, calculated_amount, created_at')
-			.eq('payment_status', 'paid'),
+		txQuery,
+		penaltiesQuery,
 		supabase
 			.from('transaction_items')
 			.select('transaction_id, item_name, type, quantity, subtotal')
@@ -38,7 +47,13 @@ export async function load({ locals }) {
 
 	const txList = txRes.data || [];
 	const penaltyList = penaltiesRes.data || [];
-	const itemList = itemsRes.data || [];
+	
+	// Filter items to current branch if branch is selected
+	let itemList = itemsRes.data || [];
+	if (profile.branch_id) {
+		const activeTxIds = new Set(txList.map(t => t.id));
+		itemList = itemList.filter(item => activeTxIds.has(item.transaction_id));
+	}
 
 	if (txRes.error) console.error('Fetch transactions error:', txRes.error);
 	if (penaltiesRes.error) console.error('Fetch penalties error:', penaltiesRes.error);
