@@ -1,6 +1,7 @@
 <script>
 	import { page } from '$app/stores';
 	import { Menu, Bell, ChevronRight, Home, ChevronDown } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
 
 	/**
 	 * @typedef {Object} Props
@@ -8,11 +9,12 @@
 	 * @property {string} title
 	 * @property {any} userProfile
 	 * @property {any} [branch]
+	 * @property {any[]} [branches]
 	 * @property {() => void} toggleSidebar
 	 */
 
 	/** @type {Props} */
-	let { sidebarExpanded, title, userProfile, branch, toggleSidebar } = $props();
+	let { sidebarExpanded, title, userProfile, branch, branches = [], toggleSidebar } = $props();
 
 	// Generate dynamic breadcrumb segments based on path
 	let pathname = $derived($page.url.pathname);
@@ -46,6 +48,35 @@
 			return { label, path };
 		});
 	});
+
+	/**
+	 * @param {any} event
+	 */
+	async function handleBranchChange(event) {
+		const select = /** @type {HTMLSelectElement} */ (event.currentTarget);
+		const branchId = select.value;
+		
+		try {
+			const res = await fetch('/api/change-branch', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ branchId })
+			});
+			
+			if (res.ok) {
+				toast.success('Berhasil mengubah cabang aktif!');
+				setTimeout(() => {
+					window.location.reload();
+				}, 500);
+			} else {
+				const err = await res.json();
+				toast.error(err?.message || 'Gagal mengubah cabang.');
+			}
+		} catch (err) {
+			console.error('Error changing branch:', err);
+			toast.error('Terjadi kesalahan saat mengubah cabang.');
+		}
+	}
 </script>
 
 <header 
@@ -86,12 +117,30 @@
 
 	<!-- Right: Actions & User Info -->
 	<div class="flex items-center gap-4">
-		<!-- Branch Badge -->
+		<!-- Branch Selector / Badge -->
 		{#if userProfile?.branch_id}
-			<div class="hidden md:flex items-center bg-[var(--color-sage-10)] text-[var(--color-forest)] border border-[var(--color-sage)]/10 px-3 py-1.5 rounded-full text-xs font-semibold gap-1.5 shadow-sm">
-				<span class="w-1.5 h-1.5 rounded-full bg-[var(--color-sage)] animate-pulse"></span>
-				Cabang: {branch?.name || 'Cabang Aktif'}
-			</div>
+			{#if userProfile?.role === 'owner' && branches.length > 0}
+				<div class="hidden md:flex items-center bg-[var(--color-sage-10)] text-[var(--color-forest)] border border-[var(--color-sage)]/20 rounded-full text-xs font-semibold shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-[var(--color-forest)]/30 transition-all duration-200">
+					<div class="flex items-center gap-1.5 pl-3 pr-1 py-1.5 border-r border-[var(--color-sage)]/10">
+						<span class="w-1.5 h-1.5 rounded-full bg-[var(--color-sage)] animate-pulse"></span>
+						<span>Cabang:</span>
+					</div>
+					<select 
+						value={userProfile.branch_id} 
+						onchange={handleBranchChange}
+						class="bg-transparent border-0 text-[var(--color-forest)] font-semibold pr-8 pl-2 py-1.5 text-xs focus:ring-0 focus:outline-none cursor-pointer hover:bg-[var(--color-sage)]/5 transition-all rounded-r-full appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%232c6e49%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.25rem_center] bg-no-repeat"
+					>
+						{#each branches as b}
+							<option value={b.id} class="text-[var(--color-stone)] bg-white font-medium">{b.name}</option>
+						{/each}
+					</select>
+				</div>
+			{:else}
+				<div class="hidden md:flex items-center bg-[var(--color-sage-10)] text-[var(--color-forest)] border border-[var(--color-sage)]/10 px-3 py-1.5 rounded-full text-xs font-semibold gap-1.5 shadow-sm">
+					<span class="w-1.5 h-1.5 rounded-full bg-[var(--color-sage)] animate-pulse"></span>
+					Cabang: {branch?.name || 'Cabang Aktif'}
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Notifications -->

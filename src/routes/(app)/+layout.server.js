@@ -19,10 +19,23 @@ export const load = async ({ locals }) => {
 		}
 	}
 
+	/** @type {any[]} */
+	let branches = [];
+	if (profile?.role === 'owner') {
+		const { data } = await locals.supabase
+			.from('branches')
+			.select('id, name')
+			.order('name');
+		if (data) {
+			branches = data;
+		}
+	}
+
 	return {
 		session,
 		user,
 		profile,
-		branch
+		branch,
+		branches
 	};
 };

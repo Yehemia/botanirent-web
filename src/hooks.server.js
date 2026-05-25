@@ -50,6 +50,11 @@ export const handle = async ({ event, resolve }) => {
 
 				const isGet = event.request.method === 'GET';
 
+				// Invalidate cache for mutations/POST requests
+				if (!isGet && tokenKey) {
+					sessionCache.delete(tokenKey);
+				}
+
 				// For GET requests, check the in-memory cache first to make navigation instant
 				if (isGet) {
 					const cached = sessionCache.get(tokenKey);

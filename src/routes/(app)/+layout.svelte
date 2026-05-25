@@ -50,6 +50,7 @@
 			title={pageTitle()}
 			userProfile={data.profile}
 			branch={data.branch}
+			branches={data.branches}
 			{toggleSidebar}
 		/>
 		
