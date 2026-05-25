@@ -10,6 +10,7 @@ export async function load({ locals }) {
 
 	const isOwner = profile.role === 'owner';
 	const branchId = profile.branch_id;
+	const todayStr = new Date().toISOString().split('T')[0];
 
 	// 1. Kumpulkan Status Aset Fisik
 	let assetsQuery = supabase.from('rental_assets').select('status, item:items!inner(branch_id)');
@@ -39,14 +40,12 @@ export async function load({ locals }) {
 	}
 	const { data: recentTransactions } = await trxQuery;
 
-	// 3. Khusus Owner: Ambil data Pendapatan (Revenue) untuk metrik dan grafik
-	let revenueData = null;
-	let chartData = null;
-
+	// 3. Data Khusus Owner
+	let ownerData = null;
 	if (isOwner) {
 		// Dapatkan tanggal 7 hari lalu untuk grafik
 		const sevenDaysAgo = new Date();
-		sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // 7 hari (termasuk hari ini)
+		sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 		sevenDaysAgo.setHours(0,0,0,0);
 
 		// Dapatkan tanggal 1 awal bulan untuk KPI Bulanan
@@ -54,10 +53,17 @@ export async function load({ locals }) {
 		startOfMonth.setDate(1);
 		startOfMonth.setHours(0,0,0,0);
 
-		// Kita query semua transaksi sejak awal bulan ATAU sejak 7 hari lalu (ambil yang paling tua)
 		const queryDate = startOfMonth < sevenDaysAgo ? startOfMonth : sevenDaysAgo;
 
-		const [allTrxRes, allPenaltiesRes] = await Promise.all([
+		// Jalankan query paralel untuk optimasi
+		const [
+			allTrxRes,
+			allPenaltiesRes,
+			staffCountRes,
+			branchCountRes,
+			customerCountRes,
+			recentLogsRes
+		] = await Promise.all([
 			supabase
 				.from('transactions')
 				.select('created_at, total_amount, payment_status')
@@ -66,7 +72,21 @@ export async function load({ locals }) {
 				.from('penalties')
 				.select('created_at, calculated_amount, payment_status')
 				.eq('payment_status', 'paid')
-				.gte('created_at', queryDate.toISOString())
+				.gte('created_at', queryDate.toISOString()),
+			supabase
+				.from('profiles')
+				.select('*', { count: 'exact', head: true }),
+			supabase
+				.from('branches')
+				.select('*', { count: 'exact', head: true }),
+			supabase
+				.from('customers')
+				.select('*', { count: 'exact', head: true }),
+			supabase
+				.from('activity_logs')
+				.select('*, profile:profiles(full_name, role), branch:branches(name)')
+				.order('created_at', { ascending: false })
+				.limit(5)
 		]);
 
 		const allTrx = allTrxRes.data;
@@ -83,7 +103,7 @@ export async function load({ locals }) {
 			const d = new Date();
 			d.setDate(d.getDate() - i);
 			last7Days.push({
-				date: d.toISOString().split('T')[0], // YYYY-MM-DD local timezone approximation
+				date: d.toISOString().split('T')[0],
 				label: new Intl.DateTimeFormat('id-ID', { weekday: 'short', day: 'numeric' }).format(d),
 				revenue: 0,
 				penalty: 0
@@ -95,13 +115,11 @@ export async function load({ locals }) {
 				if (t.payment_status === 'paid') {
 					const trxDateObj = new Date(t.created_at);
 					
-					// Jika transaksi terjadi bulan ini
 					if (trxDateObj >= startOfMonth) {
 						totalTxRevenueMonth += Number(t.total_amount) || 0;
 						successfulTrxCountMonth++;
 					}
 
-					// Coba masukkan ke data Chart jika masuk dalam 7 hari terakhir
 					const tDateStr = new Date(trxDateObj.getTime() - (trxDateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 					const chartItem = last7Days.find(d => d.date === tDateStr);
 					if (chartItem) {
@@ -116,12 +134,10 @@ export async function load({ locals }) {
 				const penaltyDateObj = new Date(p.created_at);
 				const amount = Number(p.calculated_amount) || 0;
 
-				// Jika denda terjadi bulan ini
 				if (penaltyDateObj >= startOfMonth) {
 					totalPenaltyRevenueMonth += amount;
 				}
 
-				// Coba masukkan ke data Chart jika masuk dalam 7 hari terakhir
 				const pDateStr = new Date(penaltyDateObj.getTime() - (penaltyDateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 				const chartItem = last7Days.find(d => d.date === pDateStr);
 				if (chartItem) {
@@ -130,25 +146,115 @@ export async function load({ locals }) {
 			});
 		}
 
-		revenueData = {
-			totalRevenueMonth: totalTxRevenueMonth + totalPenaltyRevenueMonth,
-			totalTxRevenueMonth,
-			totalPenaltyRevenueMonth,
-			successfulTrxCountMonth
+		ownerData = {
+			revenueData: {
+				totalRevenueMonth: totalTxRevenueMonth + totalPenaltyRevenueMonth,
+				totalTxRevenueMonth,
+				totalPenaltyRevenueMonth,
+				successfulTrxCountMonth
+			},
+			chartData: {
+				labels: last7Days.map(d => d.label),
+				revenueData: last7Days.map(d => d.revenue),
+				penaltyData: last7Days.map(d => d.penalty)
+			},
+			staffCount: staffCountRes.count || 0,
+			branchCount: branchCountRes.count || 0,
+			customerCount: customerCountRes.count || 0,
+			recentLogs: recentLogsRes.data || []
 		};
-		
-		chartData = {
-			labels: last7Days.map(d => d.label),
-			revenueData: last7Days.map(d => d.revenue),
-			penaltyData: last7Days.map(d => d.penalty)
+	}
+
+	// 4. Data Khusus Kasir
+	let kasirData = null;
+	if (profile.role === 'kasir') {
+		// Fetch denda & transaksi hari ini untuk cabang kasir
+		const startOfToday = new Date();
+		startOfToday.setHours(0,0,0,0);
+
+		const [
+			todayTrxRes,
+			activeRentalsRes,
+			todaysPickupsRes,
+			todaysReturnsDueRes
+		] = await Promise.all([
+			supabase
+				.from('transactions')
+				.select('total_amount')
+				.eq('branch_id', branchId)
+				.eq('payment_status', 'paid')
+				.gte('created_at', startOfToday.toISOString()),
+			supabase
+				.from('transaction_items')
+				.select('id, transaction:transactions!inner(branch_id)', { count: 'exact', head: true })
+				.eq('rental_status', 'active')
+				.eq('transactions.branch_id', branchId),
+			supabase
+				.from('transaction_items')
+				.select('*, transaction:transactions!inner(customer:customers(full_name, phone), branch_id)')
+				.eq('rental_status', 'active')
+				.eq('rental_start_date', todayStr)
+				.eq('transactions.branch_id', branchId),
+			supabase
+				.from('transaction_items')
+				.select('*, transaction:transactions!inner(customer:customers(full_name, phone), branch_id)')
+				.eq('rental_status', 'active')
+				.lte('rental_end_date', todayStr)
+				.eq('transactions.branch_id', branchId)
+		]);
+
+		const todayTrx = todayTrxRes.data || [];
+		const todayRevenue = todayTrx.reduce((acc, t) => acc + (Number(t.total_amount) || 0), 0);
+
+		kasirData = {
+			todayRevenue,
+			todayTrxCount: todayTrx.length,
+			activeRentalsCount: activeRentalsRes.count || 0,
+			todaysPickups: todaysPickupsRes.data || [],
+			todaysReturnsDue: todaysReturnsDueRes.data || []
+		};
+	}
+
+	// 5. Data Khusus Gudang
+	let gudangData = null;
+	if (profile.role === 'gudang') {
+		const [
+			washingAssetsRes,
+			maintenanceAssetsRes,
+			todaysShipmentsRes
+		] = await Promise.all([
+			supabase
+				.from('rental_assets')
+				.select('*, item:items!inner(name, branch_id)')
+				.eq('status', 'washing')
+				.eq('items.branch_id', branchId),
+			supabase
+				.from('rental_assets')
+				.select('*, item:items!inner(name, branch_id)')
+				.eq('status', 'maintenance')
+				.eq('items.branch_id', branchId),
+			supabase
+				.from('transaction_items')
+				.select('*, transaction:transactions!inner(customer:customers(full_name, phone), branch_id)')
+				.eq('rental_status', 'active')
+				.eq('rental_start_date', todayStr)
+				.eq('transactions.branch_id', branchId)
+		]);
+
+		gudangData = {
+			washingAssets: washingAssetsRes.data || [],
+			maintenanceAssets: maintenanceAssetsRes.data || [],
+			todaysShipments: todaysShipmentsRes.data || []
 		};
 	}
 
 	return {
 		role: profile.role,
+		profile,
 		assetStats,
 		recentTransactions: recentTransactions || [],
-		revenueData,
-		chartData
+		ownerData,
+		kasirData,
+		gudangData
 	};
 }
