@@ -171,7 +171,7 @@
 			<span class="inline-block px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-amber-300">
 				{role === 'owner' ? 'Owner Access' : role === 'kasir' ? 'Kasir Access' : 'Gudang Access'}
 			</span>
-			<h1 class="text-2xl md:text-4xl font-bold font-heading">
+			<h1 class="text-2xl md:text-4xl font-bold font-heading text-white">
 				Selamat Datang Kembali, {profile?.full_name || 'User'}!
 			</h1>
 			<p class="text-white/80 text-sm md:text-base leading-relaxed">
@@ -216,14 +216,14 @@
 				<Card padding="md" class="bg-gradient-to-br from-[var(--color-forest)] to-[#1E3710] text-white border-none shadow-md flex flex-col justify-between">
 					<div class="flex justify-between items-start">
 						<div>
-							<p class="text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Pendapatan Bulan Ini</p>
-							<h3 class="text-2xl font-bold font-heading">{formatCurrency(ownerData.revenueData.totalRevenueMonth)}</h3>
+							<p class="text-white/85 text-xs font-semibold uppercase tracking-wider mb-1">Pendapatan Bulan Ini</p>
+							<h3 class="text-2xl font-bold font-heading text-white">{formatCurrency(ownerData.revenueData.totalRevenueMonth)}</h3>
 						</div>
 						<div class="p-2 bg-white/10 rounded-lg text-amber-300"><TrendingUp size={20} /></div>
 					</div>
-					<div class="text-[10px] text-white/70 border-t border-white/10 pt-2 mt-4 space-y-0.5">
-						<div class="flex justify-between"><span>Sewa & Retail:</span> <span class="font-bold">{formatCurrency(ownerData.revenueData.totalTxRevenueMonth)}</span></div>
-						<div class="flex justify-between"><span>Denda Lunas:</span> <span class="font-bold text-red-200">{formatCurrency(ownerData.revenueData.totalPenaltyRevenueMonth)}</span></div>
+					<div class="text-[10px] text-white/80 border-t border-white/10 pt-2 mt-4 space-y-0.5">
+						<div class="flex justify-between"><span>Sewa & Retail:</span> <span class="font-bold text-white">{formatCurrency(ownerData.revenueData.totalTxRevenueMonth)}</span></div>
+						<div class="flex justify-between"><span>Denda Lunas:</span> <span class="font-bold text-amber-300">{formatCurrency(ownerData.revenueData.totalPenaltyRevenueMonth)}</span></div>
 					</div>
 				</Card>
 
