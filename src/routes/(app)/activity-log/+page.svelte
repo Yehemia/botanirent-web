@@ -7,9 +7,7 @@
 		User, 
 		MapPin, 
 		ChevronLeft, 
-		ChevronRight, 
-		Eye, 
-		EyeOff 
+		ChevronRight 
 	} from '@lucide/svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -26,8 +24,6 @@
 	let totalCount = $derived(data.totalCount);
 	let page = $derived(data.page);
 	let pageSize = $derived(data.pageSize);
-
-	let expandedId = $state('');
 
 	let totalPages = $derived(Math.ceil(totalCount / pageSize));
 	let hasNext = $derived(page < totalPages);
@@ -195,13 +191,12 @@
 						<th class="px-6 py-4">Cabang</th>
 						<th class="px-6 py-4">Aksi</th>
 						<th class="px-6 py-4">Tipe Entitas</th>
-						<th class="px-6 py-4 text-center w-24">Metadata</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-[var(--color-border-light)] bg-white">
 					{#if logs.length === 0}
 						<tr>
-							<td colspan="6" class="px-6 py-12 text-center text-[var(--color-stone)] italic">
+							<td colspan="5" class="px-6 py-12 text-center text-[var(--color-stone)] italic">
 								Tidak ada log aktivitas yang ditemukan.
 							</td>
 						</tr>
@@ -240,34 +235,7 @@
 								<td class="px-6 py-4 font-mono text-xs text-[var(--color-stone)] capitalize">
 									{log.entity_type || '-'}
 								</td>
-								<td class="px-6 py-4 text-center">
-									<button 
-										class="p-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-stone)] hover:bg-[var(--color-sand-light)] hover:text-[var(--color-earth)] transition-colors inline-flex items-center justify-center"
-										onclick={() => expandedId = expandedId === log.id ? '' : log.id}
-										title="Lihat Detail Payload"
-									>
-										{#if expandedId === log.id}
-											<EyeOff size={16} />
-										{:else}
-											<Eye size={16} />
-										{/if}
-									</button>
-								</td>
 							</tr>
-							
-							{#if expandedId === log.id}
-								<tr class="bg-[var(--color-sand-lightest)] animate-fade-in">
-									<td colspan="6" class="px-8 py-4 border-t border-b border-[var(--color-border-light)]">
-										<div class="space-y-2">
-											<div class="flex justify-between items-center text-xs text-[var(--color-stone)]">
-												<span class="font-bold">Metadata Payload JSON:</span>
-												<span>ID Log: <span class="font-mono">{log.id}</span></span>
-											</div>
-											<pre class="bg-white p-4 rounded-xl border border-[var(--color-border)] text-xs text-[var(--color-earth)] overflow-x-auto font-mono max-h-[300px] shadow-inner">{JSON.stringify(log.metadata, null, 2)}</pre>
-										</div>
-									</td>
-								</tr>
-							{/if}
 						{/each}
 					{/if}
 				</tbody>
