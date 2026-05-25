@@ -63,14 +63,15 @@
 				body: JSON.stringify({ branchId })
 			});
 			
+			const data = await res.json();
+			
 			if (res.ok) {
 				toast.success('Berhasil mengubah cabang aktif!');
 				setTimeout(() => {
 					window.location.reload();
 				}, 500);
 			} else {
-				const err = await res.json();
-				toast.error(err?.message || 'Gagal mengubah cabang.');
+				toast.error(data?.message || 'Gagal mengubah cabang.');
 			}
 		} catch (err) {
 			console.error('Error changing branch:', err);
