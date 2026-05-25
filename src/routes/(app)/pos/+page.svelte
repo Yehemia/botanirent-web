@@ -16,6 +16,7 @@
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import { formatCurrency } from '$lib/utils/format';
+	import { toast } from 'svelte-sonner';
 
 	let { data } = $props();
 	let items = $derived(data.items);
@@ -108,7 +109,9 @@
 		let maxQty = type === 'package' ? 999 : item.stock_available; // Asumsi paket tidak limitasi realtime UI dulu
 		
 		if (maxQty <= 0) {
-			alert('Stok barang habis!');
+			toast.error('Stok barang habis!', {
+				description: `${item.name} tidak tersedia saat ini.`
+			});
 			return;
 		}
 
