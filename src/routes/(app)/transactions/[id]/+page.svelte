@@ -1,7 +1,7 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Printer, CheckCircle, Leaf } from '@lucide/svelte';
+	import { ArrowLeft, Printer, CheckCircle, Leaf, QrCode } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { formatCurrency, formatDate } from '$lib/utils/format';
 
@@ -11,12 +11,44 @@
 	let isSuccess = $derived(data.isSuccess);
 
 	let showModal = $state(false);
+	let pollingInterval = /** @type {any} */ (null);
+
+	let qrData = $derived(() => {
+		if (!transaction || !transaction.midtrans_snap_token) return null;
+		try {
+			return JSON.parse(transaction.midtrans_snap_token);
+		} catch (e) {
+			return null;
+		}
+	});
 
 	onMount(() => {
 		if (isSuccess) {
 			// Slight delay for smooth modal animation
 			setTimeout(() => { showModal = true; }, 100);
 		}
+
+		// Polling status jika transaksi masih pending dan metodenya QRIS
+		if (transaction && transaction.payment_status === 'pending' && transaction.payment_method === 'qris') {
+			pollingInterval = setInterval(async () => {
+				try {
+					const res = await fetch(`/api/midtrans/status/${transaction.id}`);
+					if (res.ok) {
+						const statusData = await res.json();
+						if (statusData.payment_status === 'paid') {
+							clearInterval(pollingInterval);
+							window.location.reload();
+						}
+					}
+				} catch (e) {
+					console.error("Gagal memeriksa status pembayaran:", e);
+				}
+			}, 4000);
+		}
+	});
+
+	onDestroy(() => {
+		if (pollingInterval) clearInterval(pollingInterval);
 	});
 
 	function handlePrint() {
@@ -108,9 +140,9 @@
 <!-- ============================================================
      HALAMAN DETAIL TRANSAKSI (Default view)
      ============================================================ -->
-<div class="space-y-6 max-w-4xl mx-auto pb-12">
+<div class="max-w-5xl mx-auto pb-12 px-4">
 	<!-- Action Bar (Hidden on Print) -->
-	<div class="print:hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+	<div class="print:hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
 		<!-- eslint-disable-next-line -->
 		<a href="/transactions" class="inline-flex items-center gap-2 text-[var(--color-stone)] hover:text-[var(--color-earth)] font-medium transition-colors">
 			<ArrowLeft size={18} /> Kembali ke Riwayat
@@ -121,7 +153,7 @@
 					<CheckCircle size={14} /> LUNAS
 				</span>
 			{:else}
-				<span class="receipt-status-badge receipt-status-pending">
+				<span class="receipt-status-badge receipt-status-pending text-xs">
 					{transaction.payment_status?.toUpperCase()}
 				</span>
 			{/if}
@@ -131,9 +163,52 @@
 		</div>
 	</div>
 
-	<!-- Receipt Paper (Page view & Print view) -->
-	<div class="receipt-page-wrapper print:shadow-none print:border-none print:p-0">
-		{@render receiptPaper()}
+	<!-- Layout Grid -->
+	<div class="grid grid-cols-1 {transaction.payment_status === 'pending' && transaction.payment_method === 'qris' && qrData() ? 'lg:grid-cols-12' : ''} gap-8 items-start">
+		
+		<!-- Struk -->
+		<div class={transaction.payment_status === 'pending' && transaction.payment_method === 'qris' && qrData() ? 'lg:col-span-7' : 'max-w-md mx-auto w-full'}>
+			<!-- Receipt Paper (Page view & Print view) -->
+			<div class="receipt-page-wrapper print:shadow-none print:border-none print:p-0">
+				{@render receiptPaper()}
+			</div>
+		</div>
+
+		<!-- QRIS Code Sidebar (Hanya untuk QRIS Pending & Desktop/Web View) -->
+		{#if transaction.payment_status === 'pending' && transaction.payment_method === 'qris' && qrData()}
+			<div class="print:hidden lg:col-span-5 flex flex-col items-center gap-5 p-6 border border-[var(--color-border-light)] bg-white rounded-2xl shadow-sm">
+				<div class="flex items-center gap-3 w-full pb-4 border-b border-gray-100">
+					<div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shrink-0">
+						<QrCode size={20} />
+					</div>
+					<div>
+						<h3 class="font-bold font-heading text-[var(--color-earth)]">Menunggu Pembayaran</h3>
+						<p class="text-xs text-[var(--color-stone)] mt-0.5">Scan QRIS di bawah untuk membayar</p>
+					</div>
+				</div>
+
+				<div class="w-52 h-52 border-2 border-dashed border-gray-200 rounded-xl p-2 bg-white flex items-center justify-center shrink-0">
+					<img src={qrData().qr_url} alt="QRIS Code" class="w-full h-full object-contain" />
+				</div>
+
+				<div class="w-full space-y-3 bg-[var(--color-sand)] rounded-xl p-4 border border-[var(--color-border-light)]">
+					<div class="flex justify-between text-sm">
+						<span class="text-[var(--color-stone)]">Total Tagihan:</span>
+						<span class="font-bold text-[var(--color-forest)]">{formatCurrency(transaction.total_amount)}</span>
+					</div>
+					<div class="flex justify-between text-sm">
+						<span class="text-[var(--color-stone)]">Metode:</span>
+						<span class="font-semibold text-[var(--color-earth)]">QRIS Dinamis</span>
+					</div>
+				</div>
+
+				<div class="w-full flex items-center justify-center gap-3 p-3 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-semibold">
+					<div class="checkout-spinner border-t-amber-800 w-4 h-4"></div>
+					<span>Menunggu notifikasi pembayaran otomatis...</span>
+				</div>
+			</div>
+		{/if}
+
 	</div>
 </div>
 

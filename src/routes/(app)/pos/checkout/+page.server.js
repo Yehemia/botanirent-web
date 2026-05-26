@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { MIDTRANS_SERVER_KEY } from '$env/static/private';
+import { PUBLIC_MIDTRANS_ENV } from '$env/static/public';
 
 export async function load({ locals }) {
 	const { supabase } = locals;
@@ -115,12 +116,13 @@ export const actions = {
 		if (payload.payment_method === 'qris') {
 			try {
 				const authString = btoa(`${MIDTRANS_SERVER_KEY}:`);
-				const isProdKey = !MIDTRANS_SERVER_KEY.startsWith('SB-');
-				const apiUrl = isProdKey 
-					? 'https://app.midtrans.com/snap/v1/transactions' 
-					: 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+				const isProduction = PUBLIC_MIDTRANS_ENV === 'production';
+				const apiUrl = isProduction 
+					? 'https://api.midtrans.com/v2/charge' 
+					: 'https://api.sandbox.midtrans.com/v2/charge';
 				
 				const midtransPayload = {
+					payment_type: 'qris',
 					transaction_details: {
 						order_id: payload.transaction_code,
 						gross_amount: Math.round(payload.total_amount)
@@ -128,6 +130,10 @@ export const actions = {
 					customer_details: {
 						first_name: payload.customer_name || 'Pelanggan',
 						phone: payload.customer_phone || '-'
+					},
+					custom_expiry: {
+						expiry_duration: 5,
+						unit: 'minute'
 					}
 				};
 
@@ -142,21 +148,42 @@ export const actions = {
 				});
 
 				const midtransData = await response.json();
-				if (response.ok && midtransData.redirect_url) {
-					// Redirect user ke halaman pembayaran Midtrans
-					throw redirect(303, midtransData.redirect_url);
+				if (response.ok && midtransData.transaction_id) {
+					const qr_string = midtransData.qr_string;
+					const qr_url = midtransData.actions?.find((/** @type {any} */ act) => act.name === 'generate-qr-code')?.url || '';
+
+					// Update database dengan ID transaksi Midtrans dan data QRIS (disimpan di midtrans_snap_token sebagai JSON)
+					const { error: updateErr } = await supabase
+						.from('transactions')
+						.update({
+							midtrans_transaction_id: midtransData.transaction_id,
+							midtrans_snap_token: JSON.stringify({ qr_string, qr_url })
+						})
+						.eq('id', data.transaction_id);
+
+					if (updateErr) {
+						console.error("Gagal update data QRIS ke database:", updateErr);
+					}
+
+					return {
+						success: true,
+						payment_method: 'qris',
+						transaction_id: data.transaction_id,
+						transaction_code: payload.transaction_code,
+						qr_string,
+						qr_url
+					};
 				} else {
 					console.error("Midtrans API Error:", midtransData);
+					return fail(400, { error: midtransData.status_message || 'Gagal inisiasi pembayaran QRIS Midtrans.' });
 				}
 			} catch (e) {
-				const err = /** @type {any} */ (e);
-				if (err.status === 303) throw e; // Pass SvelteKit redirect error
 				console.error("Midtrans Request Error:", e);
-				// Biarkan tetap lanjut ke struk, biar kasir tau kalau error Midtrans tapi data masuk
+				return fail(500, { error: 'Kesalahan internal server saat menghubungi Midtrans.' });
 			}
 		}
 
-		// Redirect ke halaman struk
+		// Redirect ke halaman struk jika tunai atau transfer
 		throw redirect(303, `/transactions/${data.transaction_id}?success=true`);
 	}
 };

@@ -1,5 +1,7 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { onDestroy as destroyHelper } from 'svelte'; // We'll just use onDestroy directly, but this resolves any helper
+
 	import { enhance } from '$app/forms';
 	import { ArrowLeft, CreditCard, User, CalendarClock, ShoppingCart, CheckCircle, Banknote, QrCode, Landmark, Wallet, Package, Minus, Plus, Sparkles } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -32,6 +34,88 @@
 
 	// Animation states
 	let showChangeAnimation = $state(false);
+
+	// QRIS Modal States
+	let showQrisModal = $state(false);
+	let qrUrl = $state('');
+	let qrisTxnId = $state('');
+	let qrisTxnCode = $state('');
+	let pollingInterval = $state(/** @type {any} */ (null));
+	let timerInterval = $state(/** @type {any} */ (null));
+	let timerMinutes = $state(5);
+	let timerSeconds = $state(0);
+	let paymentStatusMsg = $state('Menunggu pembayaran...');
+	let paymentSuccess = $state(false);
+
+	function startStatusPolling() {
+		if (pollingInterval) clearInterval(pollingInterval);
+		paymentStatusMsg = 'Menunggu pembayaran...';
+		paymentSuccess = false;
+
+		pollingInterval = setInterval(async () => {
+			try {
+				const response = await fetch(`/api/midtrans/status/${qrisTxnId}`);
+				if (response.ok) {
+					const data = await response.json();
+					if (data.payment_status === 'paid') {
+						clearInterval(pollingInterval);
+						clearInterval(timerInterval);
+						paymentStatusMsg = 'Pembayaran berhasil dikonfirmasi!';
+						paymentSuccess = true;
+						
+						// Hapus keranjang
+						handleSuccess();
+
+						setTimeout(() => {
+							showQrisModal = false;
+							window.location.href = `/transactions/${qrisTxnId}?success=true`;
+						}, 2000);
+					} else if (data.payment_status === 'failed' || data.payment_status === 'expired') {
+						clearInterval(pollingInterval);
+						clearInterval(timerInterval);
+						paymentStatusMsg = 'Pembayaran gagal atau kedaluwarsa.';
+					}
+				}
+			} catch (e) {
+				console.error("Gagal memeriksa status pembayaran:", e);
+			}
+		}, 3000);
+	}
+
+	function startTimer() {
+		timerMinutes = 5;
+		timerSeconds = 0;
+		if (timerInterval) clearInterval(timerInterval);
+		timerInterval = setInterval(() => {
+			if (timerSeconds === 0) {
+				if (timerMinutes === 0) {
+					clearInterval(timerInterval);
+					clearInterval(pollingInterval);
+					paymentStatusMsg = 'Waktu pembayaran habis (kedaluwarsa).';
+					return;
+				}
+				timerMinutes -= 1;
+				timerSeconds = 59;
+			} else {
+				timerSeconds -= 1;
+			}
+		}, 1000);
+	}
+
+	function closeQrisModal() {
+		if (pollingInterval) clearInterval(pollingInterval);
+		if (timerInterval) clearInterval(timerInterval);
+		showQrisModal = false;
+		if (qrisTxnId) {
+			handleSuccess();
+			window.location.href = `/transactions/${qrisTxnId}`;
+		}
+	}
+
+	onDestroy(() => {
+		if (pollingInterval) clearInterval(pollingInterval);
+		if (timerInterval) clearInterval(timerInterval);
+	});
 
 	onMount(() => {
 		const savedCart = sessionStorage.getItem('botani_cart');
@@ -208,10 +292,20 @@
 			use:enhance={() => {
 				loading = true;
 				return async ({ update, result }) => {
-					await update();
 					loading = false;
 					if (result.type === 'redirect') {
 						handleSuccess();
+						await update();
+					} else if (result.type === 'success' && result.data?.payment_method === 'qris' && result.data?.success) {
+						const resData = /** @type {any} */ (result.data);
+						qrUrl = resData.qr_url;
+						qrisTxnId = resData.transaction_id;
+						qrisTxnCode = resData.transaction_code;
+						showQrisModal = true;
+						startStatusPolling();
+						startTimer();
+					} else {
+						await update();
 					}
 				};
 			}}
@@ -495,6 +589,80 @@
 			</div>
 		</form>
 	</div>
+	<!-- MODAL QRIS INTERAKTIF -->
+	{#if showQrisModal}
+		<div class="qris-overlay" role="dialog" aria-modal="true">
+			<div class="qris-modal">
+				<div class="qris-modal-header">
+					<div class="qris-modal-icon-bg">
+						<QrCode size={24} class="text-purple-600" />
+					</div>
+					<div>
+						<h3 class="qris-modal-title">Pembayaran QRIS Dinamis</h3>
+						<p class="qris-modal-subtitle">Scan kode QR menggunakan e-wallet atau mobile banking</p>
+					</div>
+				</div>
+
+				<div class="qris-modal-content">
+					<!-- QR Box -->
+					<div class="qris-qr-wrapper">
+						{#if qrUrl}
+							<img src={qrUrl} alt="QRIS Code" class="qris-qr-image" />
+						{:else}
+							<div class="qris-qr-placeholder">
+								<div class="checkout-spinner" style="border-top-color: var(--color-forest)"></div>
+								<p class="text-xs text-[var(--color-stone)] mt-2">Membangkitkan QRIS...</p>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Details -->
+					<div class="qris-details">
+						<div class="qris-detail-row">
+							<span>Nominal Tagihan:</span>
+							<span class="qris-amount">{formatCurrency(subtotal())}</span>
+						</div>
+						<div class="qris-detail-row">
+							<span>Kode Transaksi:</span>
+							<span class="font-mono font-bold text-[var(--color-earth)]">{qrisTxnCode}</span>
+						</div>
+					</div>
+
+					<!-- Status Polling Box -->
+					<div class="qris-status-box" class:success-bg={paymentSuccess}>
+						<div class="flex items-center justify-center gap-3">
+							{#if paymentSuccess}
+								<div class="qris-success-icon-wrapper">
+									<CheckCircle size={18} class="text-emerald-600 animate-bounce" />
+								</div>
+							{:else if paymentStatusMsg.includes('habis') || paymentStatusMsg.includes('gagal') || paymentStatusMsg.includes('kedaluwarsa')}
+								<div class="qris-error-icon-wrapper">
+									<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+								</div>
+							{:else}
+								<div class="checkout-spinner" style="border-top-color: var(--color-forest)"></div>
+							{/if}
+							<span class="qris-status-text" class:success-text={paymentSuccess}>{paymentStatusMsg}</span>
+						</div>
+					</div>
+
+					<!-- Timer Countdown -->
+					{#if !paymentSuccess && !paymentStatusMsg.includes('habis') && !paymentStatusMsg.includes('kedaluwarsa')}
+						<div class="qris-timer">
+							<span>Sisa waktu pembayaran: </span>
+							<span class="qris-timer-countdown">{timerMinutes}:{String(timerSeconds).padStart(2, '0')}</span>
+						</div>
+					{/if}
+				</div>
+
+				<div class="qris-modal-footer">
+					<button type="button" class="qris-close-btn" onclick={closeQrisModal}>
+						Tutup & Lihat Detail
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 {/if}
 
 <style>
@@ -897,8 +1065,201 @@
 		border-radius: 4px;
 	}
 
-	/* ─── Tabular numbers for prices ─── */
+	/* Tabular numbers for prices */
 	:global(.tabular-nums) {
 		font-variant-numeric: tabular-nums;
+	}
+
+	/* ─── QRIS Dynamic Modal Styles ─── */
+	.qris-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 150;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1.5rem;
+		background: rgba(26, 26, 26, 0.55);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+	}
+
+	.qris-modal {
+		background: white;
+		border-radius: 24px;
+		width: 100%;
+		max-width: 440px;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+		border: 1px solid var(--color-border-light);
+		overflow: hidden;
+		animation: modalFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	@keyframes modalFadeIn {
+		from { transform: scale(0.95); opacity: 0; }
+		to { transform: scale(1); opacity: 1; }
+	}
+
+	.qris-modal-header {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		padding: 24px;
+		border-bottom: 1px solid var(--color-border-light);
+		background: linear-gradient(180deg, var(--color-sand) 0%, transparent 100%);
+	}
+
+	.qris-modal-icon-bg {
+		width: 44px;
+		height: 44px;
+		border-radius: 14px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(124, 58, 237, 0.1);
+	}
+
+	.qris-modal-title {
+		font-size: 16px;
+		font-weight: 700;
+		color: var(--color-earth);
+		font-family: var(--font-heading);
+	}
+
+	.qris-modal-subtitle {
+		font-size: 12px;
+		color: var(--color-stone);
+		margin-top: 2px;
+	}
+
+	.qris-modal-content {
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 20px;
+	}
+
+	.qris-qr-wrapper {
+		width: 200px;
+		height: 200px;
+		border-radius: 16px;
+		border: 2px dashed var(--color-border);
+		padding: 10px;
+		background: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+	}
+
+	.qris-qr-image {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
+	.qris-qr-placeholder {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.qris-details {
+		width: 100%;
+		background: var(--color-sand);
+		border-radius: 16px;
+		padding: 14px 16px;
+		border: 1px solid var(--color-border-light);
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.qris-detail-row {
+		display: flex;
+		justify-content: space-between;
+		font-size: 13px;
+		color: var(--color-stone);
+	}
+
+	.qris-amount {
+		font-size: 15px;
+		font-weight: 800;
+		color: var(--color-forest);
+	}
+
+	.qris-status-box {
+		width: 100%;
+		padding: 12px;
+		border-radius: 14px;
+		background: rgba(44, 110, 73, 0.05);
+		border: 1.5px solid rgba(44, 110, 73, 0.15);
+		transition: all 0.3s ease;
+	}
+
+	.qris-status-box.success-bg {
+		background: var(--color-success-bg);
+		border-color: rgba(16, 185, 129, 0.2);
+	}
+
+	.qris-status-text {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--color-forest);
+	}
+
+	.qris-status-text.success-text {
+		color: var(--color-success);
+	}
+
+	.qris-success-icon-wrapper, .qris-error-icon-wrapper {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.qris-timer {
+		font-size: 12px;
+		color: var(--color-stone);
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.qris-timer-countdown {
+		font-weight: 700;
+		color: var(--color-error);
+		font-family: var(--font-mono);
+	}
+
+	.qris-modal-footer {
+		padding: 16px 24px;
+		background: var(--color-sand);
+		border-top: 1px solid var(--color-border-light);
+		display: flex;
+		justify-content: center;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.qris-close-btn {
+		width: 100%;
+		padding: 12px;
+		border-radius: 12px;
+		border: 1.5px solid var(--color-border);
+		background: white;
+		color: var(--color-earth);
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		text-align: center;
+	}
+
+	.qris-close-btn:hover {
+		background: var(--color-sand-light);
+		color: var(--color-earth);
+		border-color: var(--color-stone);
 	}
 </style>

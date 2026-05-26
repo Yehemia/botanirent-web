@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { MIDTRANS_SERVER_KEY } from '$env/static/private';
+import { PUBLIC_MIDTRANS_ENV } from '$env/static/public';
 
 export async function POST({ request, locals }) {
     const { session } = await locals.safeGetSession();
@@ -21,9 +22,9 @@ export async function POST({ request, locals }) {
         
         // Kita paksa Sandbox sesuai instruksi user
         // Jika nanti ingin production, ganti sandbox URL menjadi https://app.midtrans.com/snap/v1/transactions
-        const isProdKey = !MIDTRANS_SERVER_KEY.startsWith('SB-');
-        const apiUrl = isProdKey 
-			? 'https://app.midtrans.com/snap/v1/transactions' // User ternyata memberikan production key, kita switch otomatis
+        const isProduction = PUBLIC_MIDTRANS_ENV === 'production';
+        const apiUrl = isProduction 
+			? 'https://app.midtrans.com/snap/v1/transactions' 
 			: 'https://app.sandbox.midtrans.com/snap/v1/transactions';
             
         console.log(`Menggunakan Midtrans API: ${apiUrl}`);
