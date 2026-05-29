@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '$lib/server/supabase';
+import { createSupabaseServerClient, supabaseAdmin } from '$lib/server/supabase';
 
 // In-memory cache for validated user sessions/profiles to speed up navigation
 const sessionCache = new Map();
@@ -37,9 +37,9 @@ export const handle = async ({ event, resolve }) => {
 
 		localsWithPromise._sessionPromise = (async () => {
 			try {
-				// Find the Supabase auth token cookie dynamically
+				// Find the Supabase auth token cookie dynamically (supports chunked cookies)
 				const authCookie = event.cookies.getAll().find(
-					(c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
+					(c) => c.name.startsWith('sb-') && c.name.includes('-auth-token')
 				);
 				const tokenKey = authCookie ? authCookie.value : null;
 
@@ -82,8 +82,28 @@ export const handle = async ({ event, resolve }) => {
 					.eq('id', user.id)
 					.single();
 
-				if (!profileError) {
+				if (!profileError && profileData) {
 					profile = profileData;
+				} else {
+					// Fallback: If profile doesn't exist, create it using supabaseAdmin
+					console.log(`Profile missing for user ${user.id}. Attempting to auto-create...`);
+					const { data: newProfile, error: insertError } = await supabaseAdmin
+						.from('profiles')
+						.insert({
+							id: user.id,
+							full_name: user.user_metadata?.full_name || user.email || 'Google User',
+							avatar_url: user.user_metadata?.avatar_url || null,
+							role: 'kasir' // Default role
+						})
+						.select()
+						.single();
+
+					if (!insertError && newProfile) {
+						profile = newProfile;
+						console.log(`Successfully auto-created profile for user ${user.id}`);
+					} else {
+						console.error('Failed to auto-create profile:', insertError);
+					}
 				}
 
 				// Construct a synthetic session object containing the user info

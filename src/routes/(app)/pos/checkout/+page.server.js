@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { posController } from '$lib/server/controllers/posController.js';
 import { MIDTRANS_SERVER_KEY } from '$env/static/private';
 import { PUBLIC_MIDTRANS_ENV } from '$env/static/public';
 
@@ -10,180 +11,41 @@ export async function load({ locals }) {
 		throw redirect(303, '/login');
 	}
 
-	// Ambil daftar pelanggan yang sudah ada
-	const { data: customers } = await supabase
-		.from('customers')
-		.select('id, full_name, phone')
-		.eq('branch_id', profile.branch_id)
-		.order('full_name');
-
-	// Fetch rental settings
-	const { data: settingsData } = await supabase
-		.from('settings')
-		.select('*')
-		.eq('key', 'rental')
-		.single();
-	
-	const rentalSettings = settingsData?.value || { default_rental_duration_days: 4, late_fee_per_day_per_transaction: 10000 };
-
-	return {
-		customers: customers || [],
-		rentalSettings
-	};
+	const data = await posController.getCheckoutData(supabase, profile);
+	return data;
 }
 
 export const actions = {
-	default: async ({ request, locals }) => {
+	default: async ({ request, locals, fetch: svelteFetch }) => {
 		const { supabase } = locals;
 		const { session, profile } = await locals.safeGetSession();
 
-		if (!session || !profile) return fail(401, { error: 'Unauthorized' });
+		if (!session || !profile) {
+			return fail(401, { error: 'Unauthorized' });
+		}
 
 		const formData = await request.formData();
-		const payloadRaw = formData.get('payload');
 		
-		if (!payloadRaw) return fail(400, { error: 'Data checkout kosong.' });
-		
-		let payload;
-		try {
-			payload = JSON.parse(payloadRaw.toString());
-		} catch (e) {
-			const preview = payloadRaw.toString().substring(0, 200);
-			console.error('[Checkout] Payload JSON parse failed. Raw value preview:', preview);
-			return fail(400, { error: `Format data transaksi tidak valid. Preview: ${preview}` });
-		}
-		
-		console.log('[Checkout] Parsed payload:', JSON.stringify(payload, null, 2));
-		
-		// Injeksi data server-side
-		payload.branch_id = profile.branch_id;
-		payload.cashier_id = profile.id;
-		
-		// Generate Transaction Code (e.g., TRX-1A2B-123456)
-		const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
-		const timeStr = Date.now().toString().slice(-6);
-		payload.transaction_code = `TRX-${randomStr}-${timeStr}`;
-		
-		// Handle Customer (Jika pelanggan baru, insert dulu)
-		if (payload.customer_name && !payload.customer_id) {
-			const { data: newCust, error: custErr } = await supabase
-				.from('customers')
-				.insert({
-					branch_id: profile.branch_id,
-					full_name: payload.customer_name,
-					phone: payload.customer_phone
-				})
-				.select('id')
-				.single();
-			
-			if (!custErr && newCust) {
-				payload.customer_id = newCust.id;
+		const midtransConfig = {
+			serverKey: MIDTRANS_SERVER_KEY,
+			env: PUBLIC_MIDTRANS_ENV,
+			fetch: svelteFetch
+		};
+
+		const result = await posController.checkout(supabase, profile, formData, midtransConfig);
+
+		if (!result.success) {
+			if (result.redirect) {
+				throw redirect(303, result.redirect);
 			}
+			const errorResult = /** @type {any} */ (result);
+			return fail(errorResult.status || 500, { error: errorResult.error, values: errorResult.values });
 		}
 
-		// Jika QRIS, status awal adalah pending
-		if (payload.payment_method === 'qris') {
-			payload.payment_status = 'pending';
-			payload.paid_amount = 0; // Belum dibayar
-			payload.change_amount = 0;
-		} else {
-			// Validasi pembayaran tunai
-			if (payload.paid_amount < payload.total_amount) {
-				return fail(400, { error: 'Nominal pembayaran tunai tidak mencukupi.' });
-			}
-			payload.payment_status = 'paid';
+		if (result.redirect) {
+			throw redirect(303, result.redirect);
 		}
 
-		// Panggil Fungsi RPC yang sudah dibuat di database
-		const { data, error } = await supabase.rpc('checkout_transaction', { payload });
-
-		if (error) {
-			console.error("RPC Checkout Error:", error);
-			return fail(500, { error: `Gagal Checkout: ${error.message}` });
-		}
-
-		// Log activity
-		supabase.from('activity_logs').insert({
-			user_id: profile.id,
-			branch_id: profile.branch_id,
-			action: 'transaction_completed',
-			entity_type: 'transaction',
-			entity_id: data.transaction_id,
-			metadata: { code: payload.transaction_code, amount: payload.total_amount }
-		}).then();
-
-		// JIKA QRIS -> Request ke Midtrans API
-		if (payload.payment_method === 'qris') {
-			try {
-				const authString = btoa(`${MIDTRANS_SERVER_KEY}:`);
-				const isProduction = PUBLIC_MIDTRANS_ENV === 'production';
-				const apiUrl = isProduction 
-					? 'https://api.midtrans.com/v2/charge' 
-					: 'https://api.sandbox.midtrans.com/v2/charge';
-				
-				const midtransPayload = {
-					payment_type: 'qris',
-					transaction_details: {
-						order_id: payload.transaction_code,
-						gross_amount: Math.round(payload.total_amount)
-					},
-					customer_details: {
-						first_name: payload.customer_name || 'Pelanggan',
-						phone: payload.customer_phone || '-'
-					},
-					custom_expiry: {
-						expiry_duration: 5,
-						unit: 'minute'
-					}
-				};
-
-				const response = await fetch(apiUrl, {
-					method: 'POST',
-					headers: {
-						'Accept': 'application/json',
-						'Content-Type': 'application/json',
-						'Authorization': `Basic ${authString}`
-					},
-					body: JSON.stringify(midtransPayload)
-				});
-
-				const midtransData = await response.json();
-				if (response.ok && midtransData.transaction_id) {
-					const qr_string = midtransData.qr_string;
-					const qr_url = midtransData.actions?.find((/** @type {any} */ act) => act.name === 'generate-qr-code')?.url || '';
-
-					// Update database dengan ID transaksi Midtrans dan data QRIS (disimpan di midtrans_snap_token sebagai JSON)
-					const { error: updateErr } = await supabase
-						.from('transactions')
-						.update({
-							midtrans_transaction_id: midtransData.transaction_id,
-							midtrans_snap_token: JSON.stringify({ qr_string, qr_url })
-						})
-						.eq('id', data.transaction_id);
-
-					if (updateErr) {
-						console.error("Gagal update data QRIS ke database:", updateErr);
-					}
-
-					return {
-						success: true,
-						payment_method: 'qris',
-						transaction_id: data.transaction_id,
-						transaction_code: payload.transaction_code,
-						qr_string,
-						qr_url
-					};
-				} else {
-					console.error("Midtrans API Error:", midtransData);
-					return fail(400, { error: midtransData.status_message || 'Gagal inisiasi pembayaran QRIS Midtrans.' });
-				}
-			} catch (e) {
-				console.error("Midtrans Request Error:", e);
-				return fail(500, { error: 'Kesalahan internal server saat menghubungi Midtrans.' });
-			}
-		}
-
-		// Redirect ke halaman struk jika tunai atau transfer
-		throw redirect(303, `/transactions/${data.transaction_id}?success=true`);
+		return result;
 	}
 };

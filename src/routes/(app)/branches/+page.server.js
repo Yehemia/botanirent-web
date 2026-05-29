@@ -1,4 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
+import { branchController } from '$lib/server/controllers/branchController.js';
 
 export const load = async ({ locals: { supabase, safeGetSession } }) => {
 	const { profile } = await safeGetSession();
@@ -7,19 +8,12 @@ export const load = async ({ locals: { supabase, safeGetSession } }) => {
 		throw error(403, 'Akses ditolak. Hanya Owner yang dapat mengakses halaman ini.');
 	}
 
-	const { data: branches, error: fetchError } = await supabase
-		.from('branches')
-		.select('*')
-		.order('name');
-
-	if (fetchError) {
-		console.error('Error fetching branches:', fetchError);
+	try {
+		return await branchController.getBranches(supabase);
+	} catch (err) {
+		console.error('Error fetching branches in load:', err);
 		throw error(500, 'Gagal memuat data cabang');
 	}
-
-	return {
-		branches
-	};
 };
 
 export const actions = {
@@ -31,40 +25,12 @@ export const actions = {
 		}
 
 		const formData = await request.formData();
-		const id = formData.get('id');
-		const name = formData.get('name');
-		const address = formData.get('address');
-		const phone = formData.get('phone');
-		const is_active = formData.get('is_active') === 'true';
+		const id = formData.get('id')?.toString() || null;
+		
+		const result = await branchController.saveBranch(supabase, id, formData);
 
-		if (!name) {
-			return fail(400, { error: 'Nama cabang harus diisi.' });
-		}
-
-		const branchData = {
-			name: name.toString(),
-			address: address ? address.toString() : null,
-			phone: phone ? phone.toString() : null,
-			is_active
-		};
-
-		let result;
-		if (id) {
-			// Update existing
-			result = await supabase
-				.from('branches')
-				.update(branchData)
-				.eq('id', id);
-		} else {
-			// Insert new
-			result = await supabase
-				.from('branches')
-				.insert([branchData]);
-		}
-
-		if (result.error) {
-			console.error('Error saving branch:', result.error);
-			return fail(500, { error: 'Gagal menyimpan data cabang.' });
+		if (!result.success) {
+			return fail(result.status || 500, { error: result.error });
 		}
 
 		return { success: true };
@@ -78,19 +44,12 @@ export const actions = {
 		}
 
 		const formData = await request.formData();
-		const id = formData.get('id');
+		const id = formData.get('id')?.toString() || null;
 
-		if (!id) return fail(400, { error: 'ID tidak valid' });
+		const result = await branchController.deleteBranch(supabase, id);
 
-		// Instead of actual delete, we just deactivate it usually, but let's allow hard delete for now
-		// or maybe just rely on is_active for soft delete. Let's do hard delete if they really want to.
-		const { error } = await supabase
-			.from('branches')
-			.delete()
-			.eq('id', id);
-
-		if (error) {
-			return fail(500, { error: 'Gagal menghapus cabang (mungkin masih ada data terkait).' });
+		if (!result.success) {
+			return fail(result.status || 500, { error: result.error });
 		}
 
 		return { success: true };

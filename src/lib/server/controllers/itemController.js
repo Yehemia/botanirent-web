@@ -1,0 +1,441 @@
+import { itemModel } from '../models/itemModel.js';
+import { categoryModel } from '../models/categoryModel.js';
+import { assetModel } from '../models/assetModel.js';
+import { activityLogModel } from '../models/activityLogModel.js';
+import * as xlsx from 'xlsx';
+
+/**
+ * Generate alphabetical suffix (A, B, ..., Z, AA, AB, ...)
+ * @param {number} index
+ * @returns {string}
+ */
+const getLetterSuffix = (index) => {
+	let suffix = '';
+	let temp = index;
+	while (temp >= 0) {
+		suffix = String.fromCharCode((temp % 26) + 65) + suffix;
+		temp = Math.floor(temp / 26) - 1;
+	}
+	return suffix;
+};
+
+export const itemController = {
+	/**
+	 * Get item details and active categories for modification
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {{ role: string, branch_id: string|null }} profile
+	 * @param {string} id
+	 */
+	async getItemDetails(supabase, profile, id) {
+		const item = await itemModel.getItemDetails(supabase, id);
+
+		if (!item) {
+			return { success: false, redirect: '/inventory' };
+		}
+
+		// Verify branch access
+		if (profile.role !== 'owner' && item.branch_id !== profile.branch_id) {
+			return { success: false, redirect: '/inventory' };
+		}
+
+		const categories = await categoryModel.getCategories(supabase);
+
+		return {
+			success: true,
+			item,
+			categories
+		};
+	},
+
+	/**
+	 * Create a new item and generate assets if sewa
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {{ branch_id: string|null, id: string }} profile
+	 * @param {FormData} formData
+	 */
+	async createItem(supabase, profile, formData) {
+		const name = formData.get('name');
+		const description = formData.get('description');
+		const category_id = formData.get('category_id');
+		const rental_price_per_day = formData.get('rental_price_per_day');
+		const sell_price = formData.get('sell_price');
+		const stock_total = parseInt(formData.get('stock_total')?.toString() || '0', 10);
+		const image = formData.get('image'); // File
+
+		if (!name || !category_id) {
+			return { success: false, status: 400, error: 'Nama dan kategori wajib diisi.', values: Object.fromEntries(formData) };
+		}
+
+		// Fetch category details
+		let category;
+		try {
+			const { data } = await supabase.from('categories').select('type').eq('id', category_id).single();
+			category = data;
+		} catch (err) {
+			console.error("Error loading category in controller:", err);
+		}
+
+		if (!category) {
+			return { success: false, status: 400, error: 'Kategori tidak valid.', values: Object.fromEntries(formData) };
+		}
+
+		// Validate prices based on category type
+		if (category.type === 'sewa' && !rental_price_per_day) {
+			return { success: false, status: 400, error: 'Harga sewa per hari wajib diisi untuk barang sewa.', values: Object.fromEntries(formData) };
+		}
+		if (category.type === 'retail' && !sell_price) {
+			return { success: false, status: 400, error: 'Harga jual wajib diisi untuk barang retail.', values: Object.fromEntries(formData) };
+		}
+
+		// Auto-generate Barcode (BTN + 6 random alphanumeric)
+		const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+		const barcode = `BTN-${randomStr}`;
+
+		let image_url = null;
+
+		// Handle image upload if exists
+		if (image && typeof image !== 'string' && image.size > 0) {
+			const fileExt = image.name.split('.').pop();
+			const fileName = `${profile.branch_id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+			
+			try {
+				const { error: uploadError } = await supabase.storage
+					.from('item-images')
+					.upload(fileName, image, {
+						cacheControl: '3600',
+						upsert: false
+					});
+
+				if (uploadError) {
+					console.error("Upload error:", uploadError);
+					return { success: false, status: 500, error: 'Gagal mengunggah gambar. Pastikan Anda sudah menjalankan script setup storage.', values: Object.fromEntries(formData) };
+				}
+
+				const { data: { publicUrl } } = supabase.storage
+					.from('item-images')
+					.getPublicUrl(fileName);
+				
+				image_url = publicUrl;
+			} catch (err) {
+				console.error("Storage upload error:", err);
+				return { success: false, status: 500, error: 'Gagal mengunggah gambar.', values: Object.fromEntries(formData) };
+			}
+		}
+
+		try {
+			const newItem = await itemModel.insertItem(supabase, {
+				branch_id: profile.branch_id,
+				category_id: category_id.toString(),
+				name: name.toString(),
+				description: description ? description.toString() : null,
+				barcode,
+				image_url,
+				rental_price_per_day: rental_price_per_day ? parseFloat(rental_price_per_day.toString()) : null,
+				sell_price: sell_price ? parseFloat(sell_price.toString()) : null,
+				stock_total,
+				stock_available: stock_total,
+				is_active: true
+			});
+
+			// If rental, generate physical asset codes
+			if (category.type === 'sewa' && stock_total > 0) {
+				const newAssets = [];
+				for (let i = 0; i < stock_total; i++) {
+					newAssets.push({
+						item_id: newItem.id,
+						asset_code: `${barcode}-${getLetterSuffix(i)}`,
+						status: 'ready'
+					});
+				}
+
+				try {
+					await assetModel.insertAssets(supabase, newAssets);
+				} catch (assetsError) {
+					console.error("Insert assets error:", assetsError);
+				}
+			}
+
+			// Log activity
+			await activityLogModel.logActivity(supabase, {
+				userId: profile.id,
+				branchId: profile.branch_id,
+				action: 'item_added',
+				entityType: 'item',
+				entityId: newItem.id,
+				metadata: { name: newItem.name, barcode: newItem.barcode }
+			});
+
+			return { success: true, redirect: '/inventory' };
+		} catch (error) {
+			console.error("Error creating item in controller:", error);
+			return { success: false, status: 500, error: 'Gagal menyimpan data barang.', values: Object.fromEntries(formData) };
+		}
+	},
+
+	/**
+	 * Update an existing item and handle stock synchronization
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {{ id: string, role: string, branch_id: string|null }} profile
+	 * @param {string} id
+	 * @param {FormData} formData
+	 */
+	async updateItem(supabase, profile, id, formData) {
+		const oldItem = await itemModel.getItemDetails(supabase, id);
+
+		if (!oldItem) {
+			return { success: false, status: 404, error: 'Barang tidak ditemukan.' };
+		}
+
+		// Verify branch access
+		if (profile.role !== 'owner' && oldItem.branch_id !== profile.branch_id) {
+			return { success: false, status: 403, error: 'Akses ditolak. Barang ini milik cabang lain.' };
+		}
+
+		const name = formData.get('name');
+		const description = formData.get('description');
+		const category_id = formData.get('category_id');
+		const rental_price_per_day = formData.get('rental_price_per_day');
+		const sell_price = formData.get('sell_price');
+		const stock_total = parseInt(formData.get('stock_total')?.toString() || '0', 10);
+		const is_active_str = formData.get('is_active');
+		const is_active = is_active_str === 'true';
+		const image = formData.get('image'); // File
+
+		if (!name || !category_id) {
+			return { success: false, status: 400, error: 'Nama dan kategori wajib diisi.', values: Object.fromEntries(formData) };
+		}
+
+		// Fetch category details
+		let category;
+		try {
+			const { data } = await supabase.from('categories').select('type').eq('id', category_id).single();
+			category = data;
+		} catch (err) {
+			console.error("Error loading category in controller:", err);
+		}
+
+		if (!category) {
+			return { success: false, status: 400, error: 'Kategori tidak valid.', values: Object.fromEntries(formData) };
+		}
+
+		// Validate prices based on category type
+		if (category.type === 'sewa' && !rental_price_per_day) {
+			return { success: false, status: 400, error: 'Harga sewa per hari wajib diisi untuk barang sewa.', values: Object.fromEntries(formData) };
+		}
+		if (category.type === 'retail' && !sell_price) {
+			return { success: false, status: 400, error: 'Harga jual wajib diisi untuk barang retail.', values: Object.fromEntries(formData) };
+		}
+
+		let image_url = oldItem.image_url;
+
+		// Handle new image upload if exists
+		if (image && typeof image !== 'string' && image.size > 0) {
+			const fileExt = image.name.split('.').pop();
+			const fileName = `${oldItem.branch_id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+			
+			try {
+				const { error: uploadError } = await supabase.storage
+					.from('item-images')
+					.upload(fileName, image, {
+						cacheControl: '3600',
+						upsert: false
+					});
+
+				if (uploadError) {
+					console.error("Upload error:", uploadError);
+					return { success: false, status: 500, error: 'Gagal mengunggah gambar baru.', values: Object.fromEntries(formData) };
+				}
+
+				const { data: { publicUrl } } = supabase.storage
+					.from('item-images')
+					.getPublicUrl(fileName);
+				
+				image_url = publicUrl;
+			} catch (err) {
+				console.error("Storage upload error:", err);
+				return { success: false, status: 500, error: 'Gagal mengunggah gambar.', values: Object.fromEntries(formData) };
+			}
+		}
+
+		// Calculate stock difference
+		const stockDiff = stock_total - oldItem.stock_total;
+		const new_stock_available = oldItem.stock_available + stockDiff;
+
+		try {
+			// If stock is decreased, perform validation
+			if (stockDiff < 0) {
+				if (category.type === 'sewa') {
+					// Query ready assets
+					const readyAssets = await assetModel.getReadyAssetsForItem(supabase, id);
+					const toDeleteCount = Math.abs(stockDiff);
+
+					if (readyAssets.length < toDeleteCount) {
+						return {
+							success: false,
+							status: 400,
+							error: `Gagal mengurangi stok. Hanya ada ${readyAssets.length} unit yang siap ('ready') untuk dihapus, sedangkan Anda ingin mengurangi ${toDeleteCount} unit. Harap tunggu hingga unit lain selesai disewa atau selesai maintenance.`,
+							values: Object.fromEntries(formData)
+						};
+					}
+
+					// Delete the excess ready assets
+					const assetIdsToDelete = readyAssets.slice(0, toDeleteCount).map(a => a.id);
+					await assetModel.deleteAssetsByIds(supabase, assetIdsToDelete);
+				} else {
+					// Retail item
+					if (new_stock_available < 0) {
+						return {
+							success: false,
+							status: 400,
+							error: `Gagal mengurangi stok. Stok tersedia saat ini (${oldItem.stock_available}) kurang dari jumlah pengurangan stok (${Math.abs(stockDiff)}).`,
+							values: Object.fromEntries(formData)
+						};
+					}
+				}
+			}
+
+			// If stock is increased and it is a rental item, generate new assets
+			if (stockDiff > 0 && category.type === 'sewa') {
+				const existingAssets = await assetModel.getExistingAssetsForItem(supabase, id);
+				const existingCodes = new Set(existingAssets.map(a => a.asset_code));
+				const newAssets = [];
+				let idx = 0;
+				
+				while (newAssets.length < stockDiff) {
+					const code = `${oldItem.barcode}-${getLetterSuffix(idx)}`;
+					if (!existingCodes.has(code)) {
+						newAssets.push({
+							item_id: id,
+							asset_code: code,
+							status: 'ready'
+						});
+					}
+					idx++;
+				}
+
+				await assetModel.insertAssets(supabase, newAssets);
+			}
+
+			// Update item record
+			await itemModel.updateItem(supabase, id, {
+				category_id: category_id.toString(),
+				name: name.toString(),
+				description: description ? description.toString() : null,
+				image_url,
+				rental_price_per_day: category.type === 'sewa' ? parseFloat(rental_price_per_day?.toString() || '0') : null,
+				sell_price: category.type === 'retail' ? parseFloat(sell_price?.toString() || '0') : null,
+				stock_total,
+				stock_available: new_stock_available,
+				is_active
+			});
+
+			// Log activity
+			await activityLogModel.logActivity(supabase, {
+				userId: profile.id,
+				branchId: oldItem.branch_id,
+				action: 'item_updated',
+				entityType: 'item',
+				entityId: id,
+				metadata: { name, barcode: oldItem.barcode, stock_total, stock_available: new_stock_available }
+			});
+
+			return { success: true, redirect: '/inventory' };
+		} catch (error) {
+			console.error("Error in updateItem controller:", error);
+			return { success: false, status: 500, error: 'Gagal memperbarui data barang.', values: Object.fromEntries(formData) };
+		}
+	},
+
+	/**
+	 * Parse Excel and bulk insert items
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {{ id: string, branch_id: string|null }} profile
+	 * @param {any} file File object
+	 */
+	async bulkUpload(supabase, profile, file) {
+		if (!file || typeof file === 'string' || file.size === 0) {
+			return { success: false, status: 400, error: 'Silakan pilih file Excel terlebih dahulu.' };
+		}
+
+		try {
+			const arrayBuffer = await file.arrayBuffer();
+			const workbook = xlsx.read(arrayBuffer, { type: 'buffer' });
+			const sheetName = workbook.SheetNames[0];
+			const worksheet = workbook.Sheets[sheetName];
+			
+			const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+			if (rows.length <= 1) {
+				return { success: false, status: 400, error: 'File Excel kosong atau hanya berisi header.' };
+			}
+
+			const categories = await categoryModel.getCategories(supabase);
+			const catMap = new Map(categories.map(c => [c.id, c.type]));
+
+			const insertData = [];
+			const errors = [];
+
+			for (let i = 1; i < rows.length; i++) {
+				const row = rows[i];
+				
+				if (!row || row.length === 0 || row.every(/** @param {any} cell */ cell => cell === null || cell === undefined || cell === '')) {
+					continue;
+				}
+
+				const [name, description, category_id, rental_price, sell_price, stock] = row;
+
+				if (!name || !category_id) {
+					errors.push(`Baris ${i + 1}: Nama dan ID Kategori wajib diisi.`);
+					continue;
+				}
+
+				if (!catMap.has(category_id)) {
+					errors.push(`Baris ${i + 1}: ID Kategori "${category_id}" tidak ditemukan di database.`);
+					continue;
+				}
+
+				const catType = catMap.get(category_id);
+				const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+				const barcode = `BTN-${randomStr}`;
+
+				insertData.push({
+					branch_id: profile.branch_id,
+					category_id: category_id,
+					name: name.toString(),
+					description: description ? description.toString() : null,
+					barcode: barcode,
+					rental_price_per_day: catType === 'sewa' ? parseFloat(rental_price) || 0 : null,
+					sell_price: catType === 'retail' ? parseFloat(sell_price) || 0 : null,
+					stock_total: parseInt(stock) || 0,
+					stock_available: parseInt(stock) || 0,
+					is_active: true
+				});
+			}
+
+			if (errors.length > 0) {
+				return { success: false, status: 400, error: 'Terdapat error pada file Excel Anda:\n' + errors.join('\n') };
+			}
+
+			if (insertData.length === 0) {
+				return { success: false, status: 400, error: 'Tidak ada data valid yang bisa dimasukkan.' };
+			}
+
+			await itemModel.bulkInsertItems(supabase, insertData);
+
+			// Log activity
+			await activityLogModel.logActivity(supabase, {
+				userId: profile.id,
+				branchId: profile.branch_id,
+				action: 'item_added',
+				entityType: 'bulk_upload',
+				entityId: profile.branch_id || 'all',
+				metadata: { count: insertData.length }
+			});
+
+			return { success: true, count: insertData.length };
+		} catch (error) {
+			console.error("Parse excel error in controller:", error);
+			return { success: false, status: 500, error: 'Gagal memproses file Excel. Pastikan file tidak corrupt dan menggunakan format .xlsx atau .csv.' };
+		}
+	}
+};

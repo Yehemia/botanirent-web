@@ -1,4 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { itemController } from '$lib/server/controllers/itemController.js';
+import { categoryModel } from '$lib/server/models/categoryModel.js';
 
 export async function load({ locals }) {
 	const { supabase } = locals;
@@ -8,13 +10,10 @@ export async function load({ locals }) {
 		throw redirect(303, '/login');
 	}
 
-	const { data: categories } = await supabase
-		.from('categories')
-		.select('*')
-		.order('sort_order');
+	const categories = await categoryModel.getCategories(supabase);
 
 	return {
-		categories: categories || []
+		categories
 	};
 }
 
@@ -28,134 +27,16 @@ export const actions = {
 		}
 
 		const formData = await request.formData();
-		const name = formData.get('name');
-		const description = formData.get('description');
-		const category_id = formData.get('category_id');
-		const rental_price_per_day = formData.get('rental_price_per_day');
-		const sell_price = formData.get('sell_price');
-		const stock_total = parseInt(formData.get('stock_total')?.toString() || '0', 10);
-		const image = formData.get('image'); // File object
+		const result = await itemController.createItem(supabase, profile, formData);
 
-		if (!name || !category_id) {
-			return fail(400, { error: 'Nama dan kategori wajib diisi.', values: Object.fromEntries(formData) });
+		if (result.redirect) {
+			throw redirect(303, result.redirect);
 		}
 
-		// Ambil info kategori untuk cek tipe (sewa / retail)
-		const { data: category } = await supabase.from('categories').select('type').eq('id', category_id).single();
-		
-		if (!category) {
-			return fail(400, { error: 'Kategori tidak valid.', values: Object.fromEntries(formData) });
+		if (!result.success) {
+			return fail(result.status || 500, { error: result.error, values: result.values });
 		}
 
-		// Validasi harga berdasarkan tipe kategori
-		if (category.type === 'sewa' && !rental_price_per_day) {
-			return fail(400, { error: 'Harga sewa per hari wajib diisi untuk barang sewa.', values: Object.fromEntries(formData) });
-		}
-		if (category.type === 'retail' && !sell_price) {
-			return fail(400, { error: 'Harga jual wajib diisi untuk barang retail.', values: Object.fromEntries(formData) });
-		}
-
-		// Auto-generate Barcode (BTN + 6 random alphanumeric)
-		const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
-		const barcode = `BTN-${randomStr}`;
-
-		let image_url = null;
-
-		// Handle image upload if exists
-		if (image && typeof image !== 'string' && image.size > 0) {
-			const fileExt = image.name.split('.').pop();
-			const fileName = `${profile.branch_id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-			
-			const { data: uploadData, error: uploadError } = await supabase.storage
-				.from('item-images')
-				.upload(fileName, image, {
-					cacheControl: '3600',
-					upsert: false
-				});
-
-			if (uploadError) {
-				console.error("Upload error:", uploadError);
-				return fail(500, { error: 'Gagal mengunggah gambar. Pastikan Anda sudah menjalankan script setup storage.', values: Object.fromEntries(formData) });
-			}
-
-			// Get public URL
-			const { data: { publicUrl } } = supabase.storage
-				.from('item-images')
-				.getPublicUrl(fileName);
-			
-			image_url = publicUrl;
-		}
-
-		// Insert into database
-		const { data: newItem, error: insertError } = await supabase
-			.from('items')
-			.insert({
-				branch_id: profile.branch_id,
-				category_id: category_id.toString(),
-				name: name.toString(),
-				description: description ? description.toString() : null,
-				barcode,
-				image_url,
-				rental_price_per_day: rental_price_per_day ? parseFloat(rental_price_per_day.toString()) : null,
-				sell_price: sell_price ? parseFloat(sell_price.toString()) : null,
-				stock_total,
-				stock_available: stock_total, // Stok awal
-				is_active: true
-			})
-			.select()
-			.single();
-
-		if (insertError) {
-			console.error("Insert error:", insertError);
-			return fail(500, { error: 'Gagal menyimpan data barang.', values: Object.fromEntries(formData) });
-		}
-
-		// Jika kategori sewa, buat unit fisik otomatis
-		if (category.type === 'sewa' && stock_total > 0) {
-			/**
-			 * @param {number} index
-			 * @returns {string}
-			 */
-			const getLetterSuffix = (index) => {
-				let suffix = '';
-				let temp = index;
-				while (temp >= 0) {
-					suffix = String.fromCharCode((temp % 26) + 65) + suffix;
-					temp = Math.floor(temp / 26) - 1;
-				}
-				return suffix;
-			};
-
-			const newAssets = [];
-			for (let i = 0; i < stock_total; i++) {
-				newAssets.push({
-					item_id: newItem.id,
-					asset_code: `${barcode}-${getLetterSuffix(i)}`,
-					status: 'ready'
-				});
-			}
-
-			const { error: assetsError } = await supabase
-				.from('rental_assets')
-				.insert(newAssets);
-
-			if (assetsError) {
-				console.error("Insert assets error:", assetsError);
-				// We won't abort the whole transaction but we will log it. Since the item is created,
-				// they can add/edit stock later to try generating again.
-			}
-		}
-
-		// Log activity (fire and forget)
-		supabase.from('activity_logs').insert({
-			user_id: profile.id,
-			branch_id: profile.branch_id,
-			action: 'item_added',
-			entity_type: 'item',
-			entity_id: newItem.id,
-			metadata: { name: newItem.name, barcode: newItem.barcode }
-		}).then();
-
-		throw redirect(303, '/inventory');
+		return { success: true };
 	}
 };

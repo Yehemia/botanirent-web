@@ -1,4 +1,5 @@
 import { redirect, fail } from '@sveltejs/kit';
+import { penaltiesController } from '$lib/server/controllers/penaltiesController.js';
 
 export async function load({ locals }) {
 	const { supabase } = locals;
@@ -8,21 +9,14 @@ export async function load({ locals }) {
 		throw redirect(303, '/login');
 	}
 
-	if (profile.role !== 'owner') {
-		throw redirect(303, '/dashboard');
-	}
+	const result = await penaltiesController.getPenaltyRules(supabase, profile);
 
-	const { data: penaltyRules, error } = await supabase
-		.from('penalty_rules')
-		.select('*')
-		.order('created_at', { ascending: true });
-
-	if (error) {
-		console.error('Fetch penalty rules error:', error);
+	if (result.redirect) {
+		throw redirect(303, result.redirect);
 	}
 
 	return {
-		penaltyRules: penaltyRules || []
+		penaltyRules: result.penaltyRules || []
 	};
 }
 
@@ -31,42 +25,16 @@ export const actions = {
 		const { supabase } = locals;
 		const { session, profile } = await locals.safeGetSession();
 
-		if (!session || !profile || profile.role !== 'owner') {
+		if (!session || !profile) {
 			return fail(401, { error: 'Unauthorized' });
 		}
 
 		const formData = await request.formData();
-		const id = formData.get('id');
-		const amount = formData.get('amount');
+		const result = await penaltiesController.updatePenaltyRule(supabase, profile, formData);
 
-		if (!id || amount === null) {
-			return fail(400, { error: 'ID dan Jumlah denda wajib diisi.' });
+		if (!result.success) {
+			return fail(result.status || 500, { error: result.error, values: result.values });
 		}
-
-		const parsedAmount = parseFloat(amount.toString());
-		if (isNaN(parsedAmount) || parsedAmount < 0) {
-			return fail(400, { error: 'Jumlah denda harus berupa angka positif.' });
-		}
-
-		const { error: updateError } = await supabase
-			.from('penalty_rules')
-			.update({ amount: parsedAmount })
-			.eq('id', id);
-
-		if (updateError) {
-			console.error('Update penalty rule error:', updateError);
-			return fail(500, { error: 'Gagal memperbarui aturan denda.' });
-		}
-
-		// Log activity
-		supabase.from('activity_logs').insert({
-			user_id: profile.id,
-			branch_id: profile.branch_id,
-			action: 'penalty_rule_updated',
-			entity_type: 'penalty_rule',
-			entity_id: id,
-			metadata: { updated_amount: parsedAmount }
-		}).then();
 
 		return { success: true };
 	}

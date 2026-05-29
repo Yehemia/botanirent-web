@@ -1,4 +1,5 @@
 import { redirect } from '@sveltejs/kit';
+import { posController } from '$lib/server/controllers/posController.js';
 
 export async function load({ locals }) {
 	const { supabase } = locals;
@@ -8,51 +9,6 @@ export async function load({ locals }) {
 		throw redirect(303, '/login');
 	}
 
-	// If no branch_id is set (Semua Cabang), return empty datasets but flag it
-	if (!profile.branch_id) {
-		return {
-			categories: [],
-			items: [],
-			packages: [],
-			customers: [],
-			currentBranchId: null
-		};
-	}
-
-	// 1. Ambil kategori
-	const { data: categories } = await supabase
-		.from('categories')
-		.select('*')
-		.order('sort_order');
-
-	// 2. Ambil barang aktif (Sewa & Retail)
-	const { data: items } = await supabase
-		.from('items')
-		.select('*, category:categories(type)')
-		.eq('branch_id', profile.branch_id)
-		.eq('is_active', true)
-		.order('name');
-
-	// 3. Ambil paket bundling aktif
-	const { data: packages } = await supabase
-		.from('packages')
-		.select('*')
-		.eq('branch_id', profile.branch_id)
-		.eq('is_active', true)
-		.order('name');
-
-	// 4. Ambil data pelanggan (opsional untuk transaksi)
-	const { data: customers } = await supabase
-		.from('customers')
-		.select('id, full_name, phone')
-		.eq('branch_id', profile.branch_id)
-		.order('full_name');
-
-	return {
-		categories: categories || [],
-		items: items || [],
-		packages: packages || [],
-		customers: customers || [],
-		currentBranchId: profile.branch_id
-	};
+	const data = await posController.getPOSData(supabase, profile);
+	return data;
 }

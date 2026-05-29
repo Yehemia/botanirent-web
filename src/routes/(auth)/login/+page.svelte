@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { Mail, Lock, Eye, EyeOff, Mountain, Tent, TreePine, ArrowRight } from '@lucide/svelte';
 
-	let { form } = $props();
+	let { data, form } = $props();
 	let loading = $state(false);
 	let showPassword = $state(false);
 
@@ -91,12 +91,20 @@
 			</div>
 
 			<!-- Error Message -->
-			{#if form?.error}
+			{#if form?.error || data?.error}
 				<div class="login-error" role="alert">
 					<div class="login-error-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
 					</div>
-					<span>{form.error}</span>
+					<span>
+						{#if form?.error}
+							{form.error}
+						{:else if data?.error === 'auth_callback_failed'}
+							Verifikasi login Google gagal: {data.errorDescription || 'Silakan coba lagi.'}
+						{:else}
+							Error: {data.errorDescription || data.error}
+						{/if}
+					</span>
 				</div>
 			{/if}
 

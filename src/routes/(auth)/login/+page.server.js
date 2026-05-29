@@ -1,12 +1,33 @@
 import { fail, redirect } from '@sveltejs/kit';
 
-export const load = async ({ locals }) => {
-	// If already logged in, redirect to dashboard
-	const { session } = await locals.safeGetSession();
+export const load = async ({ locals, url }) => {
+	// If already logged in, redirect to dashboard if profile is active
+	const { session, profile } = await locals.safeGetSession();
 	if (session) {
-		throw redirect(303, '/dashboard');
+		if (profile) {
+			if (profile.is_active) {
+				throw redirect(303, '/dashboard');
+			} else {
+				return {
+					error: 'account_deactivated',
+					errorDescription: 'Akun Anda dinonaktifkan. Silakan hubungi Owner.'
+				};
+			}
+		} else {
+			return {
+				error: 'profile_missing',
+				errorDescription: 'Profil pengguna tidak ditemukan di database. Silakan hubungi Owner.'
+			};
+		}
 	}
-	return {};
+
+	const error = url.searchParams.get('error');
+	const errorDescription = url.searchParams.get('error_description');
+
+	return {
+		error,
+		errorDescription
+	};
 };
 
 export const actions = {

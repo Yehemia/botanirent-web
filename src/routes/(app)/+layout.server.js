@@ -3,7 +3,7 @@ import { redirect } from '@sveltejs/kit';
 export const load = async ({ locals }) => {
 	const { session, user, profile } = await locals.safeGetSession();
 
-	if (!session) {
+	if (!session || !profile || !profile.is_active) {
 		throw redirect(303, '/login');
 	}
 
