@@ -248,7 +248,7 @@
 						</div>
 						<div class="p-2 bg-[var(--color-amber)]/10 text-[var(--color-amber)] rounded-lg"><Users size={20} /></div>
 					</div>
-					<div class="text-[10px] text-[var(--color-stone)] border-t border-[var(--color-border-light)] pt-2 mt-4 flex justify-between">
+					<div class="text-[10px] text-[var(--color-stone)] border-t border-[var(--color-border-light)] pt-2 mt-4 flex flex-wrap gap-x-3 gap-y-1 justify-between">
 						<span>Penyewa: <strong>{ownerData.customerCount}</strong></span>
 						<span>Staff: <strong>{ownerData.staffCount}</strong></span>
 						<span>Cabang: <strong>{ownerData.branchCount}</strong></span>
@@ -263,7 +263,7 @@
 				<h3 class="font-bold text-[var(--color-earth)] mb-6 flex items-center gap-2 text-sm uppercase tracking-wider">
 					<TrendingUp size={18} /> Tren Pendapatan Harian (7 Hari Terakhir)
 				</h3>
-				<div class="h-[300px] w-full">
+				<div class="h-[240px] sm:h-[300px] w-full">
 					<Bar data={chartConfig()} options={chartOptions} />
 				</div>
 			</Card>
@@ -312,7 +312,9 @@
 							💳 Transaksi Terbaru
 						</h3>
 					</div>
-					<div class="overflow-x-auto">
+					
+					<!-- Desktop Transactions Table -->
+					<div class="hidden sm:block overflow-x-auto">
 						<table class="w-full text-left text-xs whitespace-nowrap">
 							<thead class="bg-[var(--color-sand-light)] text-[var(--color-earth)] font-semibold border-b border-[var(--color-border)]">
 								<tr>
@@ -353,6 +355,39 @@
 								{/if}
 							</tbody>
 						</table>
+					</div>
+
+					<!-- Mobile Transactions Card List -->
+					<div class="block sm:hidden divide-y divide-[var(--color-border-light)]">
+						{#if recentTransactions.length === 0}
+							<p class="p-6 text-center text-[var(--color-stone)] italic text-xs">Belum ada transaksi terbaru.</p>
+						{:else}
+							{#each recentTransactions as trx}
+								<div class="p-4 flex flex-col gap-2 hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
+									<div class="flex justify-between items-center">
+										<a href="/transactions/{trx.id}" class="font-mono font-bold text-xs text-[var(--color-forest)] hover:underline">
+											{trx.transaction_code}
+										</a>
+										{#if trx.payment_status === 'paid'}
+											<span class="inline-flex items-center gap-0.5 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full font-semibold text-[9px]">
+												<CheckCircle size={8} /> Lunas
+											</span>
+										{:else}
+											<span class="inline-flex items-center gap-0.5 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-full font-semibold text-[9px]">
+												<Clock size={8} /> {trx.payment_status}
+											</span>
+										{/if}
+									</div>
+									<div class="flex justify-between items-center text-xs text-[var(--color-earth)]">
+										<span class="font-medium truncate max-w-[150px]">{trx.customer?.full_name || 'Umum'}</span>
+										<span class="font-bold text-[var(--color-forest)]">{formatCurrency(trx.total_amount)}</span>
+									</div>
+									<div class="text-[10px] text-[var(--color-stone)]">
+										{formatDate(trx.created_at, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+									</div>
+								</div>
+							{/each}
+						{/if}
 					</div>
 				</div>
 				<div class="p-4 border-t border-[var(--color-border-light)]">
@@ -533,41 +568,41 @@
 			<h3 class="font-bold text-[var(--color-earth)] mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
 				<PackageCheck size={18} /> Status Aset Fisik (Gudang)
 			</h3>
-			<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+			<div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
 				<!-- Ready -->
-				<div class="flex items-center justify-between p-4 rounded-xl border border-[var(--color-success)]/20 bg-[var(--color-success)]/5">
-					<div class="flex items-center gap-2 text-[var(--color-success)]">
-						<div class="p-2 bg-[var(--color-success)]/20 rounded-lg"><Tent size={18} /></div>
-						<span class="font-bold text-xs">Siap Sewa</span>
+				<div class="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-[var(--color-success)]/20 bg-[var(--color-success)]/5 min-w-0">
+					<div class="flex items-center gap-1.5 text-[var(--color-success)] min-w-0">
+						<div class="p-1.5 bg-[var(--color-success)]/20 rounded-lg shrink-0"><Tent size={16} /></div>
+						<span class="font-bold text-[11px] sm:text-xs truncate">Siap Sewa</span>
 					</div>
-					<span class="text-2xl font-bold font-heading text-[var(--color-success)]">{assetStats.ready}</span>
+					<span class="text-xl sm:text-2xl font-bold font-heading text-[var(--color-success)] shrink-0 ml-1">{assetStats.ready}</span>
 				</div>
 
 				<!-- Rented -->
-				<div class="flex items-center justify-between p-4 rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/5">
-					<div class="flex items-center gap-2 text-[var(--color-info)]">
-						<div class="p-2 bg-[var(--color-info)]/20 rounded-lg"><Activity size={18} /></div>
-						<span class="font-bold text-xs">Sedang Disewa</span>
+				<div class="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/5 min-w-0">
+					<div class="flex items-center gap-1.5 text-[var(--color-info)] min-w-0">
+						<div class="p-1.5 bg-[var(--color-info)]/20 rounded-lg shrink-0"><Activity size={16} /></div>
+						<span class="font-bold text-[11px] sm:text-xs truncate">Disewa</span>
 					</div>
-					<span class="text-2xl font-bold font-heading text-[var(--color-info)]">{assetStats.rented}</span>
+					<span class="text-xl sm:text-2xl font-bold font-heading text-[var(--color-info)] shrink-0 ml-1">{assetStats.rented}</span>
 				</div>
 
 				<!-- Washing -->
-				<div class="flex items-center justify-between p-4 rounded-xl border border-[var(--color-warning)]/20 bg-[var(--color-warning)]/5">
-					<div class="flex items-center gap-2 text-[var(--color-warning)]">
-						<div class="p-2 bg-[var(--color-warning)]/20 rounded-lg"><Droplets size={18} /></div>
-						<span class="font-bold text-xs">Sedang Dicuci</span>
+				<div class="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-[var(--color-warning)]/20 bg-[var(--color-warning)]/5 min-w-0">
+					<div class="flex items-center gap-1.5 text-[var(--color-warning)] min-w-0">
+						<div class="p-1.5 bg-[var(--color-warning)]/20 rounded-lg shrink-0"><Droplets size={16} /></div>
+						<span class="font-bold text-[11px] sm:text-xs truncate">Dicuci</span>
 					</div>
-					<span class="text-2xl font-bold font-heading text-[var(--color-warning)]">{assetStats.washing}</span>
+					<span class="text-xl sm:text-2xl font-bold font-heading text-[var(--color-warning)] shrink-0 ml-1">{assetStats.washing}</span>
 				</div>
 
 				<!-- Maintenance -->
-				<div class="flex items-center justify-between p-4 rounded-xl border border-[var(--color-error)]/20 bg-[var(--color-error)]/5">
-					<div class="flex items-center gap-2 text-[var(--color-error)]">
-						<div class="p-2 bg-[var(--color-error)]/20 rounded-lg"><Wrench size={18} /></div>
-						<span class="font-bold text-xs">Dalam Perbaikan</span>
+				<div class="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-[var(--color-error)]/20 bg-[var(--color-error)]/5 min-w-0">
+					<div class="flex items-center gap-1.5 text-[var(--color-error)] min-w-0">
+						<div class="p-1.5 bg-[var(--color-error)]/20 rounded-lg shrink-0"><Wrench size={16} /></div>
+						<span class="font-bold text-[11px] sm:text-xs truncate">Servis</span>
 					</div>
-					<span class="text-2xl font-bold font-heading text-[var(--color-error)]">{assetStats.maintenance}</span>
+					<span class="text-xl sm:text-2xl font-bold font-heading text-[var(--color-error)] shrink-0 ml-1">{assetStats.maintenance}</span>
 				</div>
 			</div>
 		</Card>

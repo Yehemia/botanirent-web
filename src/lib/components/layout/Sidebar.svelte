@@ -70,8 +70,9 @@
 </script>
 
 <aside 
-	class="bg-gradient-to-b from-[#182C0D] to-[#254514] border-r border-[#385624]/30 text-white transition-all duration-250 flex flex-col h-screen fixed left-0 top-0 z-40 overflow-hidden select-none"
-	style="width: {expanded ? '260px' : '72px'};"
+	class="bg-gradient-to-b from-[#182C0D] to-[#254514] border-r border-[#385624]/30 text-white transition-all duration-250 flex flex-col h-screen fixed left-0 top-0 z-40 overflow-hidden select-none
+		{expanded ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} 
+		w-[260px] {expanded ? 'md:w-[260px]' : 'md:w-[72px]'}"
 >
 	<!-- Logo Area -->
 	<button 

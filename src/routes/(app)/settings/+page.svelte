@@ -15,13 +15,13 @@
 
 <div class="space-y-6 max-w-3xl mx-auto pb-12">
 	<!-- Header -->
-	<div class="flex items-center gap-4">
-		<div class="p-3 bg-[var(--color-sand)] text-[var(--color-earth)] rounded-xl">
-			<Settings size={28} />
+	<div class="flex items-start sm:items-center gap-3 sm:gap-4">
+		<div class="p-2.5 bg-[var(--color-sand)] text-[var(--color-earth)] rounded-xl shrink-0">
+			<Settings class="w-6 h-6 sm:w-7 sm:h-7" />
 		</div>
 		<div>
-			<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)]">Pengaturan Aplikasi</h1>
-			<p class="text-[var(--color-stone)] mt-1">Kelola konfigurasi global untuk transaksi dan operasional toko.</p>
+			<h1 class="text-2xl sm:text-3xl font-bold font-heading text-[var(--color-earth)]">Pengaturan Aplikasi</h1>
+			<p class="text-xs sm:text-sm text-[var(--color-stone)] mt-1">Kelola konfigurasi global untuk transaksi dan operasional toko.</p>
 		</div>
 	</div>
 
@@ -57,7 +57,7 @@
 							Setiap transaksi sewa akan dihitung berdasarkan siklus ini. Harga sewa yang diatur di inventaris berlaku untuk 1 siklus ini.
 						</p>
 					</div>
-					<div class="max-w-xs">
+					<div class="w-full sm:max-w-xs">
 						<Input 
 							type="number"
 							id="default_rental_duration_days"
@@ -80,7 +80,7 @@
 							Nominal denda tetap per hari yang akan ditambahkan secara otomatis jika penyewa mengembalikan barang melewati batas tanggal selesai.
 						</p>
 					</div>
-					<div class="max-w-xs">
+					<div class="w-full sm:max-w-xs">
 						<Input 
 							type="number"
 							id="late_fee_per_day_per_transaction"
@@ -103,7 +103,7 @@
 							Target omzet bulanan cabang/toko yang akan ditampilkan sebagai progress bar di dashboard utama Owner.
 						</p>
 					</div>
-					<div class="max-w-xs">
+					<div class="w-full sm:max-w-xs">
 						<Input 
 							type="number"
 							id="monthly_revenue_target"
@@ -118,7 +118,7 @@
 			</div>
 
 			<div class="flex justify-end mt-8 pt-4 border-t border-[var(--color-border)]">
-				<Button type="submit" disabled={loading} class="min-w-[180px]">
+				<Button type="submit" disabled={loading} class="w-full sm:w-auto sm:min-w-[180px] justify-center">
 					{#if loading}
 						Menyimpan...
 					{:else}

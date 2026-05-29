@@ -130,10 +130,10 @@
 <div class="space-y-6 max-w-7xl mx-auto pb-12 animate-fade-in">
 	<!-- Header -->
 	<div>
-		<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)] flex items-center gap-2">
-			<Activity size={28} /> Log Aktivitas Audit
+		<h1 class="text-2xl sm:text-3xl font-bold font-heading text-[var(--color-earth)] flex items-center gap-2">
+			<Activity class="w-6 h-6 sm:w-7 sm:h-7" /> Log Aktivitas Audit
 		</h1>
-		<p class="text-[var(--color-stone)] mt-1">Audit trail lengkap aktivitas user di seluruh cabang secara real-time.</p>
+		<p class="text-xs sm:text-sm text-[var(--color-stone)] mt-1">Audit trail lengkap aktivitas user di seluruh cabang secara real-time.</p>
 	</div>
 
 	<!-- Filters Card -->
@@ -182,7 +182,8 @@
 
 	<!-- Table Card -->
 	<Card padding="none" class="overflow-hidden shadow-sm">
-		<div class="overflow-x-auto">
+		<!-- Desktop View -->
+		<div class="hidden sm:block overflow-x-auto">
 			<table class="w-full text-left text-sm whitespace-nowrap">
 				<thead class="bg-[var(--color-sand-light)] text-[var(--color-earth)] font-semibold border-b border-[var(--color-border)]">
 					<tr>
@@ -242,10 +243,56 @@
 			</table>
 		</div>
 
+		<!-- Mobile View -->
+		<div class="block sm:hidden divide-y divide-[var(--color-border-light)] bg-white">
+			{#if logs.length === 0}
+				<p class="p-6 text-center text-[var(--color-stone)] italic text-xs">Tidak ada log aktivitas yang ditemukan.</p>
+			{:else}
+				{#each logs as log (log.id)}
+					<div class="p-4 flex flex-col gap-2.5 hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
+						<div class="flex justify-between items-start gap-2">
+							<span class="inline-block px-2 py-0.5 border rounded text-[10px] font-bold uppercase tracking-wider {getActionColorClass(log.action)}">
+								{getActionLabel(log.action)}
+							</span>
+							{#if log.entity_type}
+								<span class="font-mono text-[10px] text-[var(--color-stone)] capitalize bg-[var(--color-sand)] px-1.5 py-0.5 rounded">
+									{log.entity_type}
+								</span>
+							{/if}
+						</div>
+						
+						<div class="flex flex-col gap-1.5 text-xs text-[var(--color-earth)]">
+							<div class="flex items-center gap-2">
+								<User size={13} class="text-[var(--color-stone)] shrink-0" />
+								<span class="font-semibold">{log.profile?.full_name || 'System / Auto'}</span>
+								{#if log.profile?.role}
+									<span class="scale-90 origin-left">
+										<Badge variant={getRoleBadgeVariant(log.profile.role)}>
+											{log.profile.role.toUpperCase()}
+										</Badge>
+									</span>
+								{/if}
+							</div>
+							
+							<div class="flex items-center gap-2 text-[var(--color-stone)]">
+								<MapPin size={13} class="text-[var(--color-stone)] shrink-0" />
+								<span>Cabang: <strong>{log.branch?.name || '-'}</strong></span>
+							</div>
+						</div>
+
+						<div class="text-[10px] text-[var(--color-stone)] font-mono flex items-center gap-1 mt-0.5">
+							<Calendar size={11} class="shrink-0" />
+							{formatDate(log.created_at, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+						</div>
+					</div>
+				{/each}
+			{/if}
+		</div>
+
 		<!-- Pagination Footer -->
 		{#if totalPages > 1}
-			<div class="px-6 py-4 bg-[var(--color-sand-lightest)] border-t border-[var(--color-border)] flex items-center justify-between">
-				<div class="text-sm text-[var(--color-stone)]">
+			<div class="px-4 sm:px-6 py-4 bg-[var(--color-sand-lightest)] border-t border-[var(--color-border)] flex flex-col sm:flex-row gap-4 items-center justify-between">
+				<div class="text-xs sm:text-sm text-[var(--color-stone)] text-center sm:text-left">
 					Menampilkan <span class="font-semibold">{Math.min((page - 1) * pageSize + 1, totalCount)}</span> - <span class="font-semibold">{Math.min(page * pageSize, totalCount)}</span> dari <span class="font-semibold">{totalCount}</span> log
 				</div>
 				
@@ -260,7 +307,7 @@
 						</Button>
 					{/if}
 
-					<span class="text-sm text-[var(--color-earth)] font-medium px-2">
+					<span class="text-xs sm:text-sm text-[var(--color-earth)] font-semibold px-1 sm:px-2">
 						Halaman {page} dari {totalPages}
 					</span>
 

@@ -25,7 +25,53 @@
 	<!-- Animated Background Pattern -->
 	<div class="login-bg-pattern"></div>
 	
-	<!-- Left Panel: Branding -->
+	<!-- Mobile Hero Section (Dark Theme) -->
+	<header class="login-mobile-header">
+		<div class="pattern-overlay"></div>
+		<!-- Animated Background Elements -->
+		<div class="mobile-float-element float-1">
+			<Mountain size={36} strokeWidth={1.5} />
+		</div>
+		<div class="mobile-float-element float-2">
+			<Tent size={28} strokeWidth={1.5} />
+		</div>
+		<div class="mobile-float-element float-3">
+			<TreePine size={24} strokeWidth={1.5} />
+		</div>
+		
+		<div class="mobile-hero-content">
+			<!-- Brand Logo Group -->
+			<div class="mobile-logo-wrapper">
+				<div class="logo-bg">
+					<img src="/logo.svg" alt="Logo BotaniRent" class="mobile-hero-logo" />
+				</div>
+			</div>
+			<h1 class="mobile-hero-title">
+				BotaniRent <br/>
+				<span class="text-botani-gold">Outdoor</span>
+			</h1>
+			<p class="mobile-hero-subtitle">
+				Platform manajemen persewaan peralatan outdoor terlengkap.
+			</p>
+			<!-- Feature Chips (Mobile Row) -->
+			<div class="mobile-hero-features">
+				<div class="mobile-feature-pill">
+					<div class="feature-dot"></div>
+					<span>Multi-Cabang</span>
+				</div>
+				<div class="mobile-feature-pill">
+					<div class="feature-dot"></div>
+					<span>Real-time Tracking</span>
+				</div>
+				<div class="mobile-feature-pill">
+					<div class="feature-dot"></div>
+					<span>QRIS Payment</span>
+				</div>
+			</div>
+		</div>
+	</header>
+	
+	<!-- Left Panel: Branding (Desktop) -->
 	<div class="login-hero">
 		<div class="hero-overlay"></div>
 		<div class="hero-gradient"></div>
@@ -78,12 +124,6 @@
 	<!-- Right Panel: Login Form -->
 	<div class="login-form-panel">
 		<div class="login-form-container">
-			<!-- Mobile Logo -->
-			<div class="mobile-logo-bar">
-				<img src="/logo.svg" alt="Logo BotaniRent" class="mobile-logo" />
-				<span class="mobile-brand">BotaniRent</span>
-			</div>
-			
 			<!-- Greeting -->
 			<div class="login-greeting">
 				<h1 class="login-title">Selamat Datang</h1>
@@ -217,19 +257,33 @@
 			</p>
 		</div>
 	</div>
+
+	<!-- Mobile Footer -->
+	<footer class="login-mobile-footer">
+		<div class="footer-border"></div>
+		<p>© 2025 BotaniRent. All rights reserved.</p>
+	</footer>
 </div>
 
 <style>
 	/* ─── Page Layout ─── */
 	.login-page {
 		display: flex;
+		flex-direction: column;
 		min-height: 100vh;
 		min-height: 100dvh;
 		background: var(--color-cream);
 		font-family: var(--font-body);
 		color: var(--color-earth);
-		overflow: hidden;
+		overflow-y: auto;
 		position: relative;
+	}
+
+	@media (min-width: 768px) {
+		.login-page {
+			flex-direction: row;
+			overflow: hidden;
+		}
 	}
 
 	.login-bg-pattern {
@@ -243,7 +297,139 @@
 		z-index: 0;
 	}
 
-	/* ─── Hero Panel ─── */
+	/* ─── Mobile Hero Section ─── */
+	.login-mobile-header {
+		display: block;
+		background: #0d1a04;
+		position: relative;
+		overflow: hidden;
+		padding: 36px 20px 44px 20px;
+		text-align: center;
+		z-index: 1;
+	}
+
+	@media (min-width: 768px) {
+		.login-mobile-header {
+			display: none;
+		}
+	}
+
+	.pattern-overlay {
+		position: absolute;
+		inset: 0;
+		background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+		background-size: 24px 24px;
+		pointer-events: none;
+	}
+
+	.mobile-float-element {
+		position: absolute;
+		color: rgba(255,255,255,0.08);
+		z-index: 1;
+	}
+
+	.mobile-float-element.float-1 {
+		top: 20px;
+		left: 20px;
+		transform: rotate(-12deg);
+		animation: floatSlow 12s ease-in-out infinite;
+	}
+
+	.mobile-float-element.float-2 {
+		top: 48px;
+		right: 28px;
+		transform: rotate(12deg);
+		animation: floatSlow 10s ease-in-out infinite 2s;
+	}
+
+	.mobile-float-element.float-3 {
+		bottom: 20px;
+		left: 36px;
+		animation: floatSlow 14s ease-in-out infinite 4s;
+	}
+
+	.mobile-hero-content {
+		position: relative;
+		z-index: 2;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.mobile-logo-wrapper {
+		margin-bottom: 16px;
+	}
+
+	.mobile-logo-wrapper .logo-bg {
+		background: rgba(255, 255, 255, 0.1);
+		padding: 16px;
+		border-radius: var(--radius-xl);
+		display: inline-block;
+		backdrop-filter: blur(12px);
+		border: 1px solid rgba(255, 255, 255, 0.05);
+	}
+
+	.mobile-hero-logo {
+		width: 48px;
+		height: 48px;
+		object-fit: contain;
+	}
+
+	.mobile-hero-title {
+		font-family: var(--font-heading);
+		font-size: 28px;
+		font-weight: 700;
+		color: white;
+		line-height: 1.2;
+		letter-spacing: -0.02em;
+	}
+
+	.mobile-hero-title .text-botani-gold {
+		color: #e8c176;
+	}
+
+	.mobile-hero-subtitle {
+		color: rgba(255, 255, 255, 0.7);
+		font-size: 14px;
+		line-height: 1.5;
+		margin-top: 8px;
+		max-width: 280px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.mobile-hero-features {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 8px;
+		margin-top: 16px;
+	}
+
+	.mobile-feature-pill {
+		display: flex;
+		align-items: center;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		padding: 6px 12px;
+		border-radius: var(--radius-full);
+	}
+
+	.mobile-feature-pill span {
+		font-size: 12px;
+		color: rgba(255, 255, 255, 0.9);
+		font-weight: 500;
+	}
+
+	.mobile-feature-pill .feature-dot {
+		width: 6px;
+		height: 6px;
+		background-color: #e8c176;
+		border-radius: 50%;
+		margin-right: 8px;
+	}
+
+	/* ─── Hero Panel (Desktop) ─── */
 	.login-hero {
 		display: none;
 		width: 50%;
@@ -413,21 +599,29 @@
 	/* ─── Form Panel ─── */
 	.login-form-panel {
 		width: 100%;
-		min-height: 100vh;
-		min-height: 100dvh;
+		min-height: auto;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 32px 24px;
+		padding: 32px 24px 40px 24px;
 		position: relative;
-		z-index: 1;
-		overflow-y: auto;
+		z-index: 10;
+		background: var(--color-cream);
+		border-radius: 24px 24px 0 0;
+		margin-top: -24px;
+		box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.04);
 	}
 
 	@media (min-width: 768px) {
 		.login-form-panel {
 			width: 50%;
+			min-height: 100vh;
+			min-height: 100dvh;
 			padding: 48px 56px;
+			border-radius: 0;
+			margin-top: 0;
+			z-index: 1;
+			box-shadow: none;
 		}
 	}
 
@@ -439,26 +633,34 @@
 		gap: 28px;
 	}
 
-	/* Mobile logo */
-	.mobile-logo-bar {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		margin-bottom: 8px;
+	/* ─── Mobile Footer ─── */
+	.login-mobile-footer {
+		display: block;
+		background: var(--color-cream);
+		padding: 16px 20px 32px 20px;
+		text-align: center;
+		z-index: 5;
+		margin-top: auto;
 	}
+
 	@media (min-width: 768px) {
-		.mobile-logo-bar { display: none; }
+		.login-mobile-footer {
+			display: none;
+		}
 	}
-	.mobile-logo {
-		width: 36px;
-		height: 36px;
-		object-fit: contain;
+
+	.login-mobile-footer .footer-border {
+		border-top: 1px solid var(--color-border-light);
+		margin-bottom: 16px;
+		width: 100%;
 	}
-	.mobile-brand {
-		font-family: var(--font-heading);
-		font-size: 18px;
-		font-weight: 700;
-		color: var(--color-forest);
+
+	.login-mobile-footer p {
+		font-size: 10px;
+		color: var(--color-stone);
+		opacity: 0.6;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
 	}
 
 	/* ─── Greeting ─── */
@@ -598,7 +800,6 @@
 		border-color: var(--color-forest);
 		box-shadow: 0 0 0 4px rgba(45,80,22,0.08);
 	}
-	.form-input:focus ~ .input-icon,
 	.input-wrapper:focus-within .input-icon {
 		color: var(--color-forest);
 	}

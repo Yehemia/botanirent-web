@@ -101,6 +101,15 @@
 >
 	<!-- Left: Toggle & Breadcrumb/Title -->
 	<div class="flex items-center gap-3">
+		<!-- Hamburger Menu Toggle (Mobile only) -->
+		<button 
+			onclick={toggleSidebar}
+			class="md:hidden p-1.5 text-[var(--color-stone)] hover:bg-[var(--color-sand)] hover:text-[var(--color-earth)] rounded-xl transition-all duration-200 cursor-pointer active:scale-95 shrink-0"
+			aria-label="Toggle Sidebar"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+		</button>
+
 		<!-- Breadcrumbs Navigation -->
 		<div class="hidden sm:flex items-center gap-1.5 text-xs font-medium text-[var(--color-stone)] overflow-hidden">
 			<a href="/dashboard" class="flex items-center text-[var(--color-stone)] hover:text-[var(--color-forest)] transition-colors gap-1">

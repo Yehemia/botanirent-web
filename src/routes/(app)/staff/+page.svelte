@@ -70,7 +70,8 @@
 {/if}
 
 <div class="bg-white rounded-xl shadow-[var(--shadow-sm)] border border-[var(--color-border-light)] overflow-hidden">
-	<div class="overflow-x-auto">
+	<!-- Desktop View -->
+	<div class="hidden sm:block overflow-x-auto">
 		<table class="w-full text-left border-collapse">
 			<thead>
 				<tr class="bg-[var(--color-sand-lightest)] border-b border-[var(--color-border-light)] text-sm font-semibold text-[var(--color-stone)]">
@@ -127,6 +128,49 @@
 				{/each}
 			</tbody>
 		</table>
+	</div>
+
+	<!-- Mobile View -->
+	<div class="block sm:hidden divide-y divide-[var(--color-border-light)]">
+		{#each data.staff as staff}
+			<div class="p-4 flex flex-col gap-3 hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
+				<div class="flex justify-between items-start gap-2">
+					<div class="font-bold text-sm text-[var(--color-earth)] truncate">{staff.full_name || 'Menunggu pendaftaran...'}</div>
+					<Badge variant={staff.is_active ? 'success' : 'neutral'} class="shrink-0 text-[10px]">
+						{staff.is_active ? 'Aktif' : 'Nonaktif'}
+					</Badge>
+				</div>
+				
+				<div class="flex flex-col gap-1.5 text-xs text-[var(--color-stone)]">
+					<div class="flex items-center gap-2">
+						<Shield size={14} class="shrink-0" />
+						<span class="capitalize">{staff.role}</span>
+					</div>
+					{#if staff.branches}
+						<div class="flex items-center gap-2">
+							<Store size={14} class="shrink-0" />
+							<span>{staff.branches.name}</span>
+						</div>
+					{/if}
+				</div>
+
+				{#if staff.role !== 'owner'}
+					<div class="flex justify-end pt-1 border-t border-gray-100">
+						<form method="POST" action="?/updateStatus" use:enhance class="w-full">
+							<input type="hidden" name="id" value={staff.id}>
+							<input type="hidden" name="is_active" value={(!staff.is_active).toString()}>
+							
+							<Button variant="ghost" size="sm" type="submit" 
+								class="w-full justify-center {staff.is_active ? 'text-[var(--color-error)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-bg)]' : 'text-[var(--color-success)] hover:text-[var(--color-success)] hover:bg-[var(--color-success-bg)]'}"
+							>
+								{#snippet iconLeft()}<Power size={14} />{/snippet}
+								{staff.is_active ? 'Nonaktifkan Staff' : 'Aktifkan Staff'}
+							</Button>
+						</form>
+					</div>
+				{/if}
+			</div>
+		{/each}
 	</div>
 </div>
 
