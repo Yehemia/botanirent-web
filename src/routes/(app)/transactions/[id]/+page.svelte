@@ -4,6 +4,7 @@
 	import { ArrowLeft, Printer, CheckCircle, Leaf, QrCode } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { formatCurrency, formatDate } from '$lib/utils/format';
+	import { isMobileApp, printReceiptFromMobile } from '$lib/utils/mobileBridge';
 
 	let { data } = $props();
 	let transaction = $derived(data.transaction);
@@ -51,8 +52,38 @@
 		if (pollingInterval) clearInterval(pollingInterval);
 	});
 
-	function handlePrint() {
-		window.print();
+	async function handlePrint() {
+		if (isMobileApp()) {
+			const receiptPayload = {
+				branch_name: branch?.name || 'BotaniRent',
+				branch_address: branch?.address || '',
+				branch_phone: branch?.phone || '',
+				transaction_code: transaction.transaction_code,
+				created_at: transaction.created_at,
+				cashier_name: transaction.cashier?.full_name || '-',
+				transaction_type: transaction.type,
+				customer_name: transaction.customer?.full_name || null,
+				subtotal: transaction.subtotal,
+				discount_amount: transaction.discount_amount || 0,
+				total_amount: transaction.total_amount,
+				paid_amount: transaction.paid_amount,
+				change_amount: transaction.change_amount,
+				payment_method: transaction.payment_method,
+				items: transaction.items.map(item => ({
+					item_name: item.item_name,
+					quantity: item.quantity,
+					unit_price: item.unit_price,
+					subtotal: item.subtotal,
+					rental_days: item.rental_days,
+					rental_start_date: item.rental_start_date,
+					rental_end_date: item.rental_end_date,
+					type: item.type
+				}))
+			};
+			await printReceiptFromMobile(receiptPayload);
+		} else {
+			window.print();
+		}
 	}
 
 	function closeModal() {

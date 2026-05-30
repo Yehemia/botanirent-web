@@ -9,7 +9,8 @@
 		CreditCard, 
 		CalendarClock,
 		Minus,
-		Plus
+		Plus,
+		Camera
 	} from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -17,11 +18,26 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import { formatCurrency } from '$lib/utils/format';
 	import { toast } from 'svelte-sonner';
+	import { isMobileApp, scanBarcodeFromMobile } from '$lib/utils/mobileBridge';
 
 	let { data } = $props();
 	let items = $derived(data.items);
 	let packages = $derived(data.packages);
 	let categories = $derived(data.categories);
+
+	let isMobile = $state(false);
+
+	onMount(() => {
+		isMobile = isMobileApp();
+	});
+
+	async function handleMobileScan() {
+		const scannedCode = await scanBarcodeFromMobile();
+		if (scannedCode) {
+			toast.success(`Scan berhasil: ${scannedCode}`);
+			processBarcode(scannedCode);
+		}
+	}
 
 	// --- BARCODE SCANNER LOGIC ---
 	let barcodeBuffer = '';
@@ -188,6 +204,18 @@
 				>
 					{#snippet iconLeft()}
 						<Search size={18} />
+					{/snippet}
+					{#snippet iconRight()}
+						{#if isMobile}
+							<button 
+								type="button" 
+								class="text-[var(--color-forest)] hover:text-[var(--color-forest-light)] transition-colors p-1 flex items-center justify-center" 
+								onclick={handleMobileScan}
+								title="Pindai Barcode via Kamera"
+							>
+								<Camera size={18} />
+							</button>
+						{/if}
 					{/snippet}
 				</Input>
 			</div>
