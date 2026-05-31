@@ -117,7 +117,7 @@
 		
 		<!-- Bottom attribution -->
 		<div class="hero-footer">
-			<p>© 2025 BotaniRent. All rights reserved.</p>
+			<p>© 2026 BotaniRent. All rights reserved.</p>
 		</div>
 	</div>
 
