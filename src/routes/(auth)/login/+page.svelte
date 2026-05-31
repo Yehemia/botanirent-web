@@ -261,7 +261,7 @@
 	<!-- Mobile Footer -->
 	<footer class="login-mobile-footer">
 		<div class="footer-border"></div>
-		<p>© 2025 BotaniRent. All rights reserved.</p>
+		<p>© 2026 BotaniRent. All rights reserved.</p>
 	</footer>
 </div>
 
