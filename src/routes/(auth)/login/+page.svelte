@@ -16,10 +16,16 @@
 		// is injected by Flutter AFTER the page finishes loading.
 		const isWebView = !!(window.isFlutterWebView || window.__BOTANIRENT_MOBILE__);
 
+		console.log('[BotaniRent] handleGoogleClick called');
+		console.log('[BotaniRent] isWebView:', isWebView);
+		console.log('[BotaniRent] flutter_inappwebview exists:', !!window.flutter_inappwebview);
+
 		if (isWebView && window.flutter_inappwebview) {
 			loading = true;
 			try {
+				console.log('[BotaniRent] Calling native googleSignIn handler...');
 				const result = await window.flutter_inappwebview.callHandler('googleSignIn');
+				console.log('[BotaniRent] Native result:', JSON.stringify(result));
 				if (result && result.idToken) {
 					nativeIdToken = result.idToken;
 					// Set action to token login
@@ -33,16 +39,19 @@
 					loading = false;
 					if (result && result.error) {
 						alert('Login Google gagal: ' + result.error);
+					} else {
+						console.log('[BotaniRent] No idToken in result, user may have cancelled');
 					}
 				}
 			} catch (err) {
-				console.error('[Web] Native Google Sign In error:', err);
+				console.error('[BotaniRent] Native Google Sign In error:', err);
 				loading = false;
-				alert('Error native Google Sign In. Membuka OAuth biasa...');
+				alert('Error native Google Sign In: ' + err.message);
 				googleFormElement.action = '?/googleOauth';
 				googleFormElement.submit();
 			}
 		} else {
+			console.log('[BotaniRent] Not a WebView or flutter_inappwebview missing, using regular OAuth');
 			// Ordinary web browser behavior
 			googleFormElement.action = '?/googleOauth';
 			googleFormElement.submit();
