@@ -81,5 +81,26 @@ export const actions = {
 		}
 
 		throw redirect(303, data.url);
+	},
+
+	googleTokenLogin: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const idToken = formData.get('idToken');
+
+		if (!idToken) {
+			return fail(400, { error: 'ID Token tidak ditemukan' });
+		}
+
+		const { data, error } = await supabase.auth.signInWithIdToken({
+			provider: 'google',
+			token: idToken.toString()
+		});
+
+		if (error) {
+			console.error('Native sign-in verification error:', error);
+			return fail(400, { error: 'Verifikasi login Google gagal: ' + error.message });
+		}
+
+		throw redirect(303, '/dashboard');
 	}
 };
