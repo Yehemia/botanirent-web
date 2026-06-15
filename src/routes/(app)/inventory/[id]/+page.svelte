@@ -10,28 +10,43 @@
 	/** @type {{ data: any, form: any }} */
 	let { data, form } = $props();
 	
-	const initialItem = data.item;
-	const initialForm = form;
 	let item = $derived(data.item);
 	let categories = $derived(data.categories);
 
 	let loading = $state(false);
 	
-	// Initialize form states using Svelte 5 $state
-	let name = $state(initialForm?.values?.name ?? initialItem.name);
-	let description = $state(initialForm?.values?.description ?? initialItem.description ?? '');
-	let selectedCategoryId = $state(initialForm?.values?.category_id ?? initialItem.category_id);
-	let stock_total = $state(initialForm?.values?.stock_total ?? initialItem.stock_total);
-	let is_active = $state(initialForm?.values?.is_active ?? (initialItem.is_active ? 'true' : 'false'));
+	// Get initial values via static function to avoid Svelte compiler reactivity warnings
+	const getInitialValues = () => {
+		const val = form?.values;
+		const it = data.item;
+		return {
+			name: val?.name ?? it.name,
+			description: val?.description ?? it.description ?? '',
+			category_id: val?.category_id ?? it.category_id,
+			stock_total: val?.stock_total ?? it.stock_total,
+			is_active: val?.is_active ?? (it.is_active ? 'true' : 'false'),
+			rental_price_per_day: val?.rental_price_per_day ?? it.rental_price_per_day ?? '',
+			sell_price: val?.sell_price ?? it.sell_price ?? '',
+			imagePreview: it.image_url || null
+		};
+	};
+
+	const initial = getInitialValues();
+
+	let name = $state(initial.name);
+	let description = $state(initial.description);
+	let selectedCategoryId = $state(initial.category_id);
+	let stock_total = $state(initial.stock_total);
+	let is_active = $state(initial.is_active);
 	
-	let rental_price_per_day = $state(initialForm?.values?.rental_price_per_day ?? initialItem.rental_price_per_day ?? '');
-	let sell_price = $state(initialForm?.values?.sell_price ?? initialItem.sell_price ?? '');
+	let rental_price_per_day = $state(initial.rental_price_per_day);
+	let sell_price = $state(initial.sell_price);
 	
 	// Reactively find the selected category to toggle price inputs
 	let selectedCategory = $derived(categories.find((/** @type {any} */ c) => c.id === selectedCategoryId));
 	
 	/** @type {string | null} */
-	let imagePreview = $state(initialItem.image_url || null);
+	let imagePreview = $state(initial.imagePreview);
 
 	/** @param {Event & { currentTarget: HTMLInputElement }} e */
 	function handleImageChange(e) {

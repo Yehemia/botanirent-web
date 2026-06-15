@@ -69,7 +69,7 @@
 				paid_amount: transaction.paid_amount,
 				change_amount: transaction.change_amount,
 				payment_method: transaction.payment_method,
-				items: transaction.items.map(item => ({
+				items: transaction.items.map((/** @type {any} */ item) => ({
 					item_name: item.item_name,
 					quantity: item.quantity,
 					unit_price: item.unit_price,

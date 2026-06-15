@@ -6,25 +6,28 @@
 	let loading = $state(false);
 	let showPassword = $state(false);
 
-	let googleFormElement;
+	/** @type {any} */
+	let googleFormElement = $state();
 	let nativeIdToken = $state('');
 
+	/** @param {any} e */
 	async function handleGoogleClick(e) {
 		e.preventDefault();
 
 		// Check at click time (not onMount) because the detection script
 		// is injected by Flutter AFTER the page finishes loading.
-		const isWebView = !!(window.isFlutterWebView || window.__BOTANIRENT_MOBILE__);
+		const win = /** @type {any} */ (window);
+		const isWebView = !!(win.isFlutterWebView || win.__BOTANIRENT_MOBILE__);
 
 		console.log('[BotaniRent] handleGoogleClick called');
 		console.log('[BotaniRent] isWebView:', isWebView);
-		console.log('[BotaniRent] flutter_inappwebview exists:', !!window.flutter_inappwebview);
+		console.log('[BotaniRent] flutter_inappwebview exists:', !!win.flutter_inappwebview);
 
-		if (isWebView && window.flutter_inappwebview) {
+		if (isWebView && win.flutter_inappwebview) {
 			loading = true;
 			try {
 				console.log('[BotaniRent] Calling native googleSignIn handler...');
-				const result = await window.flutter_inappwebview.callHandler('googleSignIn');
+				const result = await win.flutter_inappwebview.callHandler('googleSignIn');
 				console.log('[BotaniRent] Native result:', JSON.stringify(result));
 				if (result && result.idToken) {
 					nativeIdToken = result.idToken;
@@ -46,7 +49,8 @@
 			} catch (err) {
 				console.error('[BotaniRent] Native Google Sign In error:', err);
 				loading = false;
-				alert('Error native Google Sign In: ' + err.message);
+				const error = /** @type {any} */ (err);
+				alert('Error native Google Sign In: ' + error.message);
 				googleFormElement.action = '?/googleOauth';
 				googleFormElement.submit();
 			}

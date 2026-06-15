@@ -3,9 +3,10 @@
  * @returns {boolean} true jika di dalam Flutter Webview
  */
 export function isMobileApp() {
-  return typeof window !== 'undefined' && 
-         window['flutter_inappwebview'] !== undefined && 
-         typeof window['flutter_inappwebview'].callHandler === 'function';
+  if (typeof window === 'undefined') return false;
+  const win = /** @type {any} */ (window);
+  return win.flutter_inappwebview !== undefined && 
+         typeof win.flutter_inappwebview.callHandler === 'function';
 }
 
 /**
@@ -18,7 +19,8 @@ export async function scanBarcodeFromMobile() {
     return null;
   }
   try {
-    const result = await window['flutter_inappwebview'].callHandler('scanBarcode');
+    const win = /** @type {any} */ (window);
+    const result = await win.flutter_inappwebview.callHandler('scanBarcode');
     return result; // Mengembalikan string kode barcode (atau null jika dibatalkan)
   } catch (error) {
     console.error("Gagal melakukan scan barcode native:", error);
@@ -37,7 +39,8 @@ export async function printReceiptFromMobile(receiptData) {
     return false;
   }
   try {
-    const success = await window['flutter_inappwebview'].callHandler('printReceipt', receiptData);
+    const win = /** @type {any} */ (window);
+    const success = await win.flutter_inappwebview.callHandler('printReceipt', receiptData);
     return success;
   } catch (error) {
     console.error("Gagal mengirim perintah cetak ke Flutter:", error);

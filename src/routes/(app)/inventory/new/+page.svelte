@@ -14,10 +14,13 @@
 
 	let loading = $state(false);
 	
-	// Default to first category if none selected previously
-	const initialForm = form;
-	const initialData = data;
-	let selectedCategoryId = $state(initialForm?.values?.category_id || (initialData.categories.length > 0 ? initialData.categories[0].id : ''));
+	// Get initial category ID using static helper to prevent Svelte warnings
+	const getInitialCategoryId = () => {
+		return form?.values?.category_id || (data.categories.length > 0 ? data.categories[0].id : '');
+	};
+
+	const initialCategoryId = getInitialCategoryId();
+	let selectedCategoryId = $state(initialCategoryId);
 	
 	// Reactively find the selected category to toggle price inputs
 	let selectedCategory = $derived(categories.find((/** @type {any} */ c) => c.id === selectedCategoryId));

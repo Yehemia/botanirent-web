@@ -862,6 +862,7 @@
 	}
 	.cash-input[type=number] {
 		-moz-appearance: textfield;
+		appearance: textfield;
 	}
 
 	/* ─── Cash Shortcut Buttons ─── */
