@@ -16,7 +16,8 @@
 		"test:cleanup": "node tests/cleanup-test-db.js",
 		"test:e2e": "npm run test:setup && playwright test && npm run test:cleanup",
 		"test:e2e:ui": "npm run test:setup && playwright test --ui",
-		"prebuild": "node tests/prebuild.js"
+		"prebuild": "npm run check",
+		"build:local": "npm run check && npm run test:e2e && npm run build"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.4",
