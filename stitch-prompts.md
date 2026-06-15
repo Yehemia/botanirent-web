@@ -271,7 +271,7 @@ Konten utama:
 - Navigasi bulan: "← Juni 2026 →" dengan panah kiri/kanan
 - Grid kalender bulanan (7 kolom: Sen-Min):
   - Header kolom: nama hari, font 12px, uppercase, #7A7062
-  - Setiap sel tanggal: 
+  - Setiap sel tanggal:
     - Nomor tanggal di kiri atas
     - Tanggal hari ini: border 2px solid #2D5016
     - Tanggal available: background putih
@@ -727,7 +727,7 @@ Timeline view (vertikal):
   - Dot pada timeline (warna sesuai tipe aksi)
   - Timestamp: "14:32 — 21 Mei 2026" (caption, monospace)
   - Avatar kecil + "Ahmad" + badge cabang "Cabang Bandung" (pill kecil)
-  - Deskripsi aksi: "Membuat transaksi baru #TRX-2026-0042 — Total Rp 325.000" 
+  - Deskripsi aksi: "Membuat transaksi baru #TRX-2026-0042 — Total Rp 325.000"
   - Icon expand (chevron) untuk lihat detail
 
 Tampilkan 6-8 entries contoh dengan berbagai tipe:
@@ -766,6 +766,7 @@ Palette Alpine Earth. Resolusi: 1440x900px
 ## 💡 Tips Penggunaan di Stitch
 
 > [!IMPORTANT]
+>
 > 1. **Paste System Prompt terlebih dahulu** sebelum generate screen apapun agar Stitch memahami design system secara global.
 > 2. **Generate satu screen per prompt** untuk hasil terbaik.
 > 3. Jika hasilnya tidak presisi, tambahkan detail spesifik seperti "warna tombol harus tepat #2D5016, bukan hijau lain".

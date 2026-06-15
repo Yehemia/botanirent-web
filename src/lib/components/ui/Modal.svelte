@@ -1,7 +1,7 @@
 <script>
 	import { fade, scale } from 'svelte/transition';
 	import { X } from '@lucide/svelte';
-	
+
 	/**
 	 * @typedef {Object} Props
 	 * @property {boolean} open
@@ -56,29 +56,31 @@
 {#if open}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div 
-		class="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-earth)]/50 backdrop-blur-[4px] p-4"
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-earth)]/50 p-4 backdrop-blur-[4px]"
 		onclick={handleBackdropClick}
 		transition:fade={{ duration: 250 }}
 	>
-		<div 
-			class="bg-white rounded-xl shadow-[var(--shadow-xl)] w-full {sizeClasses[size]} max-h-[90vh] flex flex-col relative"
+		<div
+			class="w-full rounded-xl bg-white shadow-[var(--shadow-xl)] {sizeClasses[
+				size
+			]} relative flex max-h-[90vh] flex-col"
 			transition:scale={{ duration: 250, start: 0.95, opacity: 0 }}
 			role="dialog"
 			aria-modal="true"
 		>
 			{#if title}
 				<div class="px-6 pt-6 pb-4">
-					<h3 class="text-xl font-bold font-heading text-[var(--color-earth)]">
+					<h3 class="font-heading text-xl font-bold text-[var(--color-earth)]">
 						{title}
 					</h3>
 				</div>
 			{/if}
 
 			{#if !hideCloseButton}
-				<button 
+				<button
 					type="button"
-					class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-[var(--color-stone)] hover:bg-[var(--color-sand)] hover:text-[var(--color-earth)] transition-colors"
+					class="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-stone)] transition-colors hover:bg-[var(--color-sand)] hover:text-[var(--color-earth)]"
 					onclick={close}
 					aria-label="Close"
 				>
@@ -86,14 +88,16 @@
 				</button>
 			{/if}
 
-			<div class="px-6 py-2 overflow-y-auto flex-grow">
+			<div class="flex-grow overflow-y-auto px-6 py-2">
 				{#if children}
 					{@render children()}
 				{/if}
 			</div>
 
 			{#if footer}
-				<div class="px-6 py-6 flex justify-end gap-3 mt-auto border-t border-[var(--color-border-light)]/50">
+				<div
+					class="mt-auto flex justify-end gap-3 border-t border-[var(--color-border-light)]/50 px-6 py-6"
+				>
 					{@render footer()}
 				</div>
 			{/if}

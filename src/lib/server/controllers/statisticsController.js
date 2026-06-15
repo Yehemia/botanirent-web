@@ -16,20 +16,23 @@ export const statisticsController = {
 			transactionModel.getTransactionItems(supabase)
 		]);
 
-		const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
+		const branchMap = new Map((branches || []).map((b) => [b.id, b.name]));
 
 		// Filter items to current branch if branch is selected
 		let itemList = allItems || [];
 		if (profile.branch_id) {
-			const activeTxIds = new Set(txList.map(t => t.id));
-			itemList = itemList.filter(item => activeTxIds.has(item.transaction_id));
+			const activeTxIds = new Set(txList.map((t) => t.id));
+			itemList = itemList.filter((item) => activeTxIds.has(item.transaction_id));
 		}
 
 		// --- Aggregation Logic ---
 
 		// Main Metrics
 		const totalTxRevenue = txList.reduce((acc, t) => acc + Number(t.total_amount), 0);
-		const totalPenaltyRevenue = penaltyList.reduce((acc, p) => acc + Number(p.calculated_amount), 0);
+		const totalPenaltyRevenue = penaltyList.reduce(
+			(acc, p) => acc + Number(p.calculated_amount),
+			0
+		);
 		const totalRevenue = totalTxRevenue + totalPenaltyRevenue;
 		const totalTxCount = txList.length;
 		const avgTxValue = totalTxCount > 0 ? totalTxRevenue / totalTxCount : 0;
@@ -41,7 +44,7 @@ export const statisticsController = {
 			branchStats[id] = { name, revenue: 0, count: 0, penalty_revenue: 0 };
 		});
 
-		txList.forEach(t => {
+		txList.forEach((t) => {
 			if (branchStats[t.branch_id]) {
 				branchStats[t.branch_id].revenue += Number(t.total_amount);
 				branchStats[t.branch_id].count += 1;
@@ -56,7 +59,7 @@ export const statisticsController = {
 			}
 		});
 
-		penaltyList.forEach(p => {
+		penaltyList.forEach((p) => {
 			if (branchStats[p.branch_id]) {
 				branchStats[p.branch_id].revenue += Number(p.calculated_amount);
 				branchStats[p.branch_id].penalty_revenue += Number(p.calculated_amount);
@@ -66,7 +69,7 @@ export const statisticsController = {
 		// Popular Items (top 5 by quantity)
 		/** @type {Record<string, { name: string, quantity: number, type: string, total: number }>} */
 		const itemStats = {};
-		itemList.forEach(item => {
+		itemList.forEach((item) => {
 			const name = item.item_name;
 			if (!itemStats[name]) {
 				itemStats[name] = { name, quantity: 0, type: item.type, total: 0 };
@@ -87,7 +90,7 @@ export const statisticsController = {
 			penalty: { count: penaltyList.length, revenue: totalPenaltyRevenue }
 		};
 
-		itemList.forEach(item => {
+		itemList.forEach((item) => {
 			const type = /** @type {keyof typeof typeBreakdown} */ (item.type);
 			if (typeBreakdown[type]) {
 				typeBreakdown[type].count += item.quantity;
@@ -98,7 +101,20 @@ export const statisticsController = {
 		// Monthly trend (last 6 months)
 		/** @type {Record<string, number>} */
 		const monthlyRevenue = {};
-		const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+		const monthNames = [
+			'Jan',
+			'Feb',
+			'Mar',
+			'Apr',
+			'Mei',
+			'Jun',
+			'Jul',
+			'Agu',
+			'Sep',
+			'Okt',
+			'Nov',
+			'Des'
+		];
 
 		// Generate last 6 months list
 		const trendLabels = [];
@@ -113,7 +129,7 @@ export const statisticsController = {
 			});
 		}
 
-		txList.forEach(t => {
+		txList.forEach((t) => {
 			const dateObj = new Date(t.created_at);
 			const key = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
 			if (monthlyRevenue[key] !== undefined) {
@@ -121,7 +137,7 @@ export const statisticsController = {
 			}
 		});
 
-		penaltyList.forEach(p => {
+		penaltyList.forEach((p) => {
 			const dateObj = new Date(p.created_at);
 			const key = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
 			if (monthlyRevenue[key] !== undefined) {
@@ -129,8 +145,8 @@ export const statisticsController = {
 			}
 		});
 
-		const trendData = trendLabels.map(t => monthlyRevenue[t.key]);
-		const trendLabelStrings = trendLabels.map(t => t.label);
+		const trendData = trendLabels.map((t) => monthlyRevenue[t.key]);
+		const trendLabelStrings = trendLabels.map((t) => t.label);
 
 		return {
 			metrics: {

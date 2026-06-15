@@ -68,25 +68,29 @@ export const posController = {
 		if (!payloadRaw) {
 			return { success: false, status: 400, error: 'Data checkout kosong.' };
 		}
-		
+
 		let payload;
 		try {
 			payload = JSON.parse(payloadRaw.toString());
 		} catch (e) {
 			const preview = payloadRaw.toString().substring(0, 200);
 			console.error('[Checkout] Payload JSON parse failed. Raw value preview:', preview);
-			return { success: false, status: 400, error: `Format data transaksi tidak valid. Preview: ${preview}` };
+			return {
+				success: false,
+				status: 400,
+				error: `Format data transaksi tidak valid. Preview: ${preview}`
+			};
 		}
-		
+
 		// Injeksi data server-side
 		payload.branch_id = profile.branch_id;
 		payload.cashier_id = profile.id;
-		
+
 		// Generate Transaction Code (e.g., TRX-1A2B-123456)
 		const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
 		const timeStr = Date.now().toString().slice(-6);
 		payload.transaction_code = `TRX-${randomStr}-${timeStr}`;
-		
+
 		// Handle Customer (Jika pelanggan baru, insert dulu)
 		if (payload.customer_name && !payload.customer_id) {
 			try {
@@ -99,7 +103,7 @@ export const posController = {
 					payload.customer_id = newCust.id;
 				}
 			} catch (custErr) {
-				console.error("Error creating customer in checkout:", custErr);
+				console.error('Error creating customer in checkout:', custErr);
 				// We can continue or fail. In original, if it fails to create customer, it continues but payload.customer_id will remain empty/null.
 			}
 		}
@@ -121,8 +125,12 @@ export const posController = {
 		try {
 			data = await transactionModel.checkoutTransaction(supabase, payload);
 		} catch (error) {
-			console.error("Checkout transaction error:", error);
-			return { success: false, status: 500, error: `Gagal Checkout: ${error instanceof Error ? error.message : String(error)}` };
+			console.error('Checkout transaction error:', error);
+			return {
+				success: false,
+				status: 500,
+				error: `Gagal Checkout: ${error instanceof Error ? error.message : String(error)}`
+			};
 		}
 
 		// Log activity
@@ -140,10 +148,10 @@ export const posController = {
 			try {
 				const authString = btoa(`${midtransConfig.serverKey}:`);
 				const isProduction = midtransConfig.env === 'production';
-				const apiUrl = isProduction 
-					? 'https://api.midtrans.com/v2/charge' 
+				const apiUrl = isProduction
+					? 'https://api.midtrans.com/v2/charge'
 					: 'https://api.sandbox.midtrans.com/v2/charge';
-				
+
 				const midtransPayload = {
 					payment_type: 'qris',
 					transaction_details: {
@@ -163,9 +171,9 @@ export const posController = {
 				const response = await midtransConfig.fetch(apiUrl, {
 					method: 'POST',
 					headers: {
-						'Accept': 'application/json',
+						Accept: 'application/json',
 						'Content-Type': 'application/json',
-						'Authorization': `Basic ${authString}`
+						Authorization: `Basic ${authString}`
 					},
 					body: JSON.stringify(midtransPayload)
 				});
@@ -173,7 +181,9 @@ export const posController = {
 				const midtransData = await response.json();
 				if (response.ok && midtransData.transaction_id) {
 					const qr_string = midtransData.qr_string;
-					const qr_url = midtransData.actions?.find((/** @type {any} */ act) => act.name === 'generate-qr-code')?.url || '';
+					const qr_url =
+						midtransData.actions?.find((/** @type {any} */ act) => act.name === 'generate-qr-code')
+							?.url || '';
 
 					// Update database dengan ID transaksi Midtrans dan data QRIS (disimpan di midtrans_snap_token sebagai JSON)
 					await transactionModel.updateTransaction(supabase, data.transaction_id, {
@@ -190,12 +200,20 @@ export const posController = {
 						qr_url
 					};
 				} else {
-					console.error("Midtrans API Error:", midtransData);
-					return { success: false, status: 400, error: midtransData.status_message || 'Gagal inisiasi pembayaran QRIS Midtrans.' };
+					console.error('Midtrans API Error:', midtransData);
+					return {
+						success: false,
+						status: 400,
+						error: midtransData.status_message || 'Gagal inisiasi pembayaran QRIS Midtrans.'
+					};
 				}
 			} catch (e) {
-				console.error("Midtrans Request Error:", e);
-				return { success: false, status: 500, error: 'Kesalahan internal server saat menghubungi Midtrans.' };
+				console.error('Midtrans Request Error:', e);
+				return {
+					success: false,
+					status: 500,
+					error: 'Kesalahan internal server saat menghubungi Midtrans.'
+				};
 			}
 		}
 

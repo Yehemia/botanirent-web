@@ -4,13 +4,10 @@ export const categoryModel = {
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 */
 	async getCategories(supabase) {
-		const { data, error } = await supabase
-			.from('categories')
-			.select('*')
-			.order('sort_order');
+		const { data, error } = await supabase.from('categories').select('*').order('sort_order');
 
 		if (error) {
-			console.error("Error loading categories:", error);
+			console.error('Error loading categories:', error);
 			throw new Error(error.message);
 		}
 		return data || [];

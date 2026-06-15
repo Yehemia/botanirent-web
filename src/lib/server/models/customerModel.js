@@ -7,7 +7,8 @@ export const customerModel = {
 	async getCustomers(supabase, branchId) {
 		const { data, error } = await supabase
 			.from('customers')
-			.select(`
+			.select(
+				`
 				*,
 				transactions(
 					id,
@@ -37,12 +38,13 @@ export const customerModel = {
 						)
 					)
 				)
-			`)
+			`
+			)
 			.eq('branch_id', branchId)
 			.order('created_at', { ascending: false });
 
 		if (error) {
-			console.error("Error fetching customers:", error);
+			console.error('Error fetching customers:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -61,7 +63,7 @@ export const customerModel = {
 			.order('full_name');
 
 		if (error) {
-			console.error("Error fetching customers minimal:", error);
+			console.error('Error fetching customers minimal:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -73,14 +75,10 @@ export const customerModel = {
 	 * @param {object} customerData
 	 */
 	async createCustomer(supabase, customerData) {
-		const { data, error } = await supabase
-			.from('customers')
-			.insert(customerData)
-			.select()
-			.single();
+		const { data, error } = await supabase.from('customers').insert(customerData).select().single();
 
 		if (error) {
-			console.error("Error creating customer in model:", error);
+			console.error('Error creating customer in model:', error);
 			throw new Error(error.message);
 		}
 		return data;
@@ -93,13 +91,10 @@ export const customerModel = {
 	 * @param {object} customerData
 	 */
 	async updateCustomer(supabase, id, customerData) {
-		const { error } = await supabase
-			.from('customers')
-			.update(customerData)
-			.eq('id', id);
+		const { error } = await supabase.from('customers').update(customerData).eq('id', id);
 
 		if (error) {
-			console.error("Error updating customer in model:", error);
+			console.error('Error updating customer in model:', error);
 			throw new Error(error.message);
 		}
 		return true;
@@ -111,13 +106,10 @@ export const customerModel = {
 	 * @param {string} id
 	 */
 	async deleteCustomer(supabase, id) {
-		const { error } = await supabase
-			.from('customers')
-			.delete()
-			.eq('id', id);
+		const { error } = await supabase.from('customers').delete().eq('id', id);
 
 		if (error) {
-			console.error("Error deleting customer in model:", error);
+			console.error('Error deleting customer in model:', error);
 			throw new Error(error.message);
 		}
 		return true;
@@ -136,7 +128,7 @@ export const customerModel = {
 			.single();
 
 		if (error) {
-			console.error("Error getting customer details:", error);
+			console.error('Error getting customer details:', error);
 			return null;
 		}
 		return data;
@@ -148,9 +140,7 @@ export const customerModel = {
 	 * @param {string|null} branchId
 	 */
 	async getCustomersCount(supabase, branchId = null) {
-		let query = supabase
-			.from('customers')
-			.select('*', { count: 'exact', head: true });
+		let query = supabase.from('customers').select('*', { count: 'exact', head: true });
 
 		if (branchId) {
 			query = query.eq('branch_id', branchId);
@@ -158,7 +148,7 @@ export const customerModel = {
 
 		const { count, error } = await query;
 		if (error) {
-			console.error("Error fetching customers count:", error);
+			console.error('Error fetching customers count:', error);
 			throw new Error(error.message);
 		}
 		return count || 0;

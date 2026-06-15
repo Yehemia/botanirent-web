@@ -6,20 +6,20 @@ export const assetModel = {
 	 */
 	async getAssetsStatusCounts(supabase, branchId = null) {
 		let query = supabase.from('rental_assets').select('status, item:items!inner(branch_id)');
-		
+
 		if (branchId) {
 			query = query.eq('items.branch_id', branchId);
 		}
 
 		const { data, error } = await query;
 		if (error) {
-			console.error("Error fetching assets in model:", error);
+			console.error('Error fetching assets in model:', error);
 			throw new Error(error.message);
 		}
 
 		const stats = { ready: 0, rented: 0, maintenance: 0, washing: 0 };
 		if (data) {
-			data.forEach(a => {
+			data.forEach((a) => {
 				const status = /** @type {keyof typeof stats} */ (a.status);
 				if (stats[status] !== undefined) stats[status]++;
 			});
@@ -40,7 +40,7 @@ export const assetModel = {
 			.eq('items.branch_id', branchId);
 
 		if (error) {
-			console.error("Error fetching washing assets in model:", error);
+			console.error('Error fetching washing assets in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -59,7 +59,7 @@ export const assetModel = {
 			.eq('items.branch_id', branchId);
 
 		if (error) {
-			console.error("Error fetching maintenance assets in model:", error);
+			console.error('Error fetching maintenance assets in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -74,9 +74,7 @@ export const assetModel = {
 	 * @param {boolean} [params.ascending]
 	 */
 	async getAssets(supabase, { branchId = null, orderBy = 'asset_code', ascending = true } = {}) {
-		let query = supabase
-			.from('rental_assets')
-			.select('*, item:items!inner(branch_id, name)');
+		let query = supabase.from('rental_assets').select('*, item:items!inner(branch_id, name)');
 
 		if (branchId) {
 			query = query.eq('items.branch_id', branchId);
@@ -85,7 +83,7 @@ export const assetModel = {
 		const { data, error } = await query.order(orderBy, { ascending });
 
 		if (error) {
-			console.error("Error fetching assets in model:", error);
+			console.error('Error fetching assets in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -100,9 +98,9 @@ export const assetModel = {
 	 */
 	async updateAssetStatus(supabase, id, status, notes = null) {
 		/** @type {{ status: string, last_status_change: string, notes?: string }} */
-		const updateData = { 
-			status, 
-			last_status_change: new Date().toISOString() 
+		const updateData = {
+			status,
+			last_status_change: new Date().toISOString()
 		};
 		if (notes !== null) {
 			updateData.notes = notes;
@@ -115,7 +113,7 @@ export const assetModel = {
 			.select();
 
 		if (error) {
-			console.error("Error updating asset status in model:", error);
+			console.error('Error updating asset status in model:', error);
 			throw new Error(error.message);
 		}
 		return data;
@@ -134,7 +132,7 @@ export const assetModel = {
 			.is('transaction_item_id', null);
 
 		if (error) {
-			console.error("Error deleting maintenance booking in model:", error);
+			console.error('Error deleting maintenance booking in model:', error);
 			throw new Error(error.message);
 		}
 		return true;
@@ -154,7 +152,7 @@ export const assetModel = {
 			.order('created_at', { ascending: false });
 
 		if (error) {
-			console.error("Error fetching ready assets in model:", error);
+			console.error('Error fetching ready assets in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -166,13 +164,10 @@ export const assetModel = {
 	 * @param {Array<string>} assetIds
 	 */
 	async deleteAssetsByIds(supabase, assetIds) {
-		const { error } = await supabase
-			.from('rental_assets')
-			.delete()
-			.in('id', assetIds);
+		const { error } = await supabase.from('rental_assets').delete().in('id', assetIds);
 
 		if (error) {
-			console.error("Error deleting assets by IDs in model:", error);
+			console.error('Error deleting assets by IDs in model:', error);
 			throw new Error(error.message);
 		}
 		return true;
@@ -190,7 +185,7 @@ export const assetModel = {
 			.eq('item_id', itemId);
 
 		if (error) {
-			console.error("Error fetching existing assets for item in model:", error);
+			console.error('Error fetching existing assets for item in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -202,12 +197,10 @@ export const assetModel = {
 	 * @param {Array<object>} assetsList
 	 */
 	async insertAssets(supabase, assetsList) {
-		const { error } = await supabase
-			.from('rental_assets')
-			.insert(assetsList);
+		const { error } = await supabase.from('rental_assets').insert(assetsList);
 
 		if (error) {
-			console.error("Error inserting rental assets in model:", error);
+			console.error('Error inserting rental assets in model:', error);
 			throw new Error(error.message);
 		}
 		return true;

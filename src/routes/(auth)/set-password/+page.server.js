@@ -14,7 +14,7 @@ export const load = async ({ url, locals: { supabase, safeGetSession } }) => {
 	}
 
 	const { session } = await safeGetSession();
-	
+
 	// Jika tetap tidak ada sesi (link expired atau tidak valid), tendang ke login
 	if (!session) {
 		throw redirect(303, '/login?error=link_expired');

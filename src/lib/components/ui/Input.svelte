@@ -38,13 +38,16 @@
 <div class="flex flex-col gap-1.5 {className}">
 	{#if label}
 		<label for={id} class="text-[13px] font-medium text-[var(--color-earth)]">
-			{label} {#if required}<span class="text-[var(--color-error)]">*</span>{/if}
+			{label}
+			{#if required}<span class="text-[var(--color-error)]">*</span>{/if}
 		</label>
 	{/if}
 
 	<div class="relative flex items-center">
 		{#if iconLeft}
-			<div class="absolute left-3 flex items-center justify-center text-[var(--color-muted)] pointer-events-none">
+			<div
+				class="pointer-events-none absolute left-3 flex items-center justify-center text-[var(--color-muted)]"
+			>
 				{@render iconLeft()}
 			</div>
 		{/if}
@@ -57,16 +60,15 @@
 			{disabled}
 			{required}
 			bind:value
-			class="w-full bg-white border-[1.5px] rounded-md transition-colors text-[var(--color-earth)] placeholder:text-[var(--color-muted)]
+			class="w-full rounded-md border-[1.5px] bg-white text-[var(--color-earth)] transition-colors placeholder:text-[var(--color-muted)]
 				focus:outline-none
-				disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed
+				disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400
 				{sizeClasses[size]}
 				{iconLeft ? 'pl-10' : ''}
 				{iconRight ? 'pr-10' : ''}
-				{error 
-					? 'border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[3px] focus:ring-[var(--color-error-bg)]' 
-					: 'border-[var(--color-border)] focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)]'
-				}"
+				{error
+				? 'border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[3px] focus:ring-[var(--color-error-bg)]'
+				: 'border-[var(--color-border)] focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)]'}"
 			{...rest}
 		/>
 
@@ -78,8 +80,8 @@
 	</div>
 
 	{#if error}
-		<p class="text-[12px] text-[var(--color-error)] mt-0.5">{error}</p>
+		<p class="mt-0.5 text-[12px] text-[var(--color-error)]">{error}</p>
 	{:else if helperText}
-		<p class="text-[12px] text-[var(--color-stone)] mt-0.5">{helperText}</p>
+		<p class="mt-0.5 text-[12px] text-[var(--color-stone)]">{helperText}</p>
 	{/if}
 </div>

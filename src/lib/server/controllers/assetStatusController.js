@@ -11,7 +11,7 @@ export const assetStatusController = {
 
 		if (profile.role !== 'owner') {
 			if (!profile.branch_id) {
-				console.error("User has no branch_id assigned");
+				console.error('User has no branch_id assigned');
 				return { assets: [] };
 			}
 			branchId = profile.branch_id;
@@ -27,7 +27,7 @@ export const assetStatusController = {
 				assets
 			};
 		} catch (error) {
-			console.error("Error loading assets in assetStatusController:", error);
+			console.error('Error loading assets in assetStatusController:', error);
 			return {
 				assets: []
 			};
@@ -58,7 +58,7 @@ export const assetStatusController = {
 
 			return { success: true };
 		} catch (error) {
-			console.error("Error updating asset status in controller:", error);
+			console.error('Error updating asset status in controller:', error);
 			return { success: false, status: 500, error: 'Gagal mengupdate status aset.' };
 		}
 	}

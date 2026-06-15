@@ -15,11 +15,13 @@ export const settingsModel = {
 			throw new Error(error.message);
 		}
 
-		return data?.value || { 
-			default_rental_duration_days: 4, 
-			late_fee_per_day_per_transaction: 10000,
-			monthly_revenue_target: 20000000 
-		};
+		return (
+			data?.value || {
+				default_rental_duration_days: 4,
+				late_fee_per_day_per_transaction: 10000,
+				monthly_revenue_target: 20000000
+			}
+		);
 	},
 
 	/**
@@ -28,13 +30,14 @@ export const settingsModel = {
 	 * @param {object} value
 	 */
 	async upsertRentalSettings(supabase, value) {
-		const { error } = await supabase
-			.from('settings')
-			.upsert({
+		const { error } = await supabase.from('settings').upsert(
+			{
 				key: 'rental',
 				value: value,
 				updated_at: new Date().toISOString()
-			}, { onConflict: 'key' });
+			},
+			{ onConflict: 'key' }
+		);
 
 		if (error) {
 			console.error('Error upserting settings in model:', error);

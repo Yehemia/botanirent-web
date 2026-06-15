@@ -24,7 +24,7 @@ export const bookingController = {
 					selectedBranchId = branches[0].id;
 				}
 			} catch (error) {
-				console.error("Error fetching active branches in bookingController:", error);
+				console.error('Error fetching active branches in bookingController:', error);
 			}
 		} else {
 			selectedBranchId = profile.branch_id;
@@ -75,11 +75,19 @@ export const bookingController = {
 		const status = formData.get('status')?.toString() || 'maintenance'; // 'maintenance' or 'washing'
 
 		if (!rental_asset_id || !start_date || !end_date) {
-			return { success: false, status: 400, error: 'Data tidak lengkap. Harap isi tanggal mulai, tanggal selesai, dan pilih unit.' };
+			return {
+				success: false,
+				status: 400,
+				error: 'Data tidak lengkap. Harap isi tanggal mulai, tanggal selesai, dan pilih unit.'
+			};
 		}
 
 		if (new Date(start_date) > new Date(end_date)) {
-			return { success: false, status: 400, error: 'Tanggal selesai harus setelah atau sama dengan tanggal mulai.' };
+			return {
+				success: false,
+				status: 400,
+				error: 'Tanggal selesai harus setelah atau sama dengan tanggal mulai.'
+			};
 		}
 
 		try {
@@ -108,7 +116,7 @@ export const bookingController = {
 
 			return { success: true };
 		} catch (error) {
-			console.error("Error creating maintenance booking in controller:", error);
+			console.error('Error creating maintenance booking in controller:', error);
 			return { success: false, status: 500, error: 'Gagal membuat pemblokiran di database.' };
 		}
 	},
@@ -147,12 +155,17 @@ export const bookingController = {
 			// If it's a maintenance booking and active today, reset asset status to 'ready'
 			const todayStr = new Date().toISOString().split('T')[0];
 			if (isMaintenance && booking.start_date <= todayStr && todayStr <= booking.end_date) {
-				await assetModel.updateAssetStatus(supabase, booking.rental_asset_id, 'ready', 'Maintenance selesai');
+				await assetModel.updateAssetStatus(
+					supabase,
+					booking.rental_asset_id,
+					'ready',
+					'Maintenance selesai'
+				);
 			}
 
 			return { success: true };
 		} catch (error) {
-			console.error("Error deleting booking in controller:", error);
+			console.error('Error deleting booking in controller:', error);
 			return { success: false, status: 500, error: 'Gagal menghapus booking.' };
 		}
 	}

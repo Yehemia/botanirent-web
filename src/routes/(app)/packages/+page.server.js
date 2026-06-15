@@ -11,4 +11,3 @@ export async function load({ locals }) {
 
 	return packageController.getPackages(supabase, profile);
 }
-

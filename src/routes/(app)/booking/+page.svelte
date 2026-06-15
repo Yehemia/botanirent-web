@@ -2,23 +2,23 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { 
-		ChevronLeft, 
-		ChevronRight, 
-		Plus, 
-		Wrench, 
-		Calendar, 
-		Info, 
-		Trash2, 
-		Tent, 
-		User, 
+	import {
+		ChevronLeft,
+		ChevronRight,
+		Plus,
+		Wrench,
+		Calendar,
+		Info,
+		Trash2,
+		Tent,
+		User,
 		Hash,
 		Layers,
 		CheckCircle,
 		Clock,
 		MapPin
 	} from '@lucide/svelte';
-	
+
 	// Import UI components
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -28,18 +28,18 @@
 	import { formatDate } from '$lib/utils/format';
 
 	// Date arithmetic from date-fns
-	import { 
-		startOfMonth, 
-		endOfMonth, 
-		startOfWeek, 
-		endOfWeek, 
-		eachDayOfInterval, 
-		format, 
-		isSameMonth, 
-		isSameDay, 
-		addMonths, 
-		subMonths, 
-		isToday, 
+	import {
+		startOfMonth,
+		endOfMonth,
+		startOfWeek,
+		endOfWeek,
+		eachDayOfInterval,
+		format,
+		isSameMonth,
+		isSameDay,
+		addMonths,
+		subMonths,
+		isToday,
 		parseISO,
 		addDays,
 		startOfWeek as startOfWeekFn
@@ -62,18 +62,18 @@
 	let selectedAssetId = $state('all');
 	let viewMode = $state('month'); // 'month' or 'week'
 	let currentDate = $state(new Date());
-	
+
 	// Modals state
 	let isMaintenanceModalOpen = $state(false);
 	let isDetailModalOpen = $state(false);
-	
+
 	// Form inputs for scheduling maintenance
 	let maintenanceAssetId = $state('');
 	let maintenanceStartDate = $state('');
 	let maintenanceEndDate = $state('');
 	let maintenanceNotes = $state('');
 	let maintenanceType = $state('maintenance'); // 'maintenance' or 'washing'
-	
+
 	// Detail modal state
 	/** @type {any} */
 	let selectedBooking = $state(null);
@@ -81,9 +81,9 @@
 
 	// Filter items by category pill
 	let filteredItems = $derived(
-		selectedCategory === 'all' 
-			? items 
-			: items.filter(item => item.category_id === selectedCategory)
+		selectedCategory === 'all'
+			? items
+			: items.filter((item) => item.category_id === selectedCategory)
 	);
 
 	// Sync item selection when category changes
@@ -92,7 +92,7 @@
 		if (list.length > 0) {
 			if (!selectedItemId) {
 				selectedItemId = 'all';
-			} else if (selectedItemId !== 'all' && !list.some(item => item.id === selectedItemId)) {
+			} else if (selectedItemId !== 'all' && !list.some((item) => item.id === selectedItemId)) {
 				selectedItemId = 'all';
 			}
 		} else {
@@ -102,15 +102,13 @@
 
 	// Get assets for currently selected item
 	let filteredAssets = $derived(
-		selectedItemId === 'all'
-			? []
-			: assets.filter(asset => asset.item_id === selectedItemId)
+		selectedItemId === 'all' ? [] : assets.filter((asset) => asset.item_id === selectedItemId)
 	);
 
 	// Sync asset selection when item changes
 	$effect(() => {
 		const list = filteredAssets;
-		if (selectedAssetId !== 'all' && !list.some(asset => asset.id === selectedAssetId)) {
+		if (selectedAssetId !== 'all' && !list.some((asset) => asset.id === selectedAssetId)) {
 			selectedAssetId = 'all';
 		}
 	});
@@ -119,7 +117,7 @@
 	$effect(() => {
 		const list = selectedItemId === 'all' ? assets : filteredAssets;
 		if (list.length > 0) {
-			if (!maintenanceAssetId || !list.some(a => a.id === maintenanceAssetId)) {
+			if (!maintenanceAssetId || !list.some((a) => a.id === maintenanceAssetId)) {
 				maintenanceAssetId = list[0].id;
 			}
 		}
@@ -156,8 +154,18 @@
 	// Format Indonesian month name
 	let currentMonthLabel = $derived.by(() => {
 		const monthNames = [
-			'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-			'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+			'Januari',
+			'Februari',
+			'Maret',
+			'April',
+			'Mei',
+			'Juni',
+			'Juli',
+			'Agustus',
+			'September',
+			'Oktober',
+			'November',
+			'Desember'
 		];
 		return `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 	});
@@ -177,7 +185,7 @@
 			currentDate = subDays(currentDate, 7);
 		}
 	}
-	
+
 	// Helper to subtract days
 	/**
 	 * @param {Date | string | number} date
@@ -191,13 +199,13 @@
 
 	// Filter bookings based on selected item and asset
 	let activeBookings = $derived.by(() => {
-		return bookings.filter(b => {
+		return bookings.filter((b) => {
 			// Must match selected item (or all)
 			if (selectedItemId !== 'all' && b.rental_asset?.item?.id !== selectedItemId) return false;
-			
+
 			// Must match selected asset (or all)
 			if (selectedAssetId !== 'all' && b.rental_asset_id !== selectedAssetId) return false;
-			
+
 			return true;
 		});
 	});
@@ -208,7 +216,7 @@
 	 */
 	function getBookingsForDay(day) {
 		const dayStr = format(day, 'yyyy-MM-dd');
-		return activeBookings.filter(b => b.start_date <= dayStr && b.end_date >= dayStr);
+		return activeBookings.filter((b) => b.start_date <= dayStr && b.end_date >= dayStr);
 	}
 
 	// Check if booking is a maintenance block
@@ -228,12 +236,12 @@
 		if (isMaintenance(booking)) {
 			return 'Maintenance';
 		}
-		
+
 		const customerName = booking.transaction_item?.transaction?.customer?.full_name || 'Customer';
 		const dayStr = format(day, 'yyyy-MM-dd');
-		
+
 		const prefix = booking.status === 'completed' ? '[Selesai] ' : '';
-		
+
 		if (booking.end_date === dayStr) {
 			return `${prefix}Sewa - ${customerName} (End)`;
 		}
@@ -250,16 +258,16 @@
 	function handleDayClick(day) {
 		// Prevent scheduling in the past
 		const today = new Date();
-		today.setHours(0,0,0,0);
+		today.setHours(0, 0, 0, 0);
 		const clickedDate = new Date(day);
-		clickedDate.setHours(0,0,0,0);
-		
+		clickedDate.setHours(0, 0, 0, 0);
+
 		if (clickedDate < today) return;
 
 		const dateStr = format(day, 'yyyy-MM-dd');
 		maintenanceStartDate = dateStr;
 		maintenanceEndDate = dateStr;
-		
+
 		// Pre-select asset if specific asset is chosen
 		if (selectedAssetId !== 'all') {
 			maintenanceAssetId = selectedAssetId;
@@ -283,20 +291,24 @@
 	}
 </script>
 
-<div class="space-y-6 max-w-[1400px] mx-auto pb-12">
+<div class="mx-auto max-w-[1400px] space-y-6 pb-12">
 	<!-- Top Bar and Branch Switcher -->
-	<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+	<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
 		<div>
-			<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)]">Kalender Booking</h1>
-			<p class="text-[var(--color-stone)] mt-1">Cek jadwal penyewaan dan atur pemblokiran pemeliharaan alat sewa.</p>
+			<h1 class="font-heading text-3xl font-bold text-[var(--color-earth)]">Kalender Booking</h1>
+			<p class="mt-1 text-[var(--color-stone)]">
+				Cek jadwal penyewaan dan atur pemblokiran pemeliharaan alat sewa.
+			</p>
 		</div>
 
 		{#if role === 'owner' && branches.length > 0}
-			<div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-[var(--color-border)] shadow-sm shrink-0">
-				<MapPin size={18} class="text-[var(--color-forest)] shrink-0" />
-				<span class="text-[13px] font-medium text-[var(--color-stone)] mr-1">Cabang:</span>
-				<select 
-					class="bg-transparent font-bold text-sm text-[var(--color-forest)] focus:outline-none cursor-pointer"
+			<div
+				class="flex shrink-0 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 py-2 shadow-sm"
+			>
+				<MapPin size={18} class="shrink-0 text-[var(--color-forest)]" />
+				<span class="mr-1 text-[13px] font-medium text-[var(--color-stone)]">Cabang:</span>
+				<select
+					class="cursor-pointer bg-transparent text-sm font-bold text-[var(--color-forest)] focus:outline-none"
 					value={selectedBranchId}
 					onchange={handleBranchChange}
 				>
@@ -309,37 +321,39 @@
 	</div>
 
 	{#if form?.error}
-		<div class="bg-[var(--color-error-bg)] text-[var(--color-error)] p-4 rounded-xl border border-[var(--color-error)]/20 font-medium text-sm">
+		<div
+			class="rounded-xl border border-[var(--color-error)]/20 bg-[var(--color-error-bg)] p-4 text-sm font-medium text-[var(--color-error)]"
+		>
 			{form.error}
 		</div>
 	{/if}
 
 	<!-- Controls / Filter Bar -->
-	<div class="bg-white p-4 rounded-2xl shadow-[var(--shadow-sm)] flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border border-[var(--color-border)]">
-		
+	<div
+		class="flex flex-col items-stretch justify-between gap-4 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-sm)] lg:flex-row lg:items-center"
+	>
 		<!-- Left Filters: Categories & Item Dropdown -->
-		<div class="flex flex-col md:flex-row md:items-center gap-4 flex-grow">
-			
+		<div class="flex flex-grow flex-col gap-4 md:flex-row md:items-center">
 			<!-- Category Pills -->
-			<div class="flex items-center gap-1.5 shrink-0 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-				<button 
+			<div class="scrollbar-hide flex shrink-0 items-center gap-1.5 overflow-x-auto pb-2 md:pb-0">
+				<button
 					type="button"
-					onclick={() => selectedCategory = 'all'}
-					class="px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 shadow-sm border
-						{selectedCategory === 'all' 
-							? 'bg-[var(--color-forest)] text-white border-[var(--color-forest)]' 
-							: 'bg-[var(--color-cream)] text-[var(--color-stone)] border-[var(--color-border-light)] hover:border-[var(--color-stone)]'}"
+					onclick={() => (selectedCategory = 'all')}
+					class="rounded-full border px-3.5 py-1.5 text-[13px] font-medium shadow-sm transition-all duration-200
+						{selectedCategory === 'all'
+						? 'border-[var(--color-forest)] bg-[var(--color-forest)] text-white'
+						: 'border-[var(--color-border-light)] bg-[var(--color-cream)] text-[var(--color-stone)] hover:border-[var(--color-stone)]'}"
 				>
 					Semua
 				</button>
 				{#each categories as cat (cat.id)}
-					<button 
+					<button
 						type="button"
-						onclick={() => selectedCategory = cat.id}
-						class="px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 shadow-sm border
-							{selectedCategory === cat.id 
-								? 'bg-[var(--color-forest)] text-white border-[var(--color-forest)]' 
-								: 'bg-[var(--color-cream)] text-[var(--color-stone)] border-[var(--color-border-light)] hover:border-[var(--color-stone)]'}"
+						onclick={() => (selectedCategory = cat.id)}
+						class="rounded-full border px-3.5 py-1.5 text-[13px] font-medium shadow-sm transition-all duration-200
+							{selectedCategory === cat.id
+							? 'border-[var(--color-forest)] bg-[var(--color-forest)] text-white'
+							: 'border-[var(--color-border-light)] bg-[var(--color-cream)] text-[var(--color-stone)] hover:border-[var(--color-stone)]'}"
 					>
 						{cat.name}
 					</button>
@@ -347,13 +361,13 @@
 			</div>
 
 			<!-- Separator -->
-			<div class="hidden md:block w-px h-8 bg-[var(--color-border-light)] shrink-0"></div>
+			<div class="hidden h-8 w-px shrink-0 bg-[var(--color-border-light)] md:block"></div>
 
 			<!-- Select Item Dropdown -->
-			<div class="flex-grow max-w-sm">
-				<select 
+			<div class="max-w-sm flex-grow">
+				<select
 					bind:value={selectedItemId}
-					class="w-full bg-white border-[1.5px] border-[var(--color-border)] rounded-md px-3 py-2 text-[14px] font-medium text-[var(--color-earth)] transition-colors cursor-pointer focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)]"
+					class="w-full cursor-pointer rounded-md border-[1.5px] border-[var(--color-border)] bg-white px-3 py-2 text-[14px] font-medium text-[var(--color-earth)] transition-colors focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)] focus:outline-none"
 				>
 					<option value="all">Semua Barang ({filteredItems.length})</option>
 					{#each filteredItems as item (item.id)}
@@ -364,10 +378,10 @@
 
 			<!-- Select Asset/Unit Dropdown -->
 			{#if selectedItemId && selectedItemId !== 'all' && filteredAssets.length > 0}
-				<div class="w-full md:w-48 shrink-0">
-					<select 
+				<div class="w-full shrink-0 md:w-48">
+					<select
 						bind:value={selectedAssetId}
-						class="w-full bg-white border-[1.5px] border-[var(--color-border)] rounded-md px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors cursor-pointer focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)] font-mono"
+						class="w-full cursor-pointer rounded-md border-[1.5px] border-[var(--color-border)] bg-white px-3 py-2 font-mono text-[14px] text-[var(--color-earth)] transition-colors focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)] focus:outline-none"
 					>
 						<option value="all">Semua Unit ({filteredAssets.length})</option>
 						{#each filteredAssets as asset (asset.id)}
@@ -379,26 +393,26 @@
 		</div>
 
 		<!-- Right Controls: View Toggle & Action -->
-		<div class="flex items-center gap-3 shrink-0">
+		<div class="flex shrink-0 items-center gap-3">
 			<!-- View Mode Toggle -->
-			<div class="flex bg-[var(--color-sand)] p-1 rounded-lg border border-[var(--color-border)]">
-				<button 
+			<div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-sand)] p-1">
+				<button
 					type="button"
-					onclick={() => viewMode = 'month'}
-					class="px-4 py-1.5 text-xs font-semibold rounded transition-all shadow-sm
-						{viewMode === 'month' 
-							? 'bg-white text-[var(--color-forest)] font-bold' 
-							: 'text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+					onclick={() => (viewMode = 'month')}
+					class="rounded px-4 py-1.5 text-xs font-semibold shadow-sm transition-all
+						{viewMode === 'month'
+						? 'bg-white font-bold text-[var(--color-forest)]'
+						: 'text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
 				>
 					Bulan
 				</button>
-				<button 
+				<button
 					type="button"
-					onclick={() => viewMode = 'week'}
-					class="px-4 py-1.5 text-xs font-semibold rounded transition-all shadow-sm
-						{viewMode === 'week' 
-							? 'bg-white text-[var(--color-forest)] font-bold' 
-							: 'text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+					onclick={() => (viewMode = 'week')}
+					class="rounded px-4 py-1.5 text-xs font-semibold shadow-sm transition-all
+						{viewMode === 'week'
+						? 'bg-white font-bold text-[var(--color-forest)]'
+						: 'text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
 				>
 					Minggu
 				</button>
@@ -406,8 +420,8 @@
 
 			<!-- Add Maintenance Button -->
 			{#if selectedItemId && filteredAssets.length > 0}
-				<Button 
-					size="md" 
+				<Button
+					size="md"
 					class="flex items-center gap-2"
 					onclick={() => {
 						const today = new Date();
@@ -431,28 +445,37 @@
 
 	<!-- Calendar Section -->
 	{#if !selectedItemId}
-		<Card padding="lg" class="text-center py-20">
+		<Card padding="lg" class="py-20 text-center">
 			<Calendar size={48} class="mx-auto mb-4 text-[var(--color-stone)] opacity-30" />
 			<p class="text-lg font-medium text-[var(--color-earth)]">Belum Ada Barang Terpilih</p>
-			<p class="text-sm text-[var(--color-stone)] mt-1">Pilih barang sewa di atas untuk melihat kalender ketersediaannya.</p>
+			<p class="mt-1 text-sm text-[var(--color-stone)]">
+				Pilih barang sewa di atas untuk melihat kalender ketersediaannya.
+			</p>
 		</Card>
 	{:else}
-		<div class="bg-white rounded-2xl shadow-[var(--shadow-md)] border border-[var(--color-border)] overflow-hidden flex flex-col">
-			
+		<div
+			class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-md)]"
+		>
 			<!-- Calendar Navigation Header -->
-			<div class="flex items-center justify-between p-5 border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)]">
-				<button 
+			<div
+				class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] p-5"
+			>
+				<button
 					type="button"
 					onclick={prevPeriod}
-					class="p-2 text-[var(--color-stone)] hover:text-[var(--color-forest)] hover:bg-[var(--color-sand)] rounded-full transition-colors"
+					class="rounded-full p-2 text-[var(--color-stone)] transition-colors hover:bg-[var(--color-sand)] hover:text-[var(--color-forest)]"
 				>
 					<ChevronLeft size={20} />
 				</button>
-				<h3 class="font-heading font-bold text-lg md:text-xl text-[var(--color-forest)] tracking-wide">{currentMonthLabel}</h3>
-				<button 
+				<h3
+					class="font-heading text-lg font-bold tracking-wide text-[var(--color-forest)] md:text-xl"
+				>
+					{currentMonthLabel}
+				</h3>
+				<button
 					type="button"
 					onclick={nextPeriod}
-					class="p-2 text-[var(--color-stone)] hover:text-[var(--color-forest)] hover:bg-[var(--color-sand)] rounded-full transition-colors"
+					class="rounded-full p-2 text-[var(--color-stone)] transition-colors hover:bg-[var(--color-sand)] hover:text-[var(--color-forest)]"
 				>
 					<ChevronRight size={20} />
 				</button>
@@ -461,56 +484,67 @@
 			<!-- Grid Area -->
 			{#if viewMode === 'month'}
 				<!-- Month View Grid -->
-				<div class="flex-1 flex flex-col">
+				<div class="flex flex-1 flex-col">
 					<!-- Days Header -->
-					<div class="grid grid-cols-7 border-b border-[var(--color-border)] bg-[var(--color-sand)] shrink-0">
+					<div
+						class="grid shrink-0 grid-cols-7 border-b border-[var(--color-border)] bg-[var(--color-sand)]"
+					>
 						{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as day}
-							<div class="py-2.5 px-4 text-right font-heading text-xs font-bold text-[var(--color-stone)] uppercase tracking-wider">
+							<div
+								class="px-4 py-2.5 text-right font-heading text-xs font-bold tracking-wider text-[var(--color-stone)] uppercase"
+							>
 								{day}
 							</div>
 						{/each}
 					</div>
 
 					<!-- Days cells -->
-					<div class="flex-1 grid grid-cols-7 bg-[var(--color-border)] gap-[1px]">
+					<div class="grid flex-1 grid-cols-7 gap-[1px] bg-[var(--color-border)]">
 						{#each monthDays as day}
 							{@const isCurrentMonth = isSameMonth(day, currentDate)}
 							{@const dayBookings = getBookingsForDay(day)}
 							{@const isTodayCell = isToday(day)}
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<div 
+							<div
 								onclick={() => handleDayClick(day)}
-								class="bg-white p-2 relative min-h-[110px] md:min-h-[130px] flex flex-col gap-1 transition-all duration-200 cursor-pointer
-									{isCurrentMonth ? 'text-[var(--color-earth)] hover:bg-[var(--color-sand-lightest)]' : 'text-gray-300 bg-gray-50/50'}
-									{isTodayCell ? 'border-2 border-[var(--color-forest)] shadow-[inset_0_0_0_2px_rgba(107,143,78,0.08)]' : ''}"
+								class="relative flex min-h-[110px] cursor-pointer flex-col gap-1 bg-white p-2 transition-all duration-200 md:min-h-[130px]
+									{isCurrentMonth
+									? 'text-[var(--color-earth)] hover:bg-[var(--color-sand-lightest)]'
+									: 'bg-gray-50/50 text-gray-300'}
+									{isTodayCell
+									? 'border-2 border-[var(--color-forest)] shadow-[inset_0_0_0_2px_rgba(107,143,78,0.08)]'
+									: ''}"
 							>
 								<!-- Day Number -->
 								<div class="flex justify-end">
-									<span class="font-mono text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full
-										{isTodayCell ? 'bg-[var(--color-sage-20)] text-[var(--color-forest)] font-bold' : ''}"
+									<span
+										class="flex h-6 w-6 items-center justify-center rounded-full font-mono text-xs font-medium
+										{isTodayCell ? 'bg-[var(--color-sage-20)] font-bold text-[var(--color-forest)]' : ''}"
 									>
 										{day.getDate()}
 									</span>
 								</div>
 
 								<!-- Bookings within this day -->
-								<div class="flex-grow space-y-1 mt-1 overflow-y-auto max-h-[80px] scrollbar-hide">
+								<div class="scrollbar-hide mt-1 max-h-[80px] flex-grow space-y-1 overflow-y-auto">
 									{#each dayBookings as booking (booking.id)}
 										{@const isMaint = isMaintenance(booking)}
-										<button 
+										<button
 											type="button"
 											onclick={(e) => handleBookingClick(booking, e)}
-											class="w-full text-left text-[11px] font-semibold px-2 py-1 rounded truncate border shadow-sm transition-all hover:scale-[1.02] hover:shadow
+											class="w-full truncate rounded border px-2 py-1 text-left text-[11px] font-semibold shadow-sm transition-all hover:scale-[1.02] hover:shadow
 												{booking.status === 'completed'
-													? 'bg-[var(--color-success-bg)] text-[var(--color-success)] border-[rgba(107,143,78,0.2)] opacity-75'
-													: isMaint 
-														? 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] border-[rgba(232,168,32,0.3)]' 
-														: 'bg-[var(--color-info-bg)] text-[var(--color-info)] border-[rgba(59,130,176,0.3)]'}"
+												? 'border-[rgba(107,143,78,0.2)] bg-[var(--color-success-bg)] text-[var(--color-success)] opacity-75'
+												: isMaint
+													? 'border-[rgba(232,168,32,0.3)] bg-[var(--color-warning-bg)] text-[var(--color-warning)]'
+													: 'border-[rgba(59,130,176,0.3)] bg-[var(--color-info-bg)] text-[var(--color-info)]'}"
 											title="{getBookingLabel(booking, day)} ({booking.rental_asset?.asset_code})"
 										>
 											{#if selectedAssetId === 'all'}
-												<span class="font-mono font-bold text-[10px] mr-0.5">[{booking.rental_asset?.asset_code}]</span>
+												<span class="mr-0.5 font-mono text-[10px] font-bold"
+													>[{booking.rental_asset?.asset_code}]</span
+												>
 											{/if}
 											{getBookingLabel(booking, day)}
 										</button>
@@ -522,23 +556,27 @@
 				</div>
 			{:else}
 				<!-- Week View Grid -->
-				<div class="p-6 bg-white space-y-6">
-					<p class="text-xs text-[var(--color-stone)] italic mb-2">Menampilkan jadwal detail untuk 7 hari terdekat dari tanggal terpilih.</p>
-					
-					<div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+				<div class="space-y-6 bg-white p-6">
+					<p class="mb-2 text-xs text-[var(--color-stone)] italic">
+						Menampilkan jadwal detail untuk 7 hari terdekat dari tanggal terpilih.
+					</p>
+
+					<div class="grid grid-cols-1 gap-4 md:grid-cols-7">
 						{#each weekDays as day}
 							{@const dayBookings = getBookingsForDay(day)}
 							{@const isTodayCell = isToday(day)}
-							
-							<div 
-								class="rounded-xl border p-4 flex flex-col min-h-[300px] bg-white transition-all
-									{isTodayCell 
-										? 'border-[var(--color-forest)] ring-[3px] ring-[var(--color-sage-10)] bg-[var(--color-sand-lightest)]/30' 
-										: 'border-[var(--color-border)] hover:border-[var(--color-stone)]'}"
+
+							<div
+								class="flex min-h-[300px] flex-col rounded-xl border bg-white p-4 transition-all
+									{isTodayCell
+									? 'border-[var(--color-forest)] bg-[var(--color-sand-lightest)]/30 ring-[3px] ring-[var(--color-sage-10)]'
+									: 'border-[var(--color-border)] hover:border-[var(--color-stone)]'}"
 							>
 								<!-- Day Header -->
-								<div class="pb-3 border-b border-[var(--color-border-light)] flex justify-between items-baseline">
-									<div class="font-heading font-bold text-sm text-[var(--color-earth)]">
+								<div
+									class="flex items-baseline justify-between border-b border-[var(--color-border-light)] pb-3"
+								>
+									<div class="font-heading text-sm font-bold text-[var(--color-earth)]">
 										{new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(day)}
 									</div>
 									<div class="font-mono text-base font-bold text-[var(--color-forest)]">
@@ -547,18 +585,20 @@
 								</div>
 
 								<!-- Add Button -->
-								<button 
+								<button
 									type="button"
 									onclick={() => handleDayClick(day)}
-									class="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 border border-dashed border-[var(--color-border)] hover:border-[var(--color-forest)] hover:bg-[var(--color-sage-10)] text-[var(--color-stone)] hover:text-[var(--color-forest)] rounded-lg text-xs font-semibold transition-all"
+									class="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--color-border)] py-1.5 text-xs font-semibold text-[var(--color-stone)] transition-all hover:border-[var(--color-forest)] hover:bg-[var(--color-sage-10)] hover:text-[var(--color-forest)]"
 								>
 									<Plus size={12} /> Block
 								</button>
 
 								<!-- Bookings List -->
-								<div class="mt-4 flex-grow space-y-2 overflow-y-auto max-h-[220px]">
+								<div class="mt-4 max-h-[220px] flex-grow space-y-2 overflow-y-auto">
 									{#if dayBookings.length === 0}
-										<div class="h-full flex items-center justify-center text-[var(--color-stone)] text-xs italic py-10">
+										<div
+											class="flex h-full items-center justify-center py-10 text-xs text-[var(--color-stone)] italic"
+										>
 											Ready
 										</div>
 									{:else}
@@ -566,28 +606,28 @@
 											{@const isMaint = isMaintenance(booking)}
 											<!-- svelte-ignore a11y_click_events_have_key_events -->
 											<!-- svelte-ignore a11y_no_static_element_interactions -->
-											<div 
+											<div
 												onclick={(e) => handleBookingClick(booking, e)}
-												class="p-2.5 rounded-lg border shadow-sm cursor-pointer hover:shadow transition-all text-xs font-medium flex flex-col gap-1
+												class="flex cursor-pointer flex-col gap-1 rounded-lg border p-2.5 text-xs font-medium shadow-sm transition-all hover:shadow
 													{booking.status === 'completed'
-														? 'bg-[var(--color-success-bg)] text-[var(--color-success)] border-[rgba(107,143,78,0.2)] opacity-75'
-														: isMaint 
-															? 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] border-[rgba(232,168,32,0.3)]' 
-															: 'bg-[var(--color-info-bg)] text-[var(--color-info)] border-[rgba(59,130,176,0.3)]'}"
+													? 'border-[rgba(107,143,78,0.2)] bg-[var(--color-success-bg)] text-[var(--color-success)] opacity-75'
+													: isMaint
+														? 'border-[rgba(232,168,32,0.3)] bg-[var(--color-warning-bg)] text-[var(--color-warning)]'
+														: 'border-[rgba(59,130,176,0.3)] bg-[var(--color-info-bg)] text-[var(--color-info)]'}"
 											>
-												<div class="font-bold flex items-center justify-between">
-													<span class="font-mono bg-white/60 px-1 py-0.5 rounded text-[10px]">
+												<div class="flex items-center justify-between font-bold">
+													<span class="rounded bg-white/60 px-1 py-0.5 font-mono text-[10px]">
 														{booking.rental_asset?.asset_code}
 													</span>
 													{#if booking.status === 'completed'}
-														<span class="text-[9px] uppercase font-semibold">Done</span>
+														<span class="text-[9px] font-semibold uppercase">Done</span>
 													{:else if isMaint}
-														<span class="text-[9px] uppercase font-semibold">Maint</span>
+														<span class="text-[9px] font-semibold uppercase">Maint</span>
 													{:else}
-														<span class="text-[9px] uppercase font-semibold">Rent</span>
+														<span class="text-[9px] font-semibold uppercase">Rent</span>
 													{/if}
 												</div>
-												<div class="font-semibold truncate">
+												<div class="truncate font-semibold">
 													{getBookingLabel(booking, day)}
 												</div>
 											</div>
@@ -601,21 +641,31 @@
 			{/if}
 
 			<!-- Legend Footer -->
-			<div class="flex items-center gap-6 p-4 border-t border-[var(--color-border)] bg-[var(--color-sand-lightest)]/60 text-[13px] font-semibold text-[var(--color-stone)] flex-wrap">
+			<div
+				class="flex flex-wrap items-center gap-6 border-t border-[var(--color-border)] bg-[var(--color-sand-lightest)]/60 p-4 text-[13px] font-semibold text-[var(--color-stone)]"
+			>
 				<div class="flex items-center gap-2">
-					<div class="w-3.5 h-3.5 rounded bg-white border border-[var(--color-border)] shadow-inner"></div>
+					<div
+						class="h-3.5 w-3.5 rounded border border-[var(--color-border)] bg-white shadow-inner"
+					></div>
 					<span>Ready (Siap Sewa)</span>
 				</div>
 				<div class="flex items-center gap-2">
-					<div class="w-3.5 h-3.5 rounded bg-[var(--color-info-bg)] border border-[rgba(59,130,176,0.3)] shadow-inner"></div>
+					<div
+						class="h-3.5 w-3.5 rounded border border-[rgba(59,130,176,0.3)] bg-[var(--color-info-bg)] shadow-inner"
+					></div>
 					<span>Disewa (Aktif)</span>
 				</div>
 				<div class="flex items-center gap-2">
-					<div class="w-3.5 h-3.5 rounded bg-[var(--color-success-bg)] border border-[rgba(107,143,78,0.2)] shadow-inner opacity-75"></div>
+					<div
+						class="h-3.5 w-3.5 rounded border border-[rgba(107,143,78,0.2)] bg-[var(--color-success-bg)] opacity-75 shadow-inner"
+					></div>
 					<span>Selesai (Dikembalikan)</span>
 				</div>
 				<div class="flex items-center gap-2">
-					<div class="w-3.5 h-3.5 rounded bg-[var(--color-warning-bg)] border border-[rgba(232,168,32,0.3)] shadow-inner"></div>
+					<div
+						class="h-3.5 w-3.5 rounded border border-[rgba(232,168,32,0.3)] bg-[var(--color-warning-bg)] shadow-inner"
+					></div>
 					<span>Maintenance (Dicuci / Perbaikan)</span>
 				</div>
 			</div>
@@ -626,13 +676,9 @@
 <!-- ====================================================
      MODAL: SCHEDULE MAINTENANCE
      ==================================================== -->
-<Modal 
-	bind:open={isMaintenanceModalOpen} 
-	title="Atur Pemblokiran Unit (Maintenance)"
-	size="md"
->
-	<form 
-		method="POST" 
+<Modal bind:open={isMaintenanceModalOpen} title="Atur Pemblokiran Unit (Maintenance)" size="md">
+	<form
+		method="POST"
 		action="?/createMaintenance"
 		use:enhance={() => {
 			isSubmitting = true;
@@ -649,15 +695,17 @@
 		<input type="hidden" name="branch_id" value={selectedBranchId} />
 
 		<div class="space-y-1">
-			<label class="text-[13px] font-medium text-[var(--color-earth)]" for="rental_asset_id">Pilih Unit Fisik</label>
-			<select 
+			<label class="text-[13px] font-medium text-[var(--color-earth)]" for="rental_asset_id"
+				>Pilih Unit Fisik</label
+			>
+			<select
 				id="rental_asset_id"
 				name="rental_asset_id"
 				bind:value={maintenanceAssetId}
-				class="w-full bg-white border-[1.5px] border-[var(--color-border)] rounded-md px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:outline-none focus:border-[var(--color-border-focus)] font-mono"
+				class="w-full rounded-md border-[1.5px] border-[var(--color-border)] bg-white px-3 py-2 font-mono text-[14px] text-[var(--color-earth)] transition-colors focus:border-[var(--color-border-focus)] focus:outline-none"
 				required
 			>
-				{#each (selectedItemId === 'all' ? assets : filteredAssets) as asset}
+				{#each selectedItemId === 'all' ? assets : filteredAssets as asset}
 					<option value={asset.id}>{asset.asset_code} - {asset.item?.name} ({asset.status})</option>
 				{/each}
 			</select>
@@ -665,36 +713,42 @@
 
 		<div class="grid grid-cols-2 gap-4">
 			<div class="space-y-1">
-				<label class="text-[13px] font-medium text-[var(--color-earth)]" for="start_date">Tanggal Mulai</label>
-				<input 
+				<label class="text-[13px] font-medium text-[var(--color-earth)]" for="start_date"
+					>Tanggal Mulai</label
+				>
+				<input
 					id="start_date"
-					type="date" 
-					name="start_date" 
+					type="date"
+					name="start_date"
 					bind:value={maintenanceStartDate}
-					class="w-full bg-white border-[1.5px] border-[var(--color-border)] rounded-md px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:outline-none focus:border-[var(--color-border-focus)]"
+					class="w-full rounded-md border-[1.5px] border-[var(--color-border)] bg-white px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:border-[var(--color-border-focus)] focus:outline-none"
 					required
 				/>
 			</div>
 			<div class="space-y-1">
-				<label class="text-[13px] font-medium text-[var(--color-earth)]" for="end_date">Tanggal Selesai</label>
-				<input 
+				<label class="text-[13px] font-medium text-[var(--color-earth)]" for="end_date"
+					>Tanggal Selesai</label
+				>
+				<input
 					id="end_date"
-					type="date" 
-					name="end_date" 
+					type="date"
+					name="end_date"
 					bind:value={maintenanceEndDate}
-					class="w-full bg-white border-[1.5px] border-[var(--color-border)] rounded-md px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:outline-none focus:border-[var(--color-border-focus)]"
+					class="w-full rounded-md border-[1.5px] border-[var(--color-border)] bg-white px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:border-[var(--color-border-focus)] focus:outline-none"
 					required
 				/>
 			</div>
 		</div>
 
 		<div class="space-y-1">
-			<label class="text-[13px] font-medium text-[var(--color-earth)]" for="status">Jenis Blokir / Kategori</label>
-			<select 
+			<label class="text-[13px] font-medium text-[var(--color-earth)]" for="status"
+				>Jenis Blokir / Kategori</label
+			>
+			<select
 				id="status"
 				name="status"
 				bind:value={maintenanceType}
-				class="w-full bg-white border-[1.5px] border-[var(--color-border)] rounded-md px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:outline-none focus:border-[var(--color-border-focus)]"
+				class="w-full rounded-md border-[1.5px] border-[var(--color-border)] bg-white px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:border-[var(--color-border-focus)] focus:outline-none"
 			>
 				<option value="maintenance">Perbaikan (Maintenance)</option>
 				<option value="washing">Pembersihan (Washing)</option>
@@ -702,19 +756,21 @@
 		</div>
 
 		<div class="space-y-1">
-			<label class="text-[13px] font-medium text-[var(--color-earth)]" for="notes">Catatan Kerusakan / Pemeliharaan</label>
-			<textarea 
+			<label class="text-[13px] font-medium text-[var(--color-earth)]" for="notes"
+				>Catatan Kerusakan / Pemeliharaan</label
+			>
+			<textarea
 				id="notes"
 				name="notes"
 				bind:value={maintenanceNotes}
 				rows="3"
 				placeholder="Contoh: Tiang tenda retak, dicuci karena lumpur tebal..."
-				class="w-full bg-white border-[1.5px] border-[var(--color-border)] rounded-md px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:outline-none focus:border-[var(--color-border-focus)]"
+				class="w-full rounded-md border-[1.5px] border-[var(--color-border)] bg-white px-3 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:border-[var(--color-border-focus)] focus:outline-none"
 			></textarea>
 		</div>
 
-		<div class="flex justify-end gap-3 pt-4 border-t border-[var(--color-border-light)]">
-			<Button variant="ghost" onclick={() => isMaintenanceModalOpen = false}>Batal</Button>
+		<div class="flex justify-end gap-3 border-t border-[var(--color-border-light)] pt-4">
+			<Button variant="ghost" onclick={() => (isMaintenanceModalOpen = false)}>Batal</Button>
 			<Button type="submit" disabled={isSubmitting}>
 				{isSubmitting ? 'Memproses...' : 'Simpan Blokir'}
 			</Button>
@@ -725,11 +781,7 @@
 <!-- ====================================================
      MODAL: BOOKING DETAIL
      ==================================================== -->
-<Modal 
-	bind:open={isDetailModalOpen} 
-	title="Detail Jadwal Aset"
-	size="md"
->
+<Modal bind:open={isDetailModalOpen} title="Detail Jadwal Aset" size="md">
 	{#if selectedBooking}
 		{@const isMaint = isMaintenance(selectedBooking)}
 		{@const ra = selectedBooking.rental_asset}
@@ -739,8 +791,12 @@
 
 		<div class="space-y-6 py-2">
 			<!-- Header info -->
-			<div class="flex items-start gap-4 p-4 rounded-xl border border-[var(--color-border-light)] bg-[var(--color-sand-lightest)]">
-				<div class="w-12 h-12 rounded-lg bg-[var(--color-forest)]/10 text-[var(--color-forest)] flex items-center justify-center shrink-0">
+			<div
+				class="flex items-start gap-4 rounded-xl border border-[var(--color-border-light)] bg-[var(--color-sand-lightest)] p-4"
+			>
+				<div
+					class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[var(--color-forest)]/10 text-[var(--color-forest)]"
+				>
 					{#if isMaint}
 						<Wrench size={24} />
 					{:else}
@@ -748,16 +804,22 @@
 					{/if}
 				</div>
 				<div class="min-w-0">
-					<h4 class="font-heading font-bold text-base text-[var(--color-earth)]">{ra?.item?.name}</h4>
-					<p class="text-xs font-mono font-bold text-[var(--color-stone)] mt-0.5">Kode Aset: {ra?.asset_code}</p>
+					<h4 class="font-heading text-base font-bold text-[var(--color-earth)]">
+						{ra?.item?.name}
+					</h4>
+					<p class="mt-0.5 font-mono text-xs font-bold text-[var(--color-stone)]">
+						Kode Aset: {ra?.asset_code}
+					</p>
 				</div>
 			</div>
 
 			<!-- Core Details -->
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 				<!-- Booking Type Badge -->
 				<div class="space-y-1">
-					<span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-stone)]">Tipe Jadwal</span>
+					<span class="text-[11px] font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+						>Tipe Jadwal</span
+					>
 					<div>
 						{#if isMaint}
 							<Badge variant="warning">Maintenance / Cuci</Badge>
@@ -769,18 +831,33 @@
 
 				<!-- Date Range -->
 				<div class="space-y-1">
-					<span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-stone)]">Rentang Tanggal</span>
+					<span class="text-[11px] font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+						>Rentang Tanggal</span
+					>
 					<div class="text-sm font-semibold text-[var(--color-earth)]">
-						{formatDate(selectedBooking.start_date, { day: '2-digit', month: 'short', year: 'numeric' })} s/d 
-						{formatDate(selectedBooking.end_date, { day: '2-digit', month: 'short', year: 'numeric' })}
+						{formatDate(selectedBooking.start_date, {
+							day: '2-digit',
+							month: 'short',
+							year: 'numeric'
+						})} s/d
+						{formatDate(selectedBooking.end_date, {
+							day: '2-digit',
+							month: 'short',
+							year: 'numeric'
+						})}
 					</div>
 				</div>
 
 				{#if !isMaint}
 					<!-- Transaction Code -->
 					<div class="space-y-1">
-						<span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-stone)]">Kode Transaksi</span>
-						<div class="text-sm font-mono font-bold text-[var(--color-earth)] flex items-center gap-1.5">
+						<span
+							class="text-[11px] font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+							>Kode Transaksi</span
+						>
+						<div
+							class="flex items-center gap-1.5 font-mono text-sm font-bold text-[var(--color-earth)]"
+						>
 							<Hash size={14} class="text-[var(--color-stone)]" />
 							{t?.transaction_code || '-'}
 						</div>
@@ -788,8 +865,11 @@
 
 					<!-- Customer Name -->
 					<div class="space-y-1">
-						<span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-stone)]">Nama Penyewa</span>
-						<div class="text-sm font-semibold text-[var(--color-earth)] flex items-center gap-1.5">
+						<span
+							class="text-[11px] font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+							>Nama Penyewa</span
+						>
+						<div class="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-earth)]">
 							<User size={14} class="text-[var(--color-stone)]" />
 							{customer?.full_name || 'Customer'}
 						</div>
@@ -799,20 +879,26 @@
 
 			{#if isMaint && selectedBooking.notes}
 				<!-- Notes / Reason -->
-				<div class="space-y-1 pt-2 border-t border-[var(--color-border-light)]/50">
-					<span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-stone)]">Catatan Pemeliharaan</span>
-					<p class="text-sm text-[var(--color-earth)] bg-[var(--color-cream)] p-3 rounded-lg border border-[var(--color-border-light)]/60">
+				<div class="space-y-1 border-t border-[var(--color-border-light)]/50 pt-2">
+					<span class="text-[11px] font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+						>Catatan Pemeliharaan</span
+					>
+					<p
+						class="rounded-lg border border-[var(--color-border-light)]/60 bg-[var(--color-cream)] p-3 text-sm text-[var(--color-earth)]"
+					>
 						{selectedBooking.notes || '-'}
 					</p>
 				</div>
 			{/if}
 
 			<!-- Actions -->
-			<div class="flex justify-between items-center pt-4 border-t border-[var(--color-border-light)] mt-6">
+			<div
+				class="mt-6 flex items-center justify-between border-t border-[var(--color-border-light)] pt-4"
+			>
 				<!-- Cancel/Finish block (Only for maintenance OR if cashiers can cancel bookings) -->
 				{#if isMaint}
-					<form 
-						method="POST" 
+					<form
+						method="POST"
 						action="?/deleteBooking"
 						use:enhance={() => {
 							isSubmitting = true;
@@ -827,9 +913,9 @@
 					>
 						<input type="hidden" name="id" value={selectedBooking.id} />
 						<input type="hidden" name="rental_asset_id" value={ra?.id} />
-						<Button 
-							type="submit" 
-							variant="danger" 
+						<Button
+							type="submit"
+							variant="danger"
 							size="sm"
 							class="flex items-center gap-1.5"
 							disabled={isSubmitting}
@@ -839,8 +925,8 @@
 					</form>
 				{:else}
 					<!-- For normal bookings, we can release the block in case of cancellations -->
-					<form 
-						method="POST" 
+					<form
+						method="POST"
 						action="?/deleteBooking"
 						use:enhance={() => {
 							isSubmitting = true;
@@ -855,11 +941,11 @@
 					>
 						<input type="hidden" name="id" value={selectedBooking.id} />
 						<input type="hidden" name="rental_asset_id" value={ra?.id} />
-						<Button 
-							type="submit" 
-							variant="danger" 
+						<Button
+							type="submit"
+							variant="danger"
 							size="sm"
-							class="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white"
+							class="flex items-center gap-1.5 bg-red-600 text-white hover:bg-red-700"
 							disabled={isSubmitting}
 						>
 							<Trash2 size={14} /> Lepas Booking Block
@@ -867,7 +953,7 @@
 					</form>
 				{/if}
 
-				<Button variant="ghost" onclick={() => isDetailModalOpen = false}>Tutup</Button>
+				<Button variant="ghost" onclick={() => (isDetailModalOpen = false)}>Tutup</Button>
 			</div>
 		</div>
 	{/if}

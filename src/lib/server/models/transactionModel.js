@@ -225,7 +225,7 @@ export const transactionModel = {
 	async checkoutTransaction(supabase, payload) {
 		const { data, error } = await supabase.rpc('checkout_transaction', { payload });
 		if (error) {
-			console.error("RPC Checkout Error:", error);
+			console.error('RPC Checkout Error:', error);
 			throw new Error(error.message);
 		}
 		return data;
@@ -244,7 +244,7 @@ export const transactionModel = {
 			.eq('id', transactionId);
 
 		if (error) {
-			console.error("Error updating transaction in model:", error);
+			console.error('Error updating transaction in model:', error);
 			throw new Error(error.message);
 		}
 		return true;
@@ -272,7 +272,7 @@ export const transactionModel = {
 
 		const { data, error } = await query;
 		if (error) {
-			console.error("Error fetching transactions list in model:", error);
+			console.error('Error fetching transactions list in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -296,7 +296,7 @@ export const transactionModel = {
 
 		const { data, error } = await query.maybeSingle();
 		if (error) {
-			console.error("Error fetching transaction detail in model:", error);
+			console.error('Error fetching transaction detail in model:', error);
 			throw new Error(error.message);
 		}
 		return data;
@@ -315,7 +315,7 @@ export const transactionModel = {
 			.order('id', { ascending: true });
 
 		if (error) {
-			console.error("Error fetching transaction items in model:", error);
+			console.error('Error fetching transaction items in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -329,7 +329,9 @@ export const transactionModel = {
 	async getActiveRentalsForReturns(supabase, branchId = null) {
 		let query = supabase
 			.from('transaction_items')
-			.select('*, transaction:transactions!inner(transaction_code, type, created_at, branch_id, customer:customers(full_name, phone)), item:items(sell_price)')
+			.select(
+				'*, transaction:transactions!inner(transaction_code, type, created_at, branch_id, customer:customers(full_name, phone)), item:items(sell_price)'
+			)
 			.eq('rental_status', 'active')
 			.order('rental_end_date', { ascending: true });
 
@@ -339,7 +341,7 @@ export const transactionModel = {
 
 		const { data, error } = await query;
 		if (error) {
-			console.error("Error fetching active rentals for returns in model:", error);
+			console.error('Error fetching active rentals for returns in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -352,13 +354,10 @@ export const transactionModel = {
 	 * @param {object} updateData
 	 */
 	async updateTransactionItem(supabase, id, updateData) {
-		const { error } = await supabase
-			.from('transaction_items')
-			.update(updateData)
-			.eq('id', id);
+		const { error } = await supabase.from('transaction_items').update(updateData).eq('id', id);
 
 		if (error) {
-			console.error("Error updating transaction item in model:", error);
+			console.error('Error updating transaction item in model:', error);
 			throw new Error(error.message);
 		}
 		return true;
@@ -377,7 +376,7 @@ export const transactionModel = {
 			.maybeSingle();
 
 		if (error) {
-			console.error("Error fetching transaction item sell price:", error);
+			console.error('Error fetching transaction item sell price:', error);
 			return 0;
 		}
 		const itemsVal = /** @type {any} */ (data?.items);

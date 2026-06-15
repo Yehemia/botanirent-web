@@ -3,7 +3,22 @@
 	import { onDestroy as destroyHelper } from 'svelte'; // We'll just use onDestroy directly, but this resolves any helper
 
 	import { enhance } from '$app/forms';
-	import { ArrowLeft, CreditCard, User, CalendarClock, ShoppingCart, CheckCircle, Banknote, QrCode, Landmark, Wallet, Package, Minus, Plus, Sparkles } from '@lucide/svelte';
+	import {
+		ArrowLeft,
+		CreditCard,
+		User,
+		CalendarClock,
+		ShoppingCart,
+		CheckCircle,
+		Banknote,
+		QrCode,
+		Landmark,
+		Wallet,
+		Package,
+		Minus,
+		Plus,
+		Sparkles
+	} from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
@@ -24,9 +39,9 @@
 	let customerId = $state('');
 	let customerName = $state('');
 	let customerPhone = $state('');
-	
+
 	let startDate = $state('');
-	
+
 	let paidAmount = $state('');
 	let paymentMethod = $state('cash');
 
@@ -62,7 +77,7 @@
 						clearInterval(timerInterval);
 						paymentStatusMsg = 'Pembayaran berhasil dikonfirmasi!';
 						paymentSuccess = true;
-						
+
 						// Hapus keranjang
 						handleSuccess();
 
@@ -77,7 +92,7 @@
 					}
 				}
 			} catch (e) {
-				console.error("Gagal memeriksa status pembayaran:", e);
+				console.error('Gagal memeriksa status pembayaran:', e);
 			}
 		}, 3000);
 	}
@@ -125,13 +140,15 @@
 				window.location.href = '/pos';
 				return;
 			}
-			
+
 			hasRental = cart.some((/** @type {any} */ c) => c.type === 'rental' || c.type === 'package');
-			
+
 			if (hasRental) {
 				const today = new Date();
 				// Format to YYYY-MM-DD local time
-				startDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+				startDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+					.toISOString()
+					.split('T')[0];
 			}
 			isMounted = true;
 		} else {
@@ -145,12 +162,12 @@
 		const start = new Date(startDate);
 		const end = new Date(start);
 		end.setDate(end.getDate() + defaultRentalDuration);
-		return new Date(end.getTime() - (end.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+		return new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 	});
 
 	let subtotal = $derived(() => {
 		return cart.reduce((/** @type {number} */ acc, /** @type {any} */ curr) => {
-			return acc + (curr.price * curr.quantity);
+			return acc + curr.price * curr.quantity;
 		}, 0);
 	});
 
@@ -164,10 +181,10 @@
 		const total = subtotal();
 		/** @type {{ label: string; value: number }[]} */
 		const shortcuts = [];
-		
+
 		// Uang Pas (exact amount)
 		shortcuts.push({ label: 'Uang Pas', value: total });
-		
+
 		// Smart rounding shortcuts
 		const roundups = [50000, 100000, 150000, 200000, 250000, 300000, 500000, 1000000];
 		for (const r of roundups) {
@@ -176,7 +193,7 @@
 			}
 			if (shortcuts.length >= 6) break;
 		}
-		
+
 		return shortcuts;
 	});
 
@@ -187,12 +204,14 @@
 		paidAmount = String(amount);
 		// Trigger change animation
 		showChangeAnimation = false;
-		setTimeout(() => { showChangeAnimation = true; }, 50);
+		setTimeout(() => {
+			showChangeAnimation = true;
+		}, 50);
 	}
 
 	let payloadStr = $derived(() => {
 		const payload = {
-			type: hasRental ? (cart.some(c => c.type === 'retail') ? 'hybrid' : 'rental') : 'retail',
+			type: hasRental ? (cart.some((c) => c.type === 'retail') ? 'hybrid' : 'rental') : 'retail',
 			customer_id: customerMode === 'existing' ? customerId : null,
 			customer_name: customerMode === 'new' ? customerName : null,
 			customer_phone: customerMode === 'new' ? customerPhone : null,
@@ -205,14 +224,14 @@
 			rental_start_date: hasRental ? startDate : null,
 			rental_end_date: hasRental ? endDate() : null,
 			rental_days: hasRental ? defaultRentalDuration : null,
-			cart: cart.map(c => ({
+			cart: cart.map((c) => ({
 				type: c.type,
 				item_id: c.type !== 'package' ? c.id : null,
 				package_id: c.type === 'package' ? c.id : null,
 				item_name: c.name,
 				quantity: c.quantity,
 				unit_price: c.price,
-				subtotal: (c.price * c.quantity)
+				subtotal: c.price * c.quantity
 			}))
 		};
 		return JSON.stringify(payload);
@@ -231,9 +250,21 @@
 	});
 
 	const paymentMethods = [
-		{ id: 'cash', label: 'Tunai', sublabel: 'Bayar dengan uang cash', icon: Banknote, color: 'var(--color-forest)' },
-		{ id: 'transfer', label: 'Transfer', sublabel: 'BCA / Mandiri', icon: Landmark, color: 'var(--color-info)' },
-		{ id: 'qris', label: 'QRIS', sublabel: 'Scan QR Midtrans', icon: QrCode, color: '#7C3AED' },
+		{
+			id: 'cash',
+			label: 'Tunai',
+			sublabel: 'Bayar dengan uang cash',
+			icon: Banknote,
+			color: 'var(--color-forest)'
+		},
+		{
+			id: 'transfer',
+			label: 'Transfer',
+			sublabel: 'BCA / Mandiri',
+			icon: Landmark,
+			color: 'var(--color-info)'
+		},
+		{ id: 'qris', label: 'QRIS', sublabel: 'Scan QR Midtrans', icon: QrCode, color: '#7C3AED' }
 	];
 </script>
 
@@ -244,51 +275,78 @@
 
 {#if !isMounted}
 	<!-- Skeleton Loading -->
-	<div class="max-w-6xl mx-auto pb-12">
-		<div class="flex items-center gap-4 mb-8">
-			<div class="w-10 h-10 bg-gray-200 rounded-xl animate-pulse"></div>
+	<div class="mx-auto max-w-6xl pb-12">
+		<div class="mb-8 flex items-center gap-4">
+			<div class="h-10 w-10 animate-pulse rounded-xl bg-gray-200"></div>
 			<div class="space-y-2">
-				<div class="h-6 w-48 bg-gray-200 rounded-lg animate-pulse"></div>
-				<div class="h-4 w-72 bg-gray-200 rounded-lg animate-pulse"></div>
+				<div class="h-6 w-48 animate-pulse rounded-lg bg-gray-200"></div>
+				<div class="h-4 w-72 animate-pulse rounded-lg bg-gray-200"></div>
 			</div>
 		</div>
-		<div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-			<div class="lg:col-span-3 space-y-6">
-				<div class="h-48 bg-gray-200 rounded-2xl animate-pulse"></div>
-				<div class="h-64 bg-gray-200 rounded-2xl animate-pulse"></div>
+		<div class="grid grid-cols-1 gap-8 lg:grid-cols-5">
+			<div class="space-y-6 lg:col-span-3">
+				<div class="h-48 animate-pulse rounded-2xl bg-gray-200"></div>
+				<div class="h-64 animate-pulse rounded-2xl bg-gray-200"></div>
 			</div>
-			<div class="lg:col-span-2 space-y-6">
-				<div class="h-80 bg-gray-200 rounded-2xl animate-pulse"></div>
+			<div class="space-y-6 lg:col-span-2">
+				<div class="h-80 animate-pulse rounded-2xl bg-gray-200"></div>
 			</div>
 		</div>
 	</div>
 {:else}
-	<div class="max-w-6xl mx-auto pb-16">
+	<div class="mx-auto max-w-6xl pb-16">
 		<!-- Header -->
-		<div class="flex items-center gap-4 mb-8">
+		<div class="mb-8 flex items-center gap-4">
 			<!-- eslint-disable-next-line -->
 			<a href="/pos" class="checkout-back-btn group">
-				<ArrowLeft size={20} class="transition-transform duration-200 group-hover:-translate-x-0.5" />
+				<ArrowLeft
+					size={20}
+					class="transition-transform duration-200 group-hover:-translate-x-0.5"
+				/>
 			</a>
 			<div>
-				<h1 class="text-2xl sm:text-3xl font-bold font-heading text-[var(--color-earth)] tracking-tight">Checkout Pembayaran</h1>
-				<p class="text-sm text-[var(--color-stone)] mt-1">Lengkapi informasi untuk menyelesaikan transaksi</p>
+				<h1
+					class="font-heading text-2xl font-bold tracking-tight text-[var(--color-earth)] sm:text-3xl"
+				>
+					Checkout Pembayaran
+				</h1>
+				<p class="mt-1 text-sm text-[var(--color-stone)]">
+					Lengkapi informasi untuk menyelesaikan transaksi
+				</p>
 			</div>
 		</div>
 
 		{#if form?.error}
 			<div class="checkout-error-banner mb-6">
 				<div class="flex items-center gap-3">
-					<div class="w-8 h-8 rounded-full bg-[var(--color-error)]/10 flex items-center justify-center shrink-0">
-						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
+					<div
+						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-error)]/10"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							><circle cx="12" cy="12" r="10" /><line x1="15" x2="9" y1="9" y2="15" /><line
+								x1="9"
+								x2="15"
+								y1="9"
+								y2="15"
+							/></svg
+						>
 					</div>
 					<p class="text-sm font-medium">{form.error}</p>
 				</div>
 			</div>
 		{/if}
 
-		<form 
-			method="POST" 
+		<form
+			method="POST"
 			use:enhance={() => {
 				loading = true;
 				return async ({ update, result }) => {
@@ -296,7 +354,11 @@
 					if (result.type === 'redirect') {
 						handleSuccess();
 						await update();
-					} else if (result.type === 'success' && result.data?.payment_method === 'qris' && result.data?.success) {
+					} else if (
+						result.type === 'success' &&
+						result.data?.payment_method === 'qris' &&
+						result.data?.success
+					) {
 						const resData = /** @type {any} */ (result.data);
 						qrUrl = resData.qr_url;
 						qrisTxnId = resData.transaction_id;
@@ -312,11 +374,9 @@
 		>
 			<input type="hidden" name="payload" value={payloadStr()} />
 
-			<div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-				
+			<div class="grid grid-cols-1 gap-8 lg:grid-cols-5">
 				<!-- Left Column: Form -->
-				<div class="lg:col-span-3 space-y-6">
-					
+				<div class="space-y-6 lg:col-span-3">
 					<!-- 1. Jadwal Sewa -->
 					{#if hasRental}
 						<div class="checkout-card">
@@ -329,17 +389,17 @@
 									<p class="checkout-card-subtitle">Atur periode sewa untuk barang rental</p>
 								</div>
 							</div>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-								<Input 
-									type="date" 
+							<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+								<Input
+									type="date"
 									id="startDate"
 									label="Tanggal Mulai (Ambil)"
 									bind:value={startDate}
 									required
 								/>
 								<div>
-									<Input 
-										type="date" 
+									<Input
+										type="date"
 										id="endDate"
 										label="Tanggal Selesai"
 										value={endDate()}
@@ -349,9 +409,11 @@
 								</div>
 							</div>
 							<div class="checkout-info-banner mt-4">
-								<Sparkles size={14} class="text-amber-500 shrink-0 mt-0.5" />
+								<Sparkles size={14} class="mt-0.5 shrink-0 text-amber-500" />
 								<span>
-									Siklus sewa: <strong class="text-[var(--color-forest)]">{defaultRentalDuration} Hari</strong>. Keterlambatan dikenakan denda harian.
+									Siklus sewa: <strong class="text-[var(--color-forest)]"
+										>{defaultRentalDuration} Hari</strong
+									>. Keterlambatan dikenakan denda harian.
 								</span>
 							</div>
 						</div>
@@ -369,22 +431,36 @@
 							</div>
 							<!-- Toggle -->
 							<div class="checkout-toggle">
-								<button type="button" class="checkout-toggle-btn {customerMode === 'new' ? 'active' : ''}" onclick={() => customerMode = 'new'}>Baru</button>
-								<button type="button" class="checkout-toggle-btn {customerMode === 'existing' ? 'active' : ''}" onclick={() => customerMode = 'existing'}>Database</button>
+								<button
+									type="button"
+									class="checkout-toggle-btn {customerMode === 'new' ? 'active' : ''}"
+									onclick={() => (customerMode = 'new')}>Baru</button
+								>
+								<button
+									type="button"
+									class="checkout-toggle-btn {customerMode === 'existing' ? 'active' : ''}"
+									onclick={() => (customerMode = 'existing')}>Database</button
+								>
 							</div>
 						</div>
 
 						{#if customerMode === 'new'}
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-								<Input id="customerName" label="Nama Lengkap" bind:value={customerName} placeholder="misal: Budi Santoso" />
-								<Input id="customerPhone" label="Nomor HP/WA" bind:value={customerPhone} placeholder="misal: 081234567890" />
+							<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+								<Input
+									id="customerName"
+									label="Nama Lengkap"
+									bind:value={customerName}
+									placeholder="misal: Budi Santoso"
+								/>
+								<Input
+									id="customerPhone"
+									label="Nomor HP/WA"
+									bind:value={customerPhone}
+									placeholder="misal: 081234567890"
+								/>
 							</div>
 						{:else}
-							<Select 
-								id="customerId" 
-								label="Pilih Pelanggan"
-								bind:value={customerId}
-							>
+							<Select id="customerId" label="Pilih Pelanggan" bind:value={customerId}>
 								<option value="" disabled selected>-- Cari pelanggan terdaftar --</option>
 								{#each customers as cust}
 									<option value={cust.id}>{cust.full_name} ({cust.phone || '-'})</option>
@@ -408,7 +484,7 @@
 						<!-- Payment Method Cards -->
 						<div class="grid grid-cols-3 gap-3">
 							{#each paymentMethods as pm}
-								<button 
+								<button
 									type="button"
 									onclick={() => {
 										paymentMethod = pm.id;
@@ -430,14 +506,20 @@
 						{#if paymentMethod === 'cash' || paymentMethod === 'transfer'}
 							<div class="mt-5 space-y-4">
 								<div class="relative">
-									<label for="paidAmountInput" class="text-[13px] font-medium text-[var(--color-earth)] mb-1.5 block">
+									<label
+										for="paidAmountInput"
+										class="mb-1.5 block text-[13px] font-medium text-[var(--color-earth)]"
+									>
 										Jumlah Uang Diterima
 									</label>
 									<div class="relative">
-										<span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-stone)] font-semibold text-sm pointer-events-none">Rp</span>
-										<input 
+										<span
+											class="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-sm font-semibold text-[var(--color-stone)]"
+											>Rp</span
+										>
+										<input
 											id="paidAmountInput"
-											type="number" 
+											type="number"
 											bind:value={paidAmount}
 											placeholder="0"
 											min={subtotal()}
@@ -450,13 +532,19 @@
 								<!-- Cash Shortcuts -->
 								{#if paymentMethod === 'cash'}
 									<div>
-										<p class="text-xs font-semibold text-[var(--color-stone)] mb-2 uppercase tracking-wider">Pilih Cepat</p>
-										<div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+										<p
+											class="mb-2 text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+										>
+											Pilih Cepat
+										</p>
+										<div class="grid grid-cols-3 gap-2 sm:grid-cols-6">
 											{#each cashShortcuts() as shortcut}
-												<button 
+												<button
 													type="button"
 													onclick={() => selectCashAmount(shortcut.value)}
-													class="cash-shortcut-btn {parseFloat(paidAmount) === shortcut.value ? 'active' : ''}"
+													class="cash-shortcut-btn {parseFloat(paidAmount) === shortcut.value
+														? 'active'
+														: ''}"
 												>
 													{shortcut.label}
 												</button>
@@ -470,12 +558,20 @@
 									<div class="change-display {showChangeAnimation ? 'animate' : ''}">
 										<div class="change-display-inner">
 											<div class="flex items-center gap-2">
-												<div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+												<div
+													class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100"
+												>
 													<Banknote size={16} class="text-amber-600" />
 												</div>
 												<div>
-													<p class="text-xs font-semibold text-amber-700/80 uppercase tracking-wider">Kembalian</p>
-													<p class="text-xl sm:text-2xl font-bold font-heading text-amber-700">{formatCurrency(changeAmount())}</p>
+													<p
+														class="text-xs font-semibold tracking-wider text-amber-700/80 uppercase"
+													>
+														Kembalian
+													</p>
+													<p class="font-heading text-xl font-bold text-amber-700 sm:text-2xl">
+														{formatCurrency(changeAmount())}
+													</p>
 												</div>
 											</div>
 										</div>
@@ -483,9 +579,11 @@
 								{/if}
 							</div>
 						{:else}
-							<div class="mt-4 checkout-info-banner">
-								<QrCode size={14} class="text-purple-500 shrink-0 mt-0.5" />
-								<span>Pelanggan akan diarahkan ke halaman pembayaran QRIS Midtrans setelah submit.</span>
+							<div class="checkout-info-banner mt-4">
+								<QrCode size={14} class="mt-0.5 shrink-0 text-purple-500" />
+								<span
+									>Pelanggan akan diarahkan ke halaman pembayaran QRIS Midtrans setelah submit.</span
+								>
 							</div>
 						{/if}
 					</div>
@@ -493,7 +591,7 @@
 
 				<!-- Right Column: Summary & Submit -->
 				<div class="lg:col-span-2">
-					<div class="lg:sticky lg:top-24 space-y-6">
+					<div class="space-y-6 lg:sticky lg:top-24">
 						<!-- Cart Summary -->
 						<div class="checkout-summary-card">
 							<div class="checkout-summary-header">
@@ -501,7 +599,7 @@
 								<span>Ringkasan Pesanan</span>
 								<span class="checkout-item-count">{cart.length}</span>
 							</div>
-							
+
 							<ul class="checkout-item-list">
 								{#each cart as item, idx}
 									<li class="checkout-item" style="animation-delay: {idx * 50}ms">
@@ -512,16 +610,20 @@
 												<ShoppingCart size={14} />
 											{/if}
 										</div>
-										<div class="flex-1 min-w-0">
-											<p class="text-sm font-semibold text-[var(--color-earth)] truncate">{item.name}</p>
-											<p class="text-xs text-[var(--color-stone)] mt-0.5">
+										<div class="min-w-0 flex-1">
+											<p class="truncate text-sm font-semibold text-[var(--color-earth)]">
+												{item.name}
+											</p>
+											<p class="mt-0.5 text-xs text-[var(--color-stone)]">
 												{item.quantity}× {formatCurrency(item.price)}
 												{#if item.type === 'rental' || item.type === 'package'}
-													<span class="text-[var(--color-forest)] font-medium">/siklus</span>
+													<span class="font-medium text-[var(--color-forest)]">/siklus</span>
 												{/if}
 											</p>
 										</div>
-										<div class="text-sm font-bold text-[var(--color-earth)] tabular-nums whitespace-nowrap">
+										<div
+											class="text-sm font-bold whitespace-nowrap text-[var(--color-earth)] tabular-nums"
+										>
 											{formatCurrency(item.price * item.quantity)}
 										</div>
 									</li>
@@ -530,11 +632,11 @@
 
 							<!-- Subtotal -->
 							<div class="checkout-subtotal">
-								<div class="flex justify-between items-center text-sm text-[var(--color-stone)]">
+								<div class="flex items-center justify-between text-sm text-[var(--color-stone)]">
 									<span>Subtotal ({cart.length} item)</span>
 									<span class="font-semibold tabular-nums">{formatCurrency(subtotal())}</span>
 								</div>
-								<div class="flex justify-between items-center text-sm text-[var(--color-stone)]">
+								<div class="flex items-center justify-between text-sm text-[var(--color-stone)]">
 									<span>Diskon</span>
 									<span class="font-semibold">-</span>
 								</div>
@@ -543,7 +645,9 @@
 							<!-- Total -->
 							<div class="checkout-total">
 								<span class="text-sm font-semibold text-[var(--color-earth)]">Total Tagihan</span>
-								<span class="text-2xl font-bold font-heading text-[var(--color-forest)] tabular-nums">
+								<span
+									class="font-heading text-2xl font-bold text-[var(--color-forest)] tabular-nums"
+								>
 									{formatCurrency(subtotal())}
 								</span>
 							</div>
@@ -552,13 +656,19 @@
 							{#if parseFloat(paidAmount) > 0 && paymentMethod !== 'qris'}
 								<div class="checkout-payment-info">
 									<div class="flex justify-between text-sm">
-										<span class="text-[var(--color-stone)]">Dibayar ({paymentMethod === 'cash' ? 'Tunai' : 'Transfer'})</span>
-										<span class="font-semibold text-[var(--color-earth)] tabular-nums">{formatCurrency(parseFloat(paidAmount))}</span>
+										<span class="text-[var(--color-stone)]"
+											>Dibayar ({paymentMethod === 'cash' ? 'Tunai' : 'Transfer'})</span
+										>
+										<span class="font-semibold text-[var(--color-earth)] tabular-nums"
+											>{formatCurrency(parseFloat(paidAmount))}</span
+										>
 									</div>
 									{#if changeAmount() > 0}
 										<div class="flex justify-between text-sm">
 											<span class="text-amber-600">Kembalian</span>
-											<span class="font-bold text-amber-600 tabular-nums">{formatCurrency(changeAmount())}</span>
+											<span class="font-bold text-amber-600 tabular-nums"
+												>{formatCurrency(changeAmount())}</span
+											>
 										</div>
 									{/if}
 								</div>
@@ -568,7 +678,9 @@
 							<div class="p-5 pt-0">
 								<button
 									type="submit"
-									disabled={loading || (paymentMethod !== 'qris' && (parseFloat(paidAmount)||0) < subtotal()) || (hasRental && !startDate)}
+									disabled={loading ||
+										(paymentMethod !== 'qris' && (parseFloat(paidAmount) || 0) < subtotal()) ||
+										(hasRental && !startDate)}
 									class="checkout-submit-btn"
 								>
 									{#if loading}
@@ -576,10 +688,14 @@
 										<span>Memproses Transaksi...</span>
 									{:else}
 										<CheckCircle size={20} />
-										<span>{paymentMethod === 'qris' ? 'Lanjut ke Pembayaran QRIS' : 'Selesaikan Transaksi'}</span>
+										<span
+											>{paymentMethod === 'qris'
+												? 'Lanjut ke Pembayaran QRIS'
+												: 'Selesaikan Transaksi'}</span
+										>
 									{/if}
 								</button>
-								<p class="text-[11px] text-center text-[var(--color-stone)] mt-3">
+								<p class="mt-3 text-center text-[11px] text-[var(--color-stone)]">
 									Dengan menyelesaikan transaksi, struk akan otomatis tercetak.
 								</p>
 							</div>
@@ -611,7 +727,7 @@
 						{:else}
 							<div class="qris-qr-placeholder">
 								<div class="checkout-spinner" style="border-top-color: var(--color-forest)"></div>
-								<p class="text-xs text-[var(--color-stone)] mt-2">Membangkitkan QRIS...</p>
+								<p class="mt-2 text-xs text-[var(--color-stone)]">Membangkitkan QRIS...</p>
 							</div>
 						{/if}
 					</div>
@@ -633,16 +749,34 @@
 						<div class="flex items-center justify-center gap-3">
 							{#if paymentSuccess}
 								<div class="qris-success-icon-wrapper">
-									<CheckCircle size={18} class="text-emerald-600 animate-bounce" />
+									<CheckCircle size={18} class="animate-bounce text-emerald-600" />
 								</div>
 							{:else if paymentStatusMsg.includes('habis') || paymentStatusMsg.includes('gagal') || paymentStatusMsg.includes('kedaluwarsa')}
 								<div class="qris-error-icon-wrapper">
-									<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="18"
+										height="18"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="#DC2626"
+										stroke-width="2.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line
+											x1="12"
+											x2="12.01"
+											y1="16"
+											y2="16"
+										/></svg
+									>
 								</div>
 							{:else}
 								<div class="checkout-spinner" style="border-top-color: var(--color-forest)"></div>
 							{/if}
-							<span class="qris-status-text" class:success-text={paymentSuccess}>{paymentStatusMsg}</span>
+							<span class="qris-status-text" class:success-text={paymentSuccess}
+								>{paymentStatusMsg}</span
+							>
 						</div>
 					</div>
 
@@ -650,7 +784,9 @@
 					{#if !paymentSuccess && !paymentStatusMsg.includes('habis') && !paymentStatusMsg.includes('kedaluwarsa')}
 						<div class="qris-timer">
 							<span>Sisa waktu pembayaran: </span>
-							<span class="qris-timer-countdown">{timerMinutes}:{String(timerSeconds).padStart(2, '0')}</span>
+							<span class="qris-timer-countdown"
+								>{timerMinutes}:{String(timerSeconds).padStart(2, '0')}</span
+							>
 						</div>
 					{/if}
 				</div>
@@ -701,11 +837,15 @@
 		border: 1px solid var(--color-border-light);
 		border-radius: 20px;
 		padding: 24px;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.02);
+		box-shadow:
+			0 1px 3px rgba(0, 0, 0, 0.04),
+			0 6px 16px rgba(0, 0, 0, 0.02);
 		transition: box-shadow 0.3s ease;
 	}
 	.checkout-card:hover {
-		box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.03);
+		box-shadow:
+			0 2px 8px rgba(0, 0, 0, 0.06),
+			0 8px 24px rgba(0, 0, 0, 0.03);
 	}
 
 	.checkout-card-header {
@@ -762,7 +902,7 @@
 	.checkout-toggle-btn.active {
 		background: white;
 		color: var(--color-earth);
-		box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 
 	/* ─── Info Banner ─── */
@@ -860,7 +1000,7 @@
 		-webkit-appearance: none;
 		margin: 0;
 	}
-	.cash-input[type=number] {
+	.cash-input[type='number'] {
 		-moz-appearance: textfield;
 		appearance: textfield;
 	}
@@ -908,8 +1048,14 @@
 	}
 
 	@keyframes changePopIn {
-		0% { transform: scale(0.95); opacity: 0.5; }
-		100% { transform: scale(1); opacity: 1; }
+		0% {
+			transform: scale(0.95);
+			opacity: 0.5;
+		}
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
 	}
 
 	/* ─── Summary Card ─── */
@@ -918,7 +1064,9 @@
 		border: 1.5px solid var(--color-border-light);
 		border-radius: 20px;
 		overflow: hidden;
-		box-shadow: 0 4px 20px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06);
+		box-shadow:
+			0 4px 20px rgba(0, 0, 0, 0.04),
+			0 1px 3px rgba(0, 0, 0, 0.06);
 	}
 
 	.checkout-summary-header {
@@ -965,8 +1113,14 @@
 	}
 
 	@keyframes itemFadeIn {
-		from { opacity: 0; transform: translateY(4px); }
-		to { opacity: 1; transform: translateY(0); }
+		from {
+			opacity: 0;
+			transform: translateY(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	.checkout-item-icon {
@@ -1023,13 +1177,17 @@
 		font-weight: 700;
 		cursor: pointer;
 		transition: all 0.25s ease;
-		box-shadow: 0 2px 8px rgba(44, 110, 73, 0.25), 0 1px 2px rgba(44, 110, 73, 0.15);
+		box-shadow:
+			0 2px 8px rgba(44, 110, 73, 0.25),
+			0 1px 2px rgba(44, 110, 73, 0.15);
 		margin: 20px 20px 0 20px;
 		width: calc(100% - 40px);
 	}
 	.checkout-submit-btn:hover:not(:disabled) {
 		transform: translateY(-1px);
-		box-shadow: 0 4px 16px rgba(44, 110, 73, 0.3), 0 2px 4px rgba(44, 110, 73, 0.2);
+		box-shadow:
+			0 4px 16px rgba(44, 110, 73, 0.3),
+			0 2px 4px rgba(44, 110, 73, 0.2);
 	}
 	.checkout-submit-btn:active:not(:disabled) {
 		transform: translateY(0) scale(0.98);
@@ -1044,14 +1202,16 @@
 	.checkout-spinner {
 		width: 18px;
 		height: 18px;
-		border: 2.5px solid rgba(255,255,255,0.3);
+		border: 2.5px solid rgba(255, 255, 255, 0.3);
 		border-top-color: white;
 		border-radius: 50%;
 		animation: spin 0.7s linear infinite;
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	/* ─── Scrollbar for item list ─── */
@@ -1090,15 +1250,23 @@
 		border-radius: 24px;
 		width: 100%;
 		max-width: 440px;
-		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+		box-shadow:
+			0 20px 25px -5px rgba(0, 0, 0, 0.1),
+			0 10px 10px -5px rgba(0, 0, 0, 0.04);
 		border: 1px solid var(--color-border-light);
 		overflow: hidden;
 		animation: modalFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
 
 	@keyframes modalFadeIn {
-		from { transform: scale(0.95); opacity: 0; }
-		to { transform: scale(1); opacity: 1; }
+		from {
+			transform: scale(0.95);
+			opacity: 0;
+		}
+		to {
+			transform: scale(1);
+			opacity: 1;
+		}
 	}
 
 	.qris-modal-header {
@@ -1151,7 +1319,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 	}
 
 	.qris-qr-image {
@@ -1214,7 +1382,8 @@
 		color: var(--color-success);
 	}
 
-	.qris-success-icon-wrapper, .qris-error-icon-wrapper {
+	.qris-success-icon-wrapper,
+	.qris-error-icon-wrapper {
 		display: flex;
 		align-items: center;
 		justify-content: center;

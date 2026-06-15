@@ -7,7 +7,8 @@ export const bookingModel = {
 	async getBranchBookings(supabase, branchId) {
 		const { data, error } = await supabase
 			.from('bookings')
-			.select(`
+			.select(
+				`
 				*,
 				rental_asset:rental_assets!inner(
 					id,
@@ -22,12 +23,13 @@ export const bookingModel = {
 						customer:customers(id, full_name)
 					)
 				)
-			`)
+			`
+			)
 			.eq('branch_id', branchId)
 			.neq('status', 'cancelled');
 
 		if (error) {
-			console.error("Error fetching bookings in model:", error);
+			console.error('Error fetching bookings in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -49,7 +51,7 @@ export const bookingModel = {
 			.single();
 
 		if (error) {
-			console.error("Error creating booking in model:", error);
+			console.error('Error creating booking in model:', error);
 			throw new Error(error.message);
 		}
 		return data;
@@ -61,14 +63,10 @@ export const bookingModel = {
 	 * @param {string} id
 	 */
 	async getBookingDetails(supabase, id) {
-		const { data, error } = await supabase
-			.from('bookings')
-			.select('*')
-			.eq('id', id)
-			.single();
+		const { data, error } = await supabase.from('bookings').select('*').eq('id', id).single();
 
 		if (error) {
-			console.error("Error fetching booking details in model:", error);
+			console.error('Error fetching booking details in model:', error);
 			return null;
 		}
 		return data;
@@ -80,13 +78,10 @@ export const bookingModel = {
 	 * @param {string} id
 	 */
 	async deleteBooking(supabase, id) {
-		const { error } = await supabase
-			.from('bookings')
-			.delete()
-			.eq('id', id);
+		const { error } = await supabase.from('bookings').delete().eq('id', id);
 
 		if (error) {
-			console.error("Error deleting booking in model:", error);
+			console.error('Error deleting booking in model:', error);
 			throw new Error(error.message);
 		}
 		return true;
@@ -105,7 +100,7 @@ export const bookingModel = {
 			.eq('transaction_item_id', transactionItemId);
 
 		if (error) {
-			console.error("Error updating booking status in model:", error);
+			console.error('Error updating booking status in model:', error);
 			throw new Error(error.message);
 		}
 		return true;

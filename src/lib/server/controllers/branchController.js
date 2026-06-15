@@ -63,7 +63,11 @@ export const branchController = {
 			return { success: true };
 		} catch (error) {
 			console.error('Error deleting branch in controller:', error);
-			return { success: false, status: 500, error: 'Gagal menghapus cabang (mungkin masih ada data terkait).' };
+			return {
+				success: false,
+				status: 500,
+				error: 'Gagal menghapus cabang (mungkin masih ada data terkait).'
+			};
 		}
 	}
 };

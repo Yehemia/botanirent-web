@@ -10,4 +10,3 @@ export async function load({ locals }) {
 
 	return inventoryController.getInventoryData(supabase, profile);
 }
-

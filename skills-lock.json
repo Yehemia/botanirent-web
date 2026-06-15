@@ -1,29 +1,29 @@
 {
-  "version": 1,
-  "skills": {
-    "supabase-postgres-best-practices": {
-      "source": "supabase/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
-      "computedHash": "38fb49d3b57c46cba18b07a44254bd42c4c93903fda1d8cb683429615d32fec4"
-    },
-    "svelte5-best-practices": {
-      "source": "ejirocodes/agent-skills",
-      "sourceType": "github",
-      "skillPath": "svelte/skills/svelte5-best-practices/SKILL.md",
-      "computedHash": "ce40e28405a4c17006580d6766edf2deddfad8893c7887b73c68cb71644ceadb"
-    },
-    "sveltekit-svelte5-tailwind-skill": {
-      "source": "claude-skills/sveltekit-svelte5-tailwind-skill",
-      "sourceType": "github",
-      "skillPath": "SKILL.md",
-      "computedHash": "a6b5cb2295be93d44483c1e32d5a5703e9932dfef19e20b3eff85649b998bc43"
-    },
-    "ui-ux-pro-max": {
-      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
-      "sourceType": "github",
-      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
-      "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
-    }
-  }
+	"version": 1,
+	"skills": {
+		"supabase-postgres-best-practices": {
+			"source": "supabase/agent-skills",
+			"sourceType": "github",
+			"skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+			"computedHash": "38fb49d3b57c46cba18b07a44254bd42c4c93903fda1d8cb683429615d32fec4"
+		},
+		"svelte5-best-practices": {
+			"source": "ejirocodes/agent-skills",
+			"sourceType": "github",
+			"skillPath": "svelte/skills/svelte5-best-practices/SKILL.md",
+			"computedHash": "ce40e28405a4c17006580d6766edf2deddfad8893c7887b73c68cb71644ceadb"
+		},
+		"sveltekit-svelte5-tailwind-skill": {
+			"source": "claude-skills/sveltekit-svelte5-tailwind-skill",
+			"sourceType": "github",
+			"skillPath": "SKILL.md",
+			"computedHash": "a6b5cb2295be93d44483c1e32d5a5703e9932dfef19e20b3eff85649b998bc43"
+		},
+		"ui-ux-pro-max": {
+			"source": "nextlevelbuilder/ui-ux-pro-max-skill",
+			"sourceType": "github",
+			"skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+			"computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
+		}
+	}
 }

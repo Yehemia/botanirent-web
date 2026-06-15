@@ -7,14 +7,11 @@
 	 */
 
 	/** @type {Props} */
-	let {
-		variant = 'neutral',
-		class: className = '',
-		children
-	} = $props();
+	let { variant = 'neutral', class: className = '', children } = $props();
 
-	const baseClass = "inline-flex items-center justify-center rounded-full px-3 py-1 text-[12px] font-semibold tracking-wide whitespace-nowrap";
-	
+	const baseClass =
+		'inline-flex items-center justify-center rounded-full px-3 py-1 text-[12px] font-semibold tracking-wide whitespace-nowrap';
+
 	const variantClasses = {
 		success: 'bg-[var(--color-success-bg)] text-[var(--color-success)]',
 		warning: 'bg-[var(--color-warning-bg)] text-[var(--color-warning)]',

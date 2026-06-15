@@ -63,28 +63,52 @@ export const itemController = {
 		const image = formData.get('image'); // File
 
 		if (!name || !category_id) {
-			return { success: false, status: 400, error: 'Nama dan kategori wajib diisi.', values: Object.fromEntries(formData) };
+			return {
+				success: false,
+				status: 400,
+				error: 'Nama dan kategori wajib diisi.',
+				values: Object.fromEntries(formData)
+			};
 		}
 
 		// Fetch category details
 		let category;
 		try {
-			const { data } = await supabase.from('categories').select('type').eq('id', category_id).single();
+			const { data } = await supabase
+				.from('categories')
+				.select('type')
+				.eq('id', category_id)
+				.single();
 			category = data;
 		} catch (err) {
-			console.error("Error loading category in controller:", err);
+			console.error('Error loading category in controller:', err);
 		}
 
 		if (!category) {
-			return { success: false, status: 400, error: 'Kategori tidak valid.', values: Object.fromEntries(formData) };
+			return {
+				success: false,
+				status: 400,
+				error: 'Kategori tidak valid.',
+				values: Object.fromEntries(formData)
+			};
 		}
 
 		// Validate prices based on category type
 		if (category.type === 'sewa' && !rental_price_per_day) {
-			return { success: false, status: 400, error: 'Harga sewa per hari wajib diisi untuk barang sewa.', values: Object.fromEntries(formData) };
+			return {
+				success: false,
+				status: 400,
+				error: 'Harga sewa per hari wajib diisi untuk barang sewa.',
+				values: Object.fromEntries(formData)
+			};
 		}
 		if (category.type === 'retail' && !sell_price) {
-			return { success: false, status: 400, error: 'Harga jual wajib diisi untuk barang retail.', values: Object.fromEntries(formData) };
+			return {
+				success: false,
+				status: 400,
+				error: 'Harga jual wajib diisi untuk barang retail.',
+				values: Object.fromEntries(formData)
+			};
 		}
 
 		// Auto-generate Barcode (BTN + 6 random alphanumeric)
@@ -97,7 +121,7 @@ export const itemController = {
 		if (image && typeof image !== 'string' && image.size > 0) {
 			const fileExt = image.name.split('.').pop();
 			const fileName = `${profile.branch_id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-			
+
 			try {
 				const { error: uploadError } = await supabase.storage
 					.from('item-images')
@@ -107,18 +131,28 @@ export const itemController = {
 					});
 
 				if (uploadError) {
-					console.error("Upload error:", uploadError);
-					return { success: false, status: 500, error: 'Gagal mengunggah gambar. Pastikan Anda sudah menjalankan script setup storage.', values: Object.fromEntries(formData) };
+					console.error('Upload error:', uploadError);
+					return {
+						success: false,
+						status: 500,
+						error: 'Gagal mengunggah gambar. Pastikan Anda sudah menjalankan script setup storage.',
+						values: Object.fromEntries(formData)
+					};
 				}
 
-				const { data: { publicUrl } } = supabase.storage
-					.from('item-images')
-					.getPublicUrl(fileName);
-				
+				const {
+					data: { publicUrl }
+				} = supabase.storage.from('item-images').getPublicUrl(fileName);
+
 				image_url = publicUrl;
 			} catch (err) {
-				console.error("Storage upload error:", err);
-				return { success: false, status: 500, error: 'Gagal mengunggah gambar.', values: Object.fromEntries(formData) };
+				console.error('Storage upload error:', err);
+				return {
+					success: false,
+					status: 500,
+					error: 'Gagal mengunggah gambar.',
+					values: Object.fromEntries(formData)
+				};
 			}
 		}
 
@@ -130,7 +164,9 @@ export const itemController = {
 				description: description ? description.toString() : null,
 				barcode,
 				image_url,
-				rental_price_per_day: rental_price_per_day ? parseFloat(rental_price_per_day.toString()) : null,
+				rental_price_per_day: rental_price_per_day
+					? parseFloat(rental_price_per_day.toString())
+					: null,
 				sell_price: sell_price ? parseFloat(sell_price.toString()) : null,
 				stock_total,
 				stock_available: stock_total,
@@ -151,7 +187,7 @@ export const itemController = {
 				try {
 					await assetModel.insertAssets(supabase, newAssets);
 				} catch (assetsError) {
-					console.error("Insert assets error:", assetsError);
+					console.error('Insert assets error:', assetsError);
 				}
 			}
 
@@ -167,8 +203,13 @@ export const itemController = {
 
 			return { success: true, redirect: '/inventory' };
 		} catch (error) {
-			console.error("Error creating item in controller:", error);
-			return { success: false, status: 500, error: 'Gagal menyimpan data barang.', values: Object.fromEntries(formData) };
+			console.error('Error creating item in controller:', error);
+			return {
+				success: false,
+				status: 500,
+				error: 'Gagal menyimpan data barang.',
+				values: Object.fromEntries(formData)
+			};
 		}
 	},
 
@@ -202,28 +243,52 @@ export const itemController = {
 		const image = formData.get('image'); // File
 
 		if (!name || !category_id) {
-			return { success: false, status: 400, error: 'Nama dan kategori wajib diisi.', values: Object.fromEntries(formData) };
+			return {
+				success: false,
+				status: 400,
+				error: 'Nama dan kategori wajib diisi.',
+				values: Object.fromEntries(formData)
+			};
 		}
 
 		// Fetch category details
 		let category;
 		try {
-			const { data } = await supabase.from('categories').select('type').eq('id', category_id).single();
+			const { data } = await supabase
+				.from('categories')
+				.select('type')
+				.eq('id', category_id)
+				.single();
 			category = data;
 		} catch (err) {
-			console.error("Error loading category in controller:", err);
+			console.error('Error loading category in controller:', err);
 		}
 
 		if (!category) {
-			return { success: false, status: 400, error: 'Kategori tidak valid.', values: Object.fromEntries(formData) };
+			return {
+				success: false,
+				status: 400,
+				error: 'Kategori tidak valid.',
+				values: Object.fromEntries(formData)
+			};
 		}
 
 		// Validate prices based on category type
 		if (category.type === 'sewa' && !rental_price_per_day) {
-			return { success: false, status: 400, error: 'Harga sewa per hari wajib diisi untuk barang sewa.', values: Object.fromEntries(formData) };
+			return {
+				success: false,
+				status: 400,
+				error: 'Harga sewa per hari wajib diisi untuk barang sewa.',
+				values: Object.fromEntries(formData)
+			};
 		}
 		if (category.type === 'retail' && !sell_price) {
-			return { success: false, status: 400, error: 'Harga jual wajib diisi untuk barang retail.', values: Object.fromEntries(formData) };
+			return {
+				success: false,
+				status: 400,
+				error: 'Harga jual wajib diisi untuk barang retail.',
+				values: Object.fromEntries(formData)
+			};
 		}
 
 		let image_url = oldItem.image_url;
@@ -232,7 +297,7 @@ export const itemController = {
 		if (image && typeof image !== 'string' && image.size > 0) {
 			const fileExt = image.name.split('.').pop();
 			const fileName = `${oldItem.branch_id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-			
+
 			try {
 				const { error: uploadError } = await supabase.storage
 					.from('item-images')
@@ -242,18 +307,28 @@ export const itemController = {
 					});
 
 				if (uploadError) {
-					console.error("Upload error:", uploadError);
-					return { success: false, status: 500, error: 'Gagal mengunggah gambar baru.', values: Object.fromEntries(formData) };
+					console.error('Upload error:', uploadError);
+					return {
+						success: false,
+						status: 500,
+						error: 'Gagal mengunggah gambar baru.',
+						values: Object.fromEntries(formData)
+					};
 				}
 
-				const { data: { publicUrl } } = supabase.storage
-					.from('item-images')
-					.getPublicUrl(fileName);
-				
+				const {
+					data: { publicUrl }
+				} = supabase.storage.from('item-images').getPublicUrl(fileName);
+
 				image_url = publicUrl;
 			} catch (err) {
-				console.error("Storage upload error:", err);
-				return { success: false, status: 500, error: 'Gagal mengunggah gambar.', values: Object.fromEntries(formData) };
+				console.error('Storage upload error:', err);
+				return {
+					success: false,
+					status: 500,
+					error: 'Gagal mengunggah gambar.',
+					values: Object.fromEntries(formData)
+				};
 			}
 		}
 
@@ -279,7 +354,7 @@ export const itemController = {
 					}
 
 					// Delete the excess ready assets
-					const assetIdsToDelete = readyAssets.slice(0, toDeleteCount).map(a => a.id);
+					const assetIdsToDelete = readyAssets.slice(0, toDeleteCount).map((a) => a.id);
 					await assetModel.deleteAssetsByIds(supabase, assetIdsToDelete);
 				} else {
 					// Retail item
@@ -297,10 +372,10 @@ export const itemController = {
 			// If stock is increased and it is a rental item, generate new assets
 			if (stockDiff > 0 && category.type === 'sewa') {
 				const existingAssets = await assetModel.getExistingAssetsForItem(supabase, id);
-				const existingCodes = new Set(existingAssets.map(a => a.asset_code));
+				const existingCodes = new Set(existingAssets.map((a) => a.asset_code));
 				const newAssets = [];
 				let idx = 0;
-				
+
 				while (newAssets.length < stockDiff) {
 					const code = `${oldItem.barcode}-${getLetterSuffix(idx)}`;
 					if (!existingCodes.has(code)) {
@@ -322,7 +397,8 @@ export const itemController = {
 				name: name.toString(),
 				description: description ? description.toString() : null,
 				image_url,
-				rental_price_per_day: category.type === 'sewa' ? parseFloat(rental_price_per_day?.toString() || '0') : null,
+				rental_price_per_day:
+					category.type === 'sewa' ? parseFloat(rental_price_per_day?.toString() || '0') : null,
 				sell_price: category.type === 'retail' ? parseFloat(sell_price?.toString() || '0') : null,
 				stock_total,
 				stock_available: new_stock_available,
@@ -336,13 +412,23 @@ export const itemController = {
 				action: 'item_updated',
 				entityType: 'item',
 				entityId: id,
-				metadata: { name, barcode: oldItem.barcode, stock_total, stock_available: new_stock_available }
+				metadata: {
+					name,
+					barcode: oldItem.barcode,
+					stock_total,
+					stock_available: new_stock_available
+				}
 			});
 
 			return { success: true, redirect: '/inventory' };
 		} catch (error) {
-			console.error("Error in updateItem controller:", error);
-			return { success: false, status: 500, error: 'Gagal memperbarui data barang.', values: Object.fromEntries(formData) };
+			console.error('Error in updateItem controller:', error);
+			return {
+				success: false,
+				status: 500,
+				error: 'Gagal memperbarui data barang.',
+				values: Object.fromEntries(formData)
+			};
 		}
 	},
 
@@ -362,23 +448,33 @@ export const itemController = {
 			const workbook = xlsx.read(arrayBuffer, { type: 'buffer' });
 			const sheetName = workbook.SheetNames[0];
 			const worksheet = workbook.Sheets[sheetName];
-			
+
 			const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
 
 			if (rows.length <= 1) {
-				return { success: false, status: 400, error: 'File Excel kosong atau hanya berisi header.' };
+				return {
+					success: false,
+					status: 400,
+					error: 'File Excel kosong atau hanya berisi header.'
+				};
 			}
 
 			const categories = await categoryModel.getCategories(supabase);
-			const catMap = new Map(categories.map(c => [c.id, c.type]));
+			const catMap = new Map(categories.map((c) => [c.id, c.type]));
 
 			const insertData = [];
 			const errors = [];
 
 			for (let i = 1; i < rows.length; i++) {
 				const row = rows[i];
-				
-				if (!row || row.length === 0 || row.every(/** @param {any} cell */ cell => cell === null || cell === undefined || cell === '')) {
+
+				if (
+					!row ||
+					row.length === 0 ||
+					row.every(
+						/** @param {any} cell */ (cell) => cell === null || cell === undefined || cell === ''
+					)
+				) {
 					continue;
 				}
 
@@ -413,7 +509,11 @@ export const itemController = {
 			}
 
 			if (errors.length > 0) {
-				return { success: false, status: 400, error: 'Terdapat error pada file Excel Anda:\n' + errors.join('\n') };
+				return {
+					success: false,
+					status: 400,
+					error: 'Terdapat error pada file Excel Anda:\n' + errors.join('\n')
+				};
 			}
 
 			if (insertData.length === 0) {
@@ -434,8 +534,13 @@ export const itemController = {
 
 			return { success: true, count: insertData.length };
 		} catch (error) {
-			console.error("Parse excel error in controller:", error);
-			return { success: false, status: 500, error: 'Gagal memproses file Excel. Pastikan file tidak corrupt dan menggunakan format .xlsx atau .csv.' };
+			console.error('Parse excel error in controller:', error);
+			return {
+				success: false,
+				status: 500,
+				error:
+					'Gagal memproses file Excel. Pastikan file tidak corrupt dan menggunakan format .xlsx atau .csv.'
+			};
 		}
 	}
 };

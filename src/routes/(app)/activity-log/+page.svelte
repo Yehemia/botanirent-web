@@ -1,13 +1,13 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { 
-		Activity, 
-		Search, 
-		Calendar, 
-		User, 
-		MapPin, 
-		ChevronLeft, 
-		ChevronRight 
+	import {
+		Activity,
+		Search,
+		Calendar,
+		User,
+		MapPin,
+		ChevronLeft,
+		ChevronRight
 	} from '@lucide/svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -106,7 +106,10 @@
 			case 'item_updated':
 				return 'Item Diperbarui';
 			default:
-				return action.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+				return action
+					.split('_')
+					.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+					.join(' ');
 		}
 	}
 
@@ -117,7 +120,12 @@
 		if (action.includes('delete') || action.includes('lost') || action.includes('error')) {
 			return 'bg-[var(--color-error-bg)] text-[var(--color-error)] border-[var(--color-error)]/10';
 		}
-		if (action.includes('create') || action.includes('return') || action.includes('add') || action === 'checkout') {
+		if (
+			action.includes('create') ||
+			action.includes('return') ||
+			action.includes('add') ||
+			action === 'checkout'
+		) {
 			return 'bg-[var(--color-success-bg)] text-[var(--color-success)] border-[var(--color-success)]/10';
 		}
 		if (action.includes('update') || action.includes('edit')) {
@@ -127,24 +135,28 @@
 	}
 </script>
 
-<div class="space-y-6 max-w-7xl mx-auto pb-12 animate-fade-in">
+<div class="animate-fade-in mx-auto max-w-7xl space-y-6 pb-12">
 	<!-- Header -->
 	<div>
-		<h1 class="text-2xl sm:text-3xl font-bold font-heading text-[var(--color-earth)] flex items-center gap-2">
-			<Activity class="w-6 h-6 sm:w-7 sm:h-7" /> Log Aktivitas Audit
+		<h1
+			class="flex items-center gap-2 font-heading text-2xl font-bold text-[var(--color-earth)] sm:text-3xl"
+		>
+			<Activity class="h-6 w-6 sm:h-7 sm:w-7" /> Log Aktivitas Audit
 		</h1>
-		<p class="text-xs sm:text-sm text-[var(--color-stone)] mt-1">Audit trail lengkap aktivitas user di seluruh cabang secara real-time.</p>
+		<p class="mt-1 text-xs text-[var(--color-stone)] sm:text-sm">
+			Audit trail lengkap aktivitas user di seluruh cabang secara real-time.
+		</p>
 	</div>
 
 	<!-- Filters Card -->
 	<Card padding="md">
-		<form onsubmit={handleFilterSubmit} class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+		<form onsubmit={handleFilterSubmit} class="grid grid-cols-1 items-end gap-4 md:grid-cols-4">
 			<div class="md:col-span-2">
-				<Input 
+				<Input
 					id="log-search-input"
-					name="search" 
-					label="Cari Aksi / Entitas" 
-					bind:value={searchVal} 
+					name="search"
+					label="Cari Aksi / Entitas"
+					bind:value={searchVal}
 					placeholder="Cari aksi (misal: return, checkout)..."
 				>
 					{#snippet iconLeft()}
@@ -154,12 +166,7 @@
 			</div>
 
 			<div>
-				<Select 
-					id="log-branch-select"
-					name="branchId" 
-					label="Cabang" 
-					bind:value={branchVal}
-				>
+				<Select id="log-branch-select" name="branchId" label="Cabang" bind:value={branchVal}>
 					<option value="">Semua Cabang</option>
 					{#each branches as branch}
 						<option value={branch.id}>{branch.name}</option>
@@ -167,10 +174,8 @@
 				</Select>
 			</div>
 
-			<div class="flex gap-2 h-[42px] mb-[1.5px]">
-				<Button type="submit" variant="primary" class="flex-1">
-					Filter
-				</Button>
+			<div class="mb-[1.5px] flex h-[42px] gap-2">
+				<Button type="submit" variant="primary" class="flex-1">Filter</Button>
 				{#if filters.search || filters.branchId}
 					<Button type="button" onclick={handleReset} variant="secondary" class="flex-1">
 						Reset
@@ -183,9 +188,11 @@
 	<!-- Table Card -->
 	<Card padding="none" class="overflow-hidden shadow-sm">
 		<!-- Desktop View -->
-		<div class="hidden sm:block overflow-x-auto">
+		<div class="hidden overflow-x-auto sm:block">
 			<table class="w-full text-left text-sm whitespace-nowrap">
-				<thead class="bg-[var(--color-sand-light)] text-[var(--color-earth)] font-semibold border-b border-[var(--color-border)]">
+				<thead
+					class="border-b border-[var(--color-border)] bg-[var(--color-sand-light)] font-semibold text-[var(--color-earth)]"
+				>
 					<tr>
 						<th class="px-6 py-4">Waktu</th>
 						<th class="px-6 py-4">User / Staf</th>
@@ -203,18 +210,18 @@
 						</tr>
 					{:else}
 						{#each logs as log (log.id)}
-							<tr class="hover:bg-[var(--color-sand-lightest)]/50 transition-colors">
-								<td class="px-6 py-4 text-[var(--color-stone)] text-xs font-mono">
+							<tr class="transition-colors hover:bg-[var(--color-sand-lightest)]/50">
+								<td class="px-6 py-4 font-mono text-xs text-[var(--color-stone)]">
 									{formatDate(log.created_at)}
 								</td>
 								<td class="px-6 py-4">
 									<div class="flex flex-col">
-										<span class="font-semibold text-[var(--color-earth)] flex items-center gap-1.5">
+										<span class="flex items-center gap-1.5 font-semibold text-[var(--color-earth)]">
 											<User size={13} class="text-[var(--color-stone)]" />
 											{log.profile?.full_name || 'System / Auto'}
 										</span>
 										{#if log.profile?.role}
-											<span class="text-[10px] mt-0.5 w-fit">
+											<span class="mt-0.5 w-fit text-[10px]">
 												<Badge variant={getRoleBadgeVariant(log.profile.role)}>
 													{log.profile.role.toUpperCase()}
 												</Badge>
@@ -222,14 +229,18 @@
 										{/if}
 									</div>
 								</td>
-								<td class="px-6 py-4 text-[var(--color-earth)] font-medium">
+								<td class="px-6 py-4 font-medium text-[var(--color-earth)]">
 									<span class="flex items-center gap-1">
 										<MapPin size={13} class="text-[var(--color-stone)]" />
 										{log.branch?.name || '-'}
 									</span>
 								</td>
 								<td class="px-6 py-4">
-									<span class="inline-block px-2.5 py-1 border rounded-md text-xs font-semibold uppercase tracking-wider {getActionColorClass(log.action)}">
+									<span
+										class="inline-block rounded-md border px-2.5 py-1 text-xs font-semibold tracking-wider uppercase {getActionColorClass(
+											log.action
+										)}"
+									>
 										{getActionLabel(log.action)}
 									</span>
 								</td>
@@ -244,45 +255,63 @@
 		</div>
 
 		<!-- Mobile View -->
-		<div class="block sm:hidden divide-y divide-[var(--color-border-light)] bg-white">
+		<div class="block divide-y divide-[var(--color-border-light)] bg-white sm:hidden">
 			{#if logs.length === 0}
-				<p class="p-6 text-center text-[var(--color-stone)] italic text-xs">Tidak ada log aktivitas yang ditemukan.</p>
+				<p class="p-6 text-center text-xs text-[var(--color-stone)] italic">
+					Tidak ada log aktivitas yang ditemukan.
+				</p>
 			{:else}
 				{#each logs as log (log.id)}
-					<div class="p-4 flex flex-col gap-2.5 hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
-						<div class="flex justify-between items-start gap-2">
-							<span class="inline-block px-2 py-0.5 border rounded text-[10px] font-bold uppercase tracking-wider {getActionColorClass(log.action)}">
+					<div
+						class="flex flex-col gap-2.5 p-4 transition-colors hover:bg-[var(--color-sand-lightest)]/30"
+					>
+						<div class="flex items-start justify-between gap-2">
+							<span
+								class="inline-block rounded border px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase {getActionColorClass(
+									log.action
+								)}"
+							>
 								{getActionLabel(log.action)}
 							</span>
 							{#if log.entity_type}
-								<span class="font-mono text-[10px] text-[var(--color-stone)] capitalize bg-[var(--color-sand)] px-1.5 py-0.5 rounded">
+								<span
+									class="rounded bg-[var(--color-sand)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-stone)] capitalize"
+								>
 									{log.entity_type}
 								</span>
 							{/if}
 						</div>
-						
+
 						<div class="flex flex-col gap-1.5 text-xs text-[var(--color-earth)]">
 							<div class="flex items-center gap-2">
-								<User size={13} class="text-[var(--color-stone)] shrink-0" />
+								<User size={13} class="shrink-0 text-[var(--color-stone)]" />
 								<span class="font-semibold">{log.profile?.full_name || 'System / Auto'}</span>
 								{#if log.profile?.role}
-									<span class="scale-90 origin-left">
+									<span class="origin-left scale-90">
 										<Badge variant={getRoleBadgeVariant(log.profile.role)}>
 											{log.profile.role.toUpperCase()}
 										</Badge>
 									</span>
 								{/if}
 							</div>
-							
+
 							<div class="flex items-center gap-2 text-[var(--color-stone)]">
-								<MapPin size={13} class="text-[var(--color-stone)] shrink-0" />
+								<MapPin size={13} class="shrink-0 text-[var(--color-stone)]" />
 								<span>Cabang: <strong>{log.branch?.name || '-'}</strong></span>
 							</div>
 						</div>
 
-						<div class="text-[10px] text-[var(--color-stone)] font-mono flex items-center gap-1 mt-0.5">
+						<div
+							class="mt-0.5 flex items-center gap-1 font-mono text-[10px] text-[var(--color-stone)]"
+						>
 							<Calendar size={11} class="shrink-0" />
-							{formatDate(log.created_at, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+							{formatDate(log.created_at, {
+								day: '2-digit',
+								month: 'short',
+								year: 'numeric',
+								hour: '2-digit',
+								minute: '2-digit'
+							})}
 						</div>
 					</div>
 				{/each}
@@ -291,32 +320,58 @@
 
 		<!-- Pagination Footer -->
 		{#if totalPages > 1}
-			<div class="px-4 sm:px-6 py-4 bg-[var(--color-sand-lightest)] border-t border-[var(--color-border)] flex flex-col sm:flex-row gap-4 items-center justify-between">
-				<div class="text-xs sm:text-sm text-[var(--color-stone)] text-center sm:text-left">
-					Menampilkan <span class="font-semibold">{Math.min((page - 1) * pageSize + 1, totalCount)}</span> - <span class="font-semibold">{Math.min(page * pageSize, totalCount)}</span> dari <span class="font-semibold">{totalCount}</span> log
+			<div
+				class="flex flex-col items-center justify-between gap-4 border-t border-[var(--color-border)] bg-[var(--color-sand-lightest)] px-4 py-4 sm:flex-row sm:px-6"
+			>
+				<div class="text-center text-xs text-[var(--color-stone)] sm:text-left sm:text-sm">
+					Menampilkan <span class="font-semibold"
+						>{Math.min((page - 1) * pageSize + 1, totalCount)}</span
+					>
+					- <span class="font-semibold">{Math.min(page * pageSize, totalCount)}</span> dari
+					<span class="font-semibold">{totalCount}</span> log
 				</div>
-				
+
 				<div class="flex items-center gap-2">
 					{#if hasPrev}
-						<Button onclick={() => goto(getPageUrl(page - 1))} variant="secondary" size="sm" class="inline-flex items-center gap-1">
+						<Button
+							onclick={() => goto(getPageUrl(page - 1))}
+							variant="secondary"
+							size="sm"
+							class="inline-flex items-center gap-1"
+						>
 							<ChevronLeft size={16} /> Seb.
 						</Button>
 					{:else}
-						<Button disabled variant="secondary" size="sm" class="inline-flex items-center gap-1 opacity-50">
+						<Button
+							disabled
+							variant="secondary"
+							size="sm"
+							class="inline-flex items-center gap-1 opacity-50"
+						>
 							<ChevronLeft size={16} /> Seb.
 						</Button>
 					{/if}
 
-					<span class="text-xs sm:text-sm text-[var(--color-earth)] font-semibold px-1 sm:px-2">
+					<span class="px-1 text-xs font-semibold text-[var(--color-earth)] sm:px-2 sm:text-sm">
 						Halaman {page} dari {totalPages}
 					</span>
 
 					{#if hasNext}
-						<Button onclick={() => goto(getPageUrl(page + 1))} variant="secondary" size="sm" class="inline-flex items-center gap-1">
+						<Button
+							onclick={() => goto(getPageUrl(page + 1))}
+							variant="secondary"
+							size="sm"
+							class="inline-flex items-center gap-1"
+						>
 							Sel. <ChevronRight size={16} />
 						</Button>
 					{:else}
-						<Button disabled variant="secondary" size="sm" class="inline-flex items-center gap-1 opacity-50">
+						<Button
+							disabled
+							variant="secondary"
+							size="sm"
+							class="inline-flex items-center gap-1 opacity-50"
+						>
 							Sel. <ChevronRight size={16} />
 						</Button>
 					{/if}

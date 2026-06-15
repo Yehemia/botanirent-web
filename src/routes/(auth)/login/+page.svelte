@@ -33,7 +33,7 @@
 					nativeIdToken = result.idToken;
 					// Set action to token login
 					googleFormElement.action = '?/googleTokenLogin';
-					
+
 					// Submit form programmatically after setting values
 					setTimeout(() => {
 						googleFormElement.submit();
@@ -55,7 +55,9 @@
 				googleFormElement.submit();
 			}
 		} else {
-			console.log('[BotaniRent] Not a WebView or flutter_inappwebview missing, using regular OAuth');
+			console.log(
+				'[BotaniRent] Not a WebView or flutter_inappwebview missing, using regular OAuth'
+			);
 			// Ordinary web browser behavior
 			googleFormElement.action = '?/googleOauth';
 			googleFormElement.submit();
@@ -80,7 +82,7 @@
 <div class="login-page">
 	<!-- Animated Background Pattern -->
 	<div class="login-bg-pattern"></div>
-	
+
 	<!-- Mobile Hero Section (Dark Theme) -->
 	<header class="login-mobile-header">
 		<div class="pattern-overlay"></div>
@@ -94,7 +96,7 @@
 		<div class="mobile-float-element float-3">
 			<TreePine size={24} strokeWidth={1.5} />
 		</div>
-		
+
 		<div class="mobile-hero-content">
 			<!-- Brand Logo Group -->
 			<div class="mobile-logo-wrapper">
@@ -103,12 +105,10 @@
 				</div>
 			</div>
 			<h1 class="mobile-hero-title">
-				BotaniRent <br/>
+				BotaniRent <br />
 				<span class="text-botani-gold">Outdoor</span>
 			</h1>
-			<p class="mobile-hero-subtitle">
-				Platform manajemen persewaan peralatan outdoor terlengkap.
-			</p>
+			<p class="mobile-hero-subtitle">Platform manajemen persewaan peralatan outdoor terlengkap.</p>
 			<!-- Feature Chips (Mobile Row) -->
 			<div class="mobile-hero-features">
 				<div class="mobile-feature-pill">
@@ -126,12 +126,12 @@
 			</div>
 		</div>
 	</header>
-	
+
 	<!-- Left Panel: Branding (Desktop) -->
 	<div class="login-hero">
 		<div class="hero-overlay"></div>
 		<div class="hero-gradient"></div>
-		
+
 		<!-- Floating nature elements -->
 		<div class="hero-float-element float-1">
 			<Mountain size={28} strokeWidth={1.5} />
@@ -142,18 +142,19 @@
 		<div class="hero-float-element float-3">
 			<TreePine size={22} strokeWidth={1.5} />
 		</div>
-		
+
 		<div class="hero-content">
 			<!-- Logo -->
 			<div class="hero-logo-wrapper">
 				<img src="/logo.svg" alt="Logo BotaniRent" class="hero-logo" />
 			</div>
-			
-			<h2 class="hero-title">BotaniRent<br/><span>Outdoor</span></h2>
+
+			<h2 class="hero-title">BotaniRent<br /><span>Outdoor</span></h2>
 			<p class="hero-subtitle">
-				Platform manajemen persewaan peralatan outdoor terlengkap — dari inventaris, booking, hingga laporan keuangan.
+				Platform manajemen persewaan peralatan outdoor terlengkap — dari inventaris, booking, hingga
+				laporan keuangan.
 			</p>
-			
+
 			<!-- Feature pills -->
 			<div class="hero-features">
 				<div class="hero-feature-pill">
@@ -170,7 +171,7 @@
 				</div>
 			</div>
 		</div>
-		
+
 		<!-- Bottom attribution -->
 		<div class="hero-footer">
 			<p>© 2026 BotaniRent. All rights reserved.</p>
@@ -190,7 +191,23 @@
 			{#if form?.error || data?.error}
 				<div class="login-error" role="alert">
 					<div class="login-error-icon">
-						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							><circle cx="12" cy="12" r="10" /><line x1="15" x2="9" y1="9" y2="15" /><line
+								x1="9"
+								x2="15"
+								y1="9"
+								y2="15"
+							/></svg
+						>
 					</div>
 					<span>
 						{#if form?.error}
@@ -213,12 +230,12 @@
 						<div class="input-icon">
 							<Mail size={18} />
 						</div>
-						<input 
-							id="email" 
-							name="email" 
-							type="email" 
-							placeholder="nama@botanirent.com" 
-							required 
+						<input
+							id="email"
+							name="email"
+							type="email"
+							placeholder="nama@botanirent.com"
+							required
 							autocomplete="email"
 							value={form?.email ?? ''}
 							class="form-input"
@@ -237,19 +254,19 @@
 						<div class="input-icon">
 							<Lock size={18} />
 						</div>
-						<input 
-							id="password" 
-							name="password" 
-							type={showPassword ? 'text' : 'password'} 
-							placeholder="••••••••" 
+						<input
+							id="password"
+							name="password"
+							type={showPassword ? 'text' : 'password'}
+							placeholder="••••••••"
 							required
 							autocomplete="current-password"
 							class="form-input has-toggle"
 						/>
-						<button 
-							type="button" 
+						<button
+							type="button"
 							class="password-toggle"
-							onclick={() => showPassword = !showPassword}
+							onclick={() => (showPassword = !showPassword)}
 							tabindex="-1"
 							aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
 						>
@@ -267,7 +284,17 @@
 					<label class="remember-label">
 						<input type="checkbox" name="remember" class="remember-checkbox" />
 						<div class="custom-check">
-							<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="10"
+								height="10"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="3"
+								stroke-linecap="round"
+								stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
+							>
 						</div>
 						<span>Ingat saya selama 30 hari</span>
 					</label>
@@ -297,10 +324,22 @@
 				<input type="hidden" name="idToken" value={nativeIdToken} />
 				<button type="button" onclick={handleGoogleClick} disabled={loading} class="google-btn">
 					<svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-						<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-						<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-						<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-						<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+						<path
+							d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+							fill="#4285F4"
+						/>
+						<path
+							d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+							fill="#34A853"
+						/>
+						<path
+							d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+							fill="#FBBC05"
+						/>
+						<path
+							d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+							fill="#EA4335"
+						/>
 					</svg>
 					<span>Masuk dengan Google</span>
 				</button>
@@ -308,7 +347,7 @@
 
 			<!-- Footer -->
 			<p class="login-footer">
-				Belum punya akun? 
+				Belum punya akun?
 				<!-- eslint-disable-next-line -->
 				<a href="mailto:owner@botanirent.com" class="login-footer-link">Hubungi Owner</a>
 			</p>
@@ -347,8 +386,9 @@
 		position: fixed;
 		inset: 0;
 		opacity: 0.03;
-		background-image: radial-gradient(circle at 25% 25%, var(--color-forest) 1px, transparent 1px),
-						  radial-gradient(circle at 75% 75%, var(--color-forest) 1px, transparent 1px);
+		background-image:
+			radial-gradient(circle at 25% 25%, var(--color-forest) 1px, transparent 1px),
+			radial-gradient(circle at 75% 75%, var(--color-forest) 1px, transparent 1px);
 		background-size: 40px 40px;
 		pointer-events: none;
 		z-index: 0;
@@ -374,14 +414,18 @@
 	.pattern-overlay {
 		position: absolute;
 		inset: 0;
-		background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+		background-image: radial-gradient(
+			circle at 2px 2px,
+			rgba(255, 255, 255, 0.05) 1px,
+			transparent 0
+		);
 		background-size: 24px 24px;
 		pointer-events: none;
 	}
 
 	.mobile-float-element {
 		position: absolute;
-		color: rgba(255,255,255,0.08);
+		color: rgba(255, 255, 255, 0.08);
 		z-index: 1;
 	}
 
@@ -505,8 +549,12 @@
 	}
 
 	@media (min-width: 1280px) {
-		.login-hero { width: 55%; }
-		.login-form-panel { width: 45%; }
+		.login-hero {
+			width: 55%;
+		}
+		.login-form-panel {
+			width: 45%;
+		}
 	}
 
 	.hero-overlay {
@@ -522,15 +570,20 @@
 	.hero-gradient {
 		position: absolute;
 		inset: 0;
-		background: 
-			linear-gradient(180deg, rgba(12,26,10,0.6) 0%, rgba(12,26,10,0.3) 40%, rgba(12,26,10,0.85) 100%),
-			linear-gradient(135deg, rgba(45,80,22,0.4) 0%, transparent 60%);
+		background:
+			linear-gradient(
+				180deg,
+				rgba(12, 26, 10, 0.6) 0%,
+				rgba(12, 26, 10, 0.3) 40%,
+				rgba(12, 26, 10, 0.85) 100%
+			),
+			linear-gradient(135deg, rgba(45, 80, 22, 0.4) 0%, transparent 60%);
 	}
 
 	/* Floating elements */
 	.hero-float-element {
 		position: absolute;
-		color: rgba(255,255,255,0.08);
+		color: rgba(255, 255, 255, 0.08);
 		z-index: 1;
 	}
 	.float-1 {
@@ -550,8 +603,13 @@
 	}
 
 	@keyframes floatSlow {
-		0%, 100% { transform: translateY(0) rotate(0deg); }
-		50% { transform: translateY(-12px) rotate(3deg); }
+		0%,
+		100% {
+			transform: translateY(0) rotate(0deg);
+		}
+		50% {
+			transform: translateY(-12px) rotate(3deg);
+		}
 	}
 
 	.hero-content {
@@ -568,22 +626,22 @@
 	.hero-logo-wrapper {
 		width: 88px;
 		height: 88px;
-		background: rgba(255,255,255,0.1);
+		background: rgba(255, 255, 255, 0.1);
 		backdrop-filter: blur(12px);
-		border: 1px solid rgba(255,255,255,0.15);
+		border: 1px solid rgba(255, 255, 255, 0.15);
 		border-radius: 24px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		margin-bottom: 28px;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 	}
 
 	.hero-logo {
 		width: 56px;
 		height: 56px;
 		object-fit: contain;
-		filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+		filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
 	}
 
 	.hero-title {
@@ -603,7 +661,7 @@
 	}
 
 	.hero-subtitle {
-		color: rgba(255,255,255,0.7);
+		color: rgba(255, 255, 255, 0.7);
 		font-size: 15px;
 		line-height: 1.7;
 		max-width: 400px;
@@ -622,13 +680,13 @@
 		align-items: center;
 		gap: 8px;
 		padding: 8px 16px;
-		background: rgba(255,255,255,0.08);
+		background: rgba(255, 255, 255, 0.08);
 		backdrop-filter: blur(8px);
-		border: 1px solid rgba(255,255,255,0.1);
+		border: 1px solid rgba(255, 255, 255, 0.1);
 		border-radius: 100px;
 		font-size: 12px;
 		font-weight: 600;
-		color: rgba(255,255,255,0.8);
+		color: rgba(255, 255, 255, 0.8);
 		letter-spacing: 0.02em;
 	}
 
@@ -637,7 +695,7 @@
 		height: 6px;
 		border-radius: 50%;
 		background: var(--color-amber);
-		box-shadow: 0 0 8px rgba(212,168,67,0.5);
+		box-shadow: 0 0 8px rgba(212, 168, 67, 0.5);
 	}
 
 	.hero-footer {
@@ -649,7 +707,7 @@
 		z-index: 2;
 	}
 	.hero-footer p {
-		color: rgba(255,255,255,0.3);
+		color: rgba(255, 255, 255, 0.3);
 		font-size: 12px;
 	}
 
@@ -748,8 +806,8 @@
 		align-items: center;
 		gap: 12px;
 		padding: 14px 16px;
-		background: linear-gradient(135deg, rgba(196,64,50,0.06), rgba(196,64,50,0.1));
-		border: 1px solid rgba(196,64,50,0.15);
+		background: linear-gradient(135deg, rgba(196, 64, 50, 0.06), rgba(196, 64, 50, 0.1));
+		border: 1px solid rgba(196, 64, 50, 0.15);
 		border-radius: 14px;
 		color: var(--color-error);
 		font-size: 13px;
@@ -762,7 +820,7 @@
 		width: 32px;
 		height: 32px;
 		border-radius: 8px;
-		background: rgba(196,64,50,0.1);
+		background: rgba(196, 64, 50, 0.1);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -770,11 +828,22 @@
 	}
 
 	@keyframes shakeError {
-		0%, 100% { transform: translateX(0); }
-		20% { transform: translateX(-6px); }
-		40% { transform: translateX(6px); }
-		60% { transform: translateX(-4px); }
-		80% { transform: translateX(4px); }
+		0%,
+		100% {
+			transform: translateX(0);
+		}
+		20% {
+			transform: translateX(-6px);
+		}
+		40% {
+			transform: translateX(6px);
+		}
+		60% {
+			transform: translateX(-4px);
+		}
+		80% {
+			transform: translateX(4px);
+		}
 	}
 
 	/* ─── Form ─── */
@@ -855,7 +924,7 @@
 	}
 	.form-input:focus {
 		border-color: var(--color-forest);
-		box-shadow: 0 0 0 4px rgba(45,80,22,0.08);
+		box-shadow: 0 0 0 4px rgba(45, 80, 22, 0.08);
 	}
 	.input-wrapper:focus-within .input-icon {
 		color: var(--color-forest);
@@ -922,7 +991,7 @@
 		color: white;
 	}
 	.remember-checkbox:focus-visible + .custom-check {
-		box-shadow: 0 0 0 3px rgba(45,80,22,0.15);
+		box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.15);
 	}
 
 	/* ─── Submit Button ─── */
@@ -942,7 +1011,9 @@
 		font-family: var(--font-body);
 		cursor: pointer;
 		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		box-shadow: 0 4px 16px rgba(45,80,22,0.25), 0 1px 3px rgba(45,80,22,0.15);
+		box-shadow:
+			0 4px 16px rgba(45, 80, 22, 0.25),
+			0 1px 3px rgba(45, 80, 22, 0.15);
 		position: relative;
 		overflow: hidden;
 	}
@@ -950,13 +1021,15 @@
 		content: '';
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
 		opacity: 0;
 		transition: opacity 0.3s;
 	}
 	.login-submit-btn:hover:not(:disabled) {
 		transform: translateY(-2px);
-		box-shadow: 0 8px 24px rgba(45,80,22,0.3), 0 2px 6px rgba(45,80,22,0.2);
+		box-shadow:
+			0 8px 24px rgba(45, 80, 22, 0.3),
+			0 2px 6px rgba(45, 80, 22, 0.2);
 	}
 	.login-submit-btn:hover:not(:disabled)::before {
 		opacity: 1;
@@ -972,14 +1045,16 @@
 	.login-spinner {
 		width: 18px;
 		height: 18px;
-		border: 2.5px solid rgba(255,255,255,0.3);
+		border: 2.5px solid rgba(255, 255, 255, 0.3);
 		border-top-color: white;
 		border-radius: 50%;
 		animation: spin 0.7s linear infinite;
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	/* ─── Divider ─── */
@@ -1022,7 +1097,7 @@
 	.google-btn:hover {
 		background: var(--color-sand-lightest);
 		border-color: var(--color-border);
-		box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 	}
 	.google-btn:active {
 		transform: scale(0.98);

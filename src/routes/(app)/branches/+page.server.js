@@ -19,14 +19,14 @@ export const load = async ({ locals: { supabase, safeGetSession } }) => {
 export const actions = {
 	save: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { profile } = await safeGetSession();
-		
+
 		if (profile?.role !== 'owner') {
 			return fail(403, { error: 'Akses ditolak.' });
 		}
 
 		const formData = await request.formData();
 		const id = formData.get('id')?.toString() || null;
-		
+
 		const result = await branchController.saveBranch(supabase, id, formData);
 
 		if (!result.success) {
@@ -38,7 +38,7 @@ export const actions = {
 
 	delete: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { profile } = await safeGetSession();
-		
+
 		if (profile?.role !== 'owner') {
 			return fail(403, { error: 'Akses ditolak.' });
 		}

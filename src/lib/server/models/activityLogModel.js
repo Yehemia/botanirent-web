@@ -21,7 +21,7 @@ export const activityLogModel = {
 		});
 
 		if (error) {
-			console.error("Error inserting activity log:", error);
+			console.error('Error inserting activity log:', error);
 		}
 	},
 
@@ -35,13 +35,14 @@ export const activityLogModel = {
 	 * @param {number} params.to
 	 */
 	async getActivityLogs(supabase, { branchId = null, search = null, from, to }) {
-		let query = supabase
-			.from('activity_logs')
-			.select(`
+		let query = supabase.from('activity_logs').select(
+			`
 				*,
 				profile:profiles(full_name, role),
 				branch:branches(name)
-			`, { count: 'exact' });
+			`,
+			{ count: 'exact' }
+		);
 
 		if (branchId) {
 			query = query.eq('branch_id', branchId);

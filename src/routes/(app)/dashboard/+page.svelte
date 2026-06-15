@@ -1,10 +1,10 @@
 <script>
-	import { 
-		TrendingUp, 
-		Activity, 
-		PackageCheck, 
-		Wrench, 
-		Tent, 
+	import {
+		TrendingUp,
+		Activity,
+		PackageCheck,
+		Wrench,
+		Tent,
 		Droplets,
 		ArrowRight,
 		Clock,
@@ -36,17 +36,10 @@
 		Legend,
 		BarElement,
 		CategoryScale,
-		LinearScale,
+		LinearScale
 	} from 'chart.js';
 
-	ChartJS.register(
-		Title,
-		Tooltip,
-		Legend,
-		BarElement,
-		CategoryScale,
-		LinearScale
-	);
+	ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
 	import { formatCurrency, formatDate } from '$lib/utils/format';
 
@@ -62,7 +55,9 @@
 	// Owner targets
 	let monthlyTarget = $derived(ownerData?.revenueData?.monthlyRevenueTarget || 20000000);
 	let targetProgress = $derived(
-		ownerData ? Math.min(Math.round((ownerData.revenueData.totalRevenueMonth / monthlyTarget) * 100), 100) : 0
+		ownerData
+			? Math.min(Math.round((ownerData.revenueData.totalRevenueMonth / monthlyTarget) * 100), 100)
+			: 0
 	);
 
 	// Chart data
@@ -101,7 +96,7 @@
 		responsive: true,
 		maintainAspectRatio: false,
 		plugins: {
-			legend: { 
+			legend: {
 				display: true,
 				position: /** @type {'top'} */ ('top'),
 				labels: {
@@ -112,7 +107,7 @@
 			tooltip: {
 				callbacks: {
 					/** @param {any} context */
-					label: function(context) {
+					label: function (context) {
 						let label = context.dataset.label || '';
 						if (label) label += ': ';
 						if (context.parsed.y !== null) {
@@ -130,9 +125,9 @@
 				beginAtZero: true,
 				ticks: {
 					/** @param {any} value */
-					callback: function(value) {
+					callback: function (value) {
 						if (value === 0) return '0';
-						return 'Rp ' + (value / 1000) + 'k'; // simplify numbers
+						return 'Rp ' + value / 1000 + 'k'; // simplify numbers
 					}
 				}
 			}
@@ -163,92 +158,159 @@
 	}
 </script>
 
-<div class="space-y-6 max-w-7xl mx-auto pb-12">
-	
+<div class="mx-auto max-w-7xl space-y-6 pb-12">
 	<!-- Modern Welcome Banner Card -->
-	<div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#182C0D] to-[#2E5519] text-white p-6 md:p-8 shadow-md border border-white/5">
+	<div
+		class="relative overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-r from-[#182C0D] to-[#2E5519] p-6 text-white shadow-md md:p-8"
+	>
 		<div class="relative z-10 max-w-2xl space-y-2">
-			<span class="inline-block px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-amber-300">
+			<span
+				class="inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-bold tracking-wider text-amber-300 uppercase backdrop-blur-md"
+			>
 				{role === 'owner' ? 'Owner Access' : role === 'kasir' ? 'Kasir Access' : 'Gudang Access'}
 			</span>
-			<h1 class="text-2xl md:text-4xl font-bold font-heading text-white">
+			<h1 class="font-heading text-2xl font-bold text-white md:text-4xl">
 				Selamat Datang Kembali, {profile?.full_name || 'User'}!
 			</h1>
-			<p class="text-white/80 text-sm md:text-base leading-relaxed">
+			<p class="text-sm leading-relaxed text-white/80 md:text-base">
 				{#if role === 'owner'}
-					Pantau metrik penjualan, tren denda, performa seluruh cabang, dan log aktivitas secara real-time dari satu tempat.
+					Pantau metrik penjualan, tren denda, performa seluruh cabang, dan log aktivitas secara
+					real-time dari satu tempat.
 				{:else}
-					Semoga aktivitas pelayanan operasional dan pengelolaan aset hari ini berjalan dengan lancar dan tertib.
+					Semoga aktivitas pelayanan operasional dan pengelolaan aset hari ini berjalan dengan
+					lancar dan tertib.
 				{/if}
 			</p>
 		</div>
 		<!-- Geometric background accent -->
-		<div class="absolute top-0 right-0 -translate-y-12 translate-x-12 w-64 h-64 bg-white/5 rounded-full blur-2xl"></div>
-		<div class="absolute bottom-0 right-0 translate-y-12 translate-x-4 w-48 h-48 bg-white/5 rounded-full blur-xl"></div>
+		<div
+			class="absolute top-0 right-0 h-64 w-64 translate-x-12 -translate-y-12 rounded-full bg-white/5 blur-2xl"
+		></div>
+		<div
+			class="absolute right-0 bottom-0 h-48 w-48 translate-x-4 translate-y-12 rounded-full bg-white/5 blur-xl"
+		></div>
 	</div>
 
 	<!-- ================== 1. OWNER LAYOUT ================== -->
 	{#if role === 'owner' && ownerData}
-		
 		<!-- target pencapaian & KPI overview -->
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<!-- Target progress -->
-			<Card padding="md" class="lg:col-span-1 border border-[var(--color-border)] shadow-sm bg-white flex flex-col justify-between">
+			<Card
+				padding="md"
+				class="flex flex-col justify-between border border-[var(--color-border)] bg-white shadow-sm lg:col-span-1"
+			>
 				<div>
-					<h3 class="font-bold text-[var(--color-earth)] text-sm uppercase tracking-wider mb-2">Target Pendapatan Bulan Ini</h3>
-					<div class="flex justify-between items-baseline mb-1">
-						<span class="text-3xl font-extrabold text-[var(--color-earth)] font-heading">{targetProgress}%</span>
-						<span class="text-xs text-[var(--color-stone)]">{formatCurrency(ownerData.revenueData.totalRevenueMonth)} / {formatCurrency(monthlyTarget)}</span>
+					<h3 class="mb-2 text-sm font-bold tracking-wider text-[var(--color-earth)] uppercase">
+						Target Pendapatan Bulan Ini
+					</h3>
+					<div class="mb-1 flex items-baseline justify-between">
+						<span class="font-heading text-3xl font-extrabold text-[var(--color-earth)]"
+							>{targetProgress}%</span
+						>
+						<span class="text-xs text-[var(--color-stone)]"
+							>{formatCurrency(ownerData.revenueData.totalRevenueMonth)} / {formatCurrency(
+								monthlyTarget
+							)}</span
+						>
 					</div>
 					<!-- Progress bar -->
-					<div class="w-full bg-[var(--color-sand)] rounded-full h-3 overflow-hidden mt-3 shadow-inner">
-						<div class="bg-[var(--color-forest)] h-3 rounded-full transition-all duration-500" style="width: {targetProgress}%;"></div>
+					<div
+						class="mt-3 h-3 w-full overflow-hidden rounded-full bg-[var(--color-sand)] shadow-inner"
+					>
+						<div
+							class="h-3 rounded-full bg-[var(--color-forest)] transition-all duration-500"
+							style="width: {targetProgress}%;"
+						></div>
 					</div>
 				</div>
-				<p class="text-[11px] text-[var(--color-stone)] mt-4">
-					Batas aman target bulanan. Tingkatkan penyewaan barang dan penawaran paket bundling untuk mempercepat pencapaian target.
+				<p class="mt-4 text-[11px] text-[var(--color-stone)]">
+					Batas aman target bulanan. Tingkatkan penyewaan barang dan penawaran paket bundling untuk
+					mempercepat pencapaian target.
 				</p>
 			</Card>
 
 			<!-- KPI Cards Grid -->
-			<div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6">
+			<div class="grid grid-cols-1 gap-6 sm:grid-cols-3 lg:col-span-2">
 				<!-- Total Revenue -->
-				<div class="bg-gradient-to-br from-[var(--color-forest)] to-[#1E3710] text-white p-5 rounded-lg shadow-[var(--shadow-sm)] flex flex-col justify-between border-none">
-					<div class="flex justify-between items-start">
+				<div
+					class="flex flex-col justify-between rounded-lg border-none bg-gradient-to-br from-[var(--color-forest)] to-[#1E3710] p-5 text-white shadow-[var(--shadow-sm)]"
+				>
+					<div class="flex items-start justify-between">
 						<div>
-							<p class="text-white/85 text-xs font-semibold uppercase tracking-wider mb-1">Pendapatan Bulan Ini</p>
-							<h3 class="text-2xl font-bold font-heading text-white">{formatCurrency(ownerData.revenueData.totalRevenueMonth)}</h3>
+							<p class="mb-1 text-xs font-semibold tracking-wider text-white/85 uppercase">
+								Pendapatan Bulan Ini
+							</p>
+							<h3 class="font-heading text-2xl font-bold text-white">
+								{formatCurrency(ownerData.revenueData.totalRevenueMonth)}
+							</h3>
 						</div>
-						<div class="p-2 bg-white/10 rounded-lg text-amber-300"><TrendingUp size={20} /></div>
+						<div class="rounded-lg bg-white/10 p-2 text-amber-300"><TrendingUp size={20} /></div>
 					</div>
-					<div class="text-[10px] text-white/80 border-t border-white/10 pt-2 mt-4 space-y-0.5">
-						<div class="flex justify-between"><span>Sewa & Retail:</span> <span class="font-bold text-white">{formatCurrency(ownerData.revenueData.totalTxRevenueMonth)}</span></div>
-						<div class="flex justify-between"><span>Denda Lunas:</span> <span class="font-bold text-amber-300">{formatCurrency(ownerData.revenueData.totalPenaltyRevenueMonth)}</span></div>
+					<div class="mt-4 space-y-0.5 border-t border-white/10 pt-2 text-[10px] text-white/80">
+						<div class="flex justify-between">
+							<span>Sewa & Retail:</span>
+							<span class="font-bold text-white"
+								>{formatCurrency(ownerData.revenueData.totalTxRevenueMonth)}</span
+							>
+						</div>
+						<div class="flex justify-between">
+							<span>Denda Lunas:</span>
+							<span class="font-bold text-amber-300"
+								>{formatCurrency(ownerData.revenueData.totalPenaltyRevenueMonth)}</span
+							>
+						</div>
 					</div>
 				</div>
 
 				<!-- Transactions -->
-				<Card padding="md" class="border border-[var(--color-border)] shadow-sm bg-white flex flex-col justify-between">
-					<div class="flex justify-between items-start">
+				<Card
+					padding="md"
+					class="flex flex-col justify-between border border-[var(--color-border)] bg-white shadow-sm"
+				>
+					<div class="flex items-start justify-between">
 						<div>
-							<p class="text-[var(--color-stone)] text-xs font-semibold uppercase tracking-wider mb-1">Transaksi Sukses</p>
-							<h3 class="text-2xl font-bold font-heading text-[var(--color-earth)]">{ownerData.revenueData.successfulTrxCountMonth}</h3>
+							<p
+								class="mb-1 text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+							>
+								Transaksi Sukses
+							</p>
+							<h3 class="font-heading text-2xl font-bold text-[var(--color-earth)]">
+								{ownerData.revenueData.successfulTrxCountMonth}
+							</h3>
 						</div>
-						<div class="p-2 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-lg"><Activity size={20} /></div>
+						<div class="rounded-lg bg-[var(--color-success)]/10 p-2 text-[var(--color-success)]">
+							<Activity size={20} />
+						</div>
 					</div>
-					<p class="text-xs text-[var(--color-stone)] mt-4">Transaksi berstatus lunas yang sukses dicatat pada bulan berjalan.</p>
+					<p class="mt-4 text-xs text-[var(--color-stone)]">
+						Transaksi berstatus lunas yang sukses dicatat pada bulan berjalan.
+					</p>
 				</Card>
 
 				<!-- Business Size -->
-				<Card padding="md" class="border border-[var(--color-border)] shadow-sm bg-white flex flex-col justify-between">
-					<div class="flex justify-between items-start">
+				<Card
+					padding="md"
+					class="flex flex-col justify-between border border-[var(--color-border)] bg-white shadow-sm"
+				>
+					<div class="flex items-start justify-between">
 						<div>
-							<p class="text-[var(--color-stone)] text-xs font-semibold uppercase tracking-wider mb-1">Ekosistem Bisnis</p>
-							<h3 class="text-2xl font-bold font-heading text-[var(--color-earth)]">{ownerData.customerCount}</h3>
+							<p
+								class="mb-1 text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+							>
+								Ekosistem Bisnis
+							</p>
+							<h3 class="font-heading text-2xl font-bold text-[var(--color-earth)]">
+								{ownerData.customerCount}
+							</h3>
 						</div>
-						<div class="p-2 bg-[var(--color-amber)]/10 text-[var(--color-amber)] rounded-lg"><Users size={20} /></div>
+						<div class="rounded-lg bg-[var(--color-amber)]/10 p-2 text-[var(--color-amber)]">
+							<Users size={20} />
+						</div>
 					</div>
-					<div class="text-[10px] text-[var(--color-stone)] border-t border-[var(--color-border-light)] pt-2 mt-4 flex flex-wrap gap-x-3 gap-y-1 justify-between">
+					<div
+						class="mt-4 flex flex-wrap justify-between gap-x-3 gap-y-1 border-t border-[var(--color-border-light)] pt-2 text-[10px] text-[var(--color-stone)]"
+					>
 						<span>Penyewa: <strong>{ownerData.customerCount}</strong></span>
 						<span>Staff: <strong>{ownerData.staffCount}</strong></span>
 						<span>Cabang: <strong>{ownerData.branchCount}</strong></span>
@@ -259,37 +321,58 @@
 
 		<!-- Trend Chart -->
 		{#if chartConfig()}
-			<Card padding="md" class="border border-[var(--color-border)] shadow-sm bg-white">
-				<h3 class="font-bold text-[var(--color-earth)] mb-6 flex items-center gap-2 text-sm uppercase tracking-wider">
+			<Card padding="md" class="border border-[var(--color-border)] bg-white shadow-sm">
+				<h3
+					class="mb-6 flex items-center gap-2 text-sm font-bold tracking-wider text-[var(--color-earth)] uppercase"
+				>
 					<TrendingUp size={18} /> Tren Pendapatan Harian (7 Hari Terakhir)
 				</h3>
-				<div class="h-[240px] sm:h-[300px] w-full">
+				<div class="h-[240px] w-full sm:h-[300px]">
 					<Bar data={chartConfig()} options={chartOptions} />
 				</div>
 			</Card>
 		{/if}
 
 		<!-- Log & Recent Transactions -->
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<!-- Activity Log Feed -->
-			<Card padding="md" class="lg:col-span-1 border border-[var(--color-border)] shadow-sm bg-white flex flex-col justify-between">
+			<Card
+				padding="md"
+				class="flex flex-col justify-between border border-[var(--color-border)] bg-white shadow-sm lg:col-span-1"
+			>
 				<div>
-					<h3 class="font-bold text-[var(--color-earth)] mb-4 text-sm uppercase tracking-wider flex items-center gap-1.5">
+					<h3
+						class="mb-4 flex items-center gap-1.5 text-sm font-bold tracking-wider text-[var(--color-earth)] uppercase"
+					>
 						<History size={16} /> Log Aktivitas Terbaru
 					</h3>
-					<div class="divide-y divide-[var(--color-border-light)] max-h-[350px] overflow-y-auto pr-1">
+					<div
+						class="max-h-[350px] divide-y divide-[var(--color-border-light)] overflow-y-auto pr-1"
+					>
 						{#if ownerData.recentLogs.length === 0}
-							<p class="text-center py-8 text-[var(--color-stone)] italic text-xs">Belum ada aktivitas tercatat.</p>
+							<p class="py-8 text-center text-xs text-[var(--color-stone)] italic">
+								Belum ada aktivitas tercatat.
+							</p>
 						{:else}
 							{#each ownerData.recentLogs as log}
-								<div class="py-3 flex flex-col gap-1 first:pt-0 last:pb-0">
-									<div class="flex justify-between items-start gap-2">
-										<span class="text-xs font-semibold text-[var(--color-earth)] truncate">{log.profile?.full_name || 'System'}</span>
-										<span class="text-[10px] text-[var(--color-stone)] whitespace-nowrap">{formatDate(log.created_at, { hour: '2-digit', minute: '2-digit' })}</span>
+								<div class="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
+									<div class="flex items-start justify-between gap-2">
+										<span class="truncate text-xs font-semibold text-[var(--color-earth)]"
+											>{log.profile?.full_name || 'System'}</span
+										>
+										<span class="text-[10px] whitespace-nowrap text-[var(--color-stone)]"
+											>{formatDate(log.created_at, { hour: '2-digit', minute: '2-digit' })}</span
+										>
 									</div>
-									<div class="flex items-center justify-between gap-1.5 mt-0.5">
-										<p class="text-[11px] text-[var(--color-stone)] truncate">{getActionLabel(log.action)}</p>
-										<span class="px-1.5 py-0.5 border rounded text-[9px] font-bold uppercase tracking-wider whitespace-nowrap {getLogBadgeColor(log.action)}">
+									<div class="mt-0.5 flex items-center justify-between gap-1.5">
+										<p class="truncate text-[11px] text-[var(--color-stone)]">
+											{getActionLabel(log.action)}
+										</p>
+										<span
+											class="rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider whitespace-nowrap uppercase {getLogBadgeColor(
+												log.action
+											)}"
+										>
 											{log.profile?.role || 'SYSTEM'}
 										</span>
 									</div>
@@ -299,24 +382,34 @@
 					</div>
 				</div>
 				<!-- eslint-disable-next-line -->
-				<a href="/activity-log" class="text-xs font-bold text-[var(--color-forest)] hover:underline mt-4 flex items-center gap-1">
+				<a
+					href="/activity-log"
+					class="mt-4 flex items-center gap-1 text-xs font-bold text-[var(--color-forest)] hover:underline"
+				>
 					Buka Log Aktivitas Lengkap <ArrowRight size={12} />
 				</a>
 			</Card>
 
 			<!-- Recent Transactions Table -->
-			<Card padding="none" class="lg:col-span-2 border border-[var(--color-border)] shadow-sm bg-white overflow-hidden flex flex-col justify-between">
+			<Card
+				padding="none"
+				class="flex flex-col justify-between overflow-hidden border border-[var(--color-border)] bg-white shadow-sm lg:col-span-2"
+			>
 				<div>
-					<div class="p-4 border-b border-[var(--color-border)] flex justify-between items-center">
-						<h3 class="font-bold text-[var(--color-earth)] text-sm uppercase tracking-wider flex items-center gap-1.5">
+					<div class="flex items-center justify-between border-b border-[var(--color-border)] p-4">
+						<h3
+							class="flex items-center gap-1.5 text-sm font-bold tracking-wider text-[var(--color-earth)] uppercase"
+						>
 							💳 Transaksi Terbaru
 						</h3>
 					</div>
-					
+
 					<!-- Desktop Transactions Table -->
-					<div class="hidden sm:block overflow-x-auto">
+					<div class="hidden overflow-x-auto sm:block">
 						<table class="w-full text-left text-xs whitespace-nowrap">
-							<thead class="bg-[var(--color-sand-light)] text-[var(--color-earth)] font-semibold border-b border-[var(--color-border)]">
+							<thead
+								class="border-b border-[var(--color-border)] bg-[var(--color-sand-light)] font-semibold text-[var(--color-earth)]"
+							>
 								<tr>
 									<th class="px-4 py-3">Kode</th>
 									<th class="px-4 py-3">Waktu</th>
@@ -328,25 +421,45 @@
 							<tbody class="divide-y divide-[var(--color-border-light)]">
 								{#if recentTransactions.length === 0}
 									<tr>
-										<td colspan="5" class="px-4 py-8 text-center text-[var(--color-stone)] italic">Belum ada transaksi terbaru.</td>
+										<td colspan="5" class="px-4 py-8 text-center text-[var(--color-stone)] italic"
+											>Belum ada transaksi terbaru.</td
+										>
 									</tr>
 								{:else}
 									{#each recentTransactions as trx}
-										<tr class="hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
+										<tr class="transition-colors hover:bg-[var(--color-sand-lightest)]/30">
 											<td class="px-4 py-3 font-mono font-bold text-[var(--color-earth)]">
-												<a href="/transactions/{trx.id}" class="hover:text-[var(--color-forest)]">{trx.transaction_code}</a>
+												<a href="/transactions/{trx.id}" class="hover:text-[var(--color-forest)]"
+													>{trx.transaction_code}</a
+												>
 											</td>
-											<td class="px-4 py-3 text-[var(--color-stone)]">{formatDate(trx.created_at, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
-											<td class="px-4 py-3 font-medium truncate max-w-[120px]">{trx.customer?.full_name || 'Umum'}</td>
-											<td class="px-4 py-3 text-right font-bold text-[var(--color-forest)]">{formatCurrency(trx.total_amount)}</td>
+											<td class="px-4 py-3 text-[var(--color-stone)]"
+												>{formatDate(trx.created_at, {
+													day: '2-digit',
+													month: 'short',
+													hour: '2-digit',
+													minute: '2-digit'
+												})}</td
+											>
+											<td class="max-w-[120px] truncate px-4 py-3 font-medium"
+												>{trx.customer?.full_name || 'Umum'}</td
+											>
+											<td class="px-4 py-3 text-right font-bold text-[var(--color-forest)]"
+												>{formatCurrency(trx.total_amount)}</td
+											>
 											<td class="px-4 py-3 text-center">
 												{#if trx.payment_status === 'paid'}
-													<span class="inline-flex items-center gap-0.5 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full font-semibold text-[10px]">
+													<span
+														class="inline-flex items-center gap-0.5 rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+													>
 														<CheckCircle size={10} /> Lunas
 													</span>
 												{:else}
-													<span class="inline-flex items-center gap-0.5 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-full font-semibold text-[10px]">
-														<Clock size={10} /> {trx.payment_status}
+													<span
+														class="inline-flex items-center gap-0.5 rounded-full border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700"
+													>
+														<Clock size={10} />
+														{trx.payment_status}
 													</span>
 												{/if}
 											</td>
@@ -358,116 +471,177 @@
 					</div>
 
 					<!-- Mobile Transactions Card List -->
-					<div class="block sm:hidden divide-y divide-[var(--color-border-light)]">
+					<div class="block divide-y divide-[var(--color-border-light)] sm:hidden">
 						{#if recentTransactions.length === 0}
-							<p class="p-6 text-center text-[var(--color-stone)] italic text-xs">Belum ada transaksi terbaru.</p>
+							<p class="p-6 text-center text-xs text-[var(--color-stone)] italic">
+								Belum ada transaksi terbaru.
+							</p>
 						{:else}
 							{#each recentTransactions as trx}
-								<div class="p-4 flex flex-col gap-2 hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
-									<div class="flex justify-between items-center">
-										<a href="/transactions/{trx.id}" class="font-mono font-bold text-xs text-[var(--color-forest)] hover:underline">
+								<div
+									class="flex flex-col gap-2 p-4 transition-colors hover:bg-[var(--color-sand-lightest)]/30"
+								>
+									<div class="flex items-center justify-between">
+										<a
+											href="/transactions/{trx.id}"
+											class="font-mono text-xs font-bold text-[var(--color-forest)] hover:underline"
+										>
 											{trx.transaction_code}
 										</a>
 										{#if trx.payment_status === 'paid'}
-											<span class="inline-flex items-center gap-0.5 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full font-semibold text-[9px]">
+											<span
+												class="inline-flex items-center gap-0.5 rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-700"
+											>
 												<CheckCircle size={8} /> Lunas
 											</span>
 										{:else}
-											<span class="inline-flex items-center gap-0.5 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-full font-semibold text-[9px]">
-												<Clock size={8} /> {trx.payment_status}
+											<span
+												class="inline-flex items-center gap-0.5 rounded-full border border-amber-100 bg-amber-50 px-2 py-0.5 text-[9px] font-semibold text-amber-700"
+											>
+												<Clock size={8} />
+												{trx.payment_status}
 											</span>
 										{/if}
 									</div>
-									<div class="flex justify-between items-center text-xs text-[var(--color-earth)]">
-										<span class="font-medium truncate max-w-[150px]">{trx.customer?.full_name || 'Umum'}</span>
-										<span class="font-bold text-[var(--color-forest)]">{formatCurrency(trx.total_amount)}</span>
+									<div class="flex items-center justify-between text-xs text-[var(--color-earth)]">
+										<span class="max-w-[150px] truncate font-medium"
+											>{trx.customer?.full_name || 'Umum'}</span
+										>
+										<span class="font-bold text-[var(--color-forest)]"
+											>{formatCurrency(trx.total_amount)}</span
+										>
 									</div>
 									<div class="text-[10px] text-[var(--color-stone)]">
-										{formatDate(trx.created_at, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+										{formatDate(trx.created_at, {
+											day: '2-digit',
+											month: 'short',
+											hour: '2-digit',
+											minute: '2-digit'
+										})}
 									</div>
 								</div>
 							{/each}
 						{/if}
 					</div>
 				</div>
-				<div class="p-4 border-t border-[var(--color-border-light)]">
+				<div class="border-t border-[var(--color-border-light)] p-4">
 					<!-- eslint-disable-next-line -->
-					<a href="/transactions" class="text-xs font-bold text-[var(--color-forest)] hover:underline flex items-center gap-1">
+					<a
+						href="/transactions"
+						class="flex items-center gap-1 text-xs font-bold text-[var(--color-forest)] hover:underline"
+					>
 						Buka Riwayat Transaksi <ArrowRight size={12} />
 					</a>
 				</div>
 			</Card>
 		</div>
 
-	<!-- ================== 2. KASIR LAYOUT ================== -->
+		<!-- ================== 2. KASIR LAYOUT ================== -->
 	{:else if role === 'kasir' && kasirData}
-		
 		<!-- Kasir Stats Grid -->
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
 			<!-- Today sales -->
-			<Card padding="md" class="border border-[var(--color-border)] shadow-sm bg-white">
-				<div class="flex justify-between items-start">
+			<Card padding="md" class="border border-[var(--color-border)] bg-white shadow-sm">
+				<div class="flex items-start justify-between">
 					<div>
-						<p class="text-[var(--color-stone)] text-xs font-semibold uppercase tracking-wider mb-1">Pendapatan Cabang (Hari Ini)</p>
-						<h3 class="text-2xl font-bold font-heading text-[var(--color-forest)]">{formatCurrency(kasirData.todayRevenue)}</h3>
-						<p class="text-[10px] text-[var(--color-stone)] mt-2">Total pembayaran lunas di cabang ini sejak tadi pagi</p>
+						<p
+							class="mb-1 text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+						>
+							Pendapatan Cabang (Hari Ini)
+						</p>
+						<h3 class="font-heading text-2xl font-bold text-[var(--color-forest)]">
+							{formatCurrency(kasirData.todayRevenue)}
+						</h3>
+						<p class="mt-2 text-[10px] text-[var(--color-stone)]">
+							Total pembayaran lunas di cabang ini sejak tadi pagi
+						</p>
 					</div>
-					<div class="p-2 bg-[var(--color-forest)]/10 text-[var(--color-forest)] rounded-lg"><Coins size={20} /></div>
+					<div class="rounded-lg bg-[var(--color-forest)]/10 p-2 text-[var(--color-forest)]">
+						<Coins size={20} />
+					</div>
 				</div>
 			</Card>
 
 			<!-- Today Trx -->
-			<Card padding="md" class="border border-[var(--color-border)] shadow-sm bg-white">
-				<div class="flex justify-between items-start">
+			<Card padding="md" class="border border-[var(--color-border)] bg-white shadow-sm">
+				<div class="flex items-start justify-between">
 					<div>
-						<p class="text-[var(--color-stone)] text-xs font-semibold uppercase tracking-wider mb-1">Transaksi Cabang (Hari Ini)</p>
-						<h3 class="text-2xl font-bold font-heading text-[var(--color-earth)]">{kasirData.todayTrxCount} Transaksi</h3>
-						<p class="text-[10px] text-[var(--color-stone)] mt-2">Volume penjualan lunas hari ini</p>
+						<p
+							class="mb-1 text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+						>
+							Transaksi Cabang (Hari Ini)
+						</p>
+						<h3 class="font-heading text-2xl font-bold text-[var(--color-earth)]">
+							{kasirData.todayTrxCount} Transaksi
+						</h3>
+						<p class="mt-2 text-[10px] text-[var(--color-stone)]">
+							Volume penjualan lunas hari ini
+						</p>
 					</div>
-					<div class="p-2 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-lg"><Activity size={20} /></div>
+					<div class="rounded-lg bg-[var(--color-success)]/10 p-2 text-[var(--color-success)]">
+						<Activity size={20} />
+					</div>
 				</div>
 			</Card>
 
 			<!-- Active Rentals -->
-			<Card padding="md" class="border border-[var(--color-border)] shadow-sm bg-white">
-				<div class="flex justify-between items-start">
+			<Card padding="md" class="border border-[var(--color-border)] bg-white shadow-sm">
+				<div class="flex items-start justify-between">
 					<div>
-						<p class="text-[var(--color-stone)] text-xs font-semibold uppercase tracking-wider mb-1">Penyewaan Aktif Cabang</p>
-						<h3 class="text-2xl font-bold font-heading text-[var(--color-earth)]">{kasirData.activeRentalsCount} Unit</h3>
-						<p class="text-[10px] text-[var(--color-stone)] mt-2">Fisik unit tenda/alat sedang dibawa pelanggan</p>
+						<p
+							class="mb-1 text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+						>
+							Penyewaan Aktif Cabang
+						</p>
+						<h3 class="font-heading text-2xl font-bold text-[var(--color-earth)]">
+							{kasirData.activeRentalsCount} Unit
+						</h3>
+						<p class="mt-2 text-[10px] text-[var(--color-stone)]">
+							Fisik unit tenda/alat sedang dibawa pelanggan
+						</p>
 					</div>
-					<div class="p-2 bg-[var(--color-amber)]/10 text-[var(--color-amber)] rounded-lg"><Tent size={20} /></div>
+					<div class="rounded-lg bg-[var(--color-amber)]/10 p-2 text-[var(--color-amber)]">
+						<Tent size={20} />
+					</div>
 				</div>
 			</Card>
 		</div>
 
 		<!-- Kasir Quick Action Panel -->
-		<Card padding="md" class="border border-[var(--color-border)] shadow-sm bg-white">
-			<h3 class="font-bold text-[var(--color-earth)] text-sm uppercase tracking-wider mb-4">🚀 Akses Menu Cepat</h3>
-			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-				<a 
-					href="/pos" 
-					class="flex items-center justify-between p-4 rounded-xl border border-[var(--color-forest)]/20 bg-[var(--color-forest)]/5 text-[var(--color-forest)] hover:bg-[var(--color-forest)]/10 hover:border-[var(--color-forest)]/30 transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.99]"
+		<Card padding="md" class="border border-[var(--color-border)] bg-white shadow-sm">
+			<h3 class="mb-4 text-sm font-bold tracking-wider text-[var(--color-earth)] uppercase">
+				🚀 Akses Menu Cepat
+			</h3>
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				<a
+					href="/pos"
+					class="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-forest)]/20 bg-[var(--color-forest)]/5 p-4 text-[var(--color-forest)] shadow-sm transition-all duration-200 hover:border-[var(--color-forest)]/30 hover:bg-[var(--color-forest)]/10 active:scale-[0.99]"
 				>
 					<div class="flex items-center gap-3">
-						<div class="p-2 bg-[var(--color-forest)]/10 rounded-lg"><Plus size={20} /></div>
+						<div class="rounded-lg bg-[var(--color-forest)]/10 p-2"><Plus size={20} /></div>
 						<div class="text-left">
-							<p class="font-bold text-sm">Mulai Transaksi Baru (POS)</p>
-							<p class="text-[10px] text-[var(--color-stone)] mt-0.5">Input order penyewaan baru atau pembelian retail</p>
+							<p class="text-sm font-bold">Mulai Transaksi Baru (POS)</p>
+							<p class="mt-0.5 text-[10px] text-[var(--color-stone)]">
+								Input order penyewaan baru atau pembelian retail
+							</p>
 						</div>
 					</div>
 					<ArrowRight size={18} />
 				</a>
 
-				<a 
-					href="/returns" 
-					class="flex items-center justify-between p-4 rounded-xl border border-[var(--color-earth)]/20 bg-[var(--color-earth)]/5 text-[var(--color-earth)] hover:bg-[var(--color-earth)]/10 hover:border-[var(--color-earth)]/30 transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.99]"
+				<a
+					href="/returns"
+					class="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-earth)]/20 bg-[var(--color-earth)]/5 p-4 text-[var(--color-earth)] shadow-sm transition-all duration-200 hover:border-[var(--color-earth)]/30 hover:bg-[var(--color-earth)]/10 active:scale-[0.99]"
 				>
 					<div class="flex items-center gap-3">
-						<div class="p-2 bg-[var(--color-earth)]/10 rounded-lg"><ClipboardCheck size={20} /></div>
+						<div class="rounded-lg bg-[var(--color-earth)]/10 p-2">
+							<ClipboardCheck size={20} />
+						</div>
 						<div class="text-left">
-							<p class="font-bold text-sm">Proses Pengembalian Barang</p>
-							<p class="text-[10px] text-[var(--color-stone)] mt-0.5">Terima barang sewa kembali, cek kerusakan & denda</p>
+							<p class="text-sm font-bold">Proses Pengembalian Barang</p>
+							<p class="mt-0.5 text-[10px] text-[var(--color-stone)]">
+								Terima barang sewa kembali, cek kerusakan & denda
+							</p>
 						</div>
 					</div>
 					<ArrowRight size={18} />
@@ -476,74 +650,124 @@
 		</Card>
 
 		<!-- Operational Pickup & Return Lists -->
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 			<!-- Pickups Today -->
-			<Card padding="none" class="border border-[var(--color-border)] shadow-sm bg-white overflow-hidden flex flex-col justify-between min-h-[300px]">
+			<Card
+				padding="none"
+				class="flex min-h-[300px] flex-col justify-between overflow-hidden border border-[var(--color-border)] bg-white shadow-sm"
+			>
 				<div>
-					<div class="p-4 border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] flex items-center justify-between">
-						<h3 class="font-bold text-[var(--color-earth)] text-xs uppercase tracking-wider flex items-center gap-1.5">
-							<ClipboardList size={16} class="text-[var(--color-forest)]" /> Pengambilan Barang (Hari Ini)
+					<div
+						class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] p-4"
+					>
+						<h3
+							class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-[var(--color-earth)] uppercase"
+						>
+							<ClipboardList size={16} class="text-[var(--color-forest)]" /> Pengambilan Barang (Hari
+							Ini)
 						</h3>
 						<Badge variant="info" class="text-[10px]">{kasirData.todaysPickups.length}</Badge>
 					</div>
-					<div class="divide-y divide-[var(--color-border-light)] max-h-[300px] overflow-y-auto">
+					<div class="max-h-[300px] divide-y divide-[var(--color-border-light)] overflow-y-auto">
 						{#if kasirData.todaysPickups.length === 0}
-							<div class="p-8 text-center text-[var(--color-stone)] italic text-xs flex flex-col items-center justify-center gap-2">
+							<div
+								class="flex flex-col items-center justify-center gap-2 p-8 text-center text-xs text-[var(--color-stone)] italic"
+							>
 								<CheckCircle size={32} class="text-[var(--color-success)] opacity-40" />
 								<span>Tidak ada pengambilan terjadwal untuk hari ini.</span>
 							</div>
 						{:else}
 							{#each kasirData.todaysPickups as item}
-								<div class="p-4 flex justify-between items-center hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
+								<div
+									class="flex items-center justify-between p-4 transition-colors hover:bg-[var(--color-sand-lightest)]/30"
+								>
 									<div>
-										<p class="font-bold text-sm text-[var(--color-earth)]">{item.item_name}</p>
-										<p class="text-xs text-[var(--color-stone)] mt-0.5">Penyewa: {item.transaction?.customer?.full_name || 'Umum'} ({item.transaction?.customer?.phone || '-'})</p>
+										<p class="text-sm font-bold text-[var(--color-earth)]">{item.item_name}</p>
+										<p class="mt-0.5 text-xs text-[var(--color-stone)]">
+											Penyewa: {item.transaction?.customer?.full_name || 'Umum'} ({item.transaction
+												?.customer?.phone || '-'})
+										</p>
 									</div>
 									<div class="text-right">
-										<span class="inline-block px-2 py-0.5 bg-[var(--color-forest)]/10 text-[var(--color-forest)] text-[10px] font-bold rounded">Ambil</span>
+										<span
+											class="inline-block rounded bg-[var(--color-forest)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--color-forest)]"
+											>Ambil</span
+										>
 									</div>
 								</div>
 							{/each}
 						{/if}
 					</div>
 				</div>
-				<div class="p-4 border-t border-[var(--color-border-light)] text-center">
+				<div class="border-t border-[var(--color-border-light)] p-4 text-center">
 					<!-- eslint-disable-next-line -->
-					<a href="/booking" class="text-xs font-bold text-[var(--color-forest)] hover:underline flex items-center justify-center gap-1">
+					<a
+						href="/booking"
+						class="flex items-center justify-center gap-1 text-xs font-bold text-[var(--color-forest)] hover:underline"
+					>
 						Buka Kalender Booking <ArrowRight size={12} />
 					</a>
 				</div>
 			</Card>
 
 			<!-- Returns Due Today -->
-			<Card padding="none" class="border border-[var(--color-border)] shadow-sm bg-white overflow-hidden flex flex-col justify-between min-h-[300px]">
+			<Card
+				padding="none"
+				class="flex min-h-[300px] flex-col justify-between overflow-hidden border border-[var(--color-border)] bg-white shadow-sm"
+			>
 				<div>
-					<div class="p-4 border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] flex items-center justify-between">
-						<h3 class="font-bold text-[var(--color-earth)] text-xs uppercase tracking-wider flex items-center gap-1.5">
-							<ShieldAlert size={16} class="text-[var(--color-error)]" /> Pengembalian Jatuh Tempo (Hari Ini / Terlambat)
+					<div
+						class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] p-4"
+					>
+						<h3
+							class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-[var(--color-earth)] uppercase"
+						>
+							<ShieldAlert size={16} class="text-[var(--color-error)]" /> Pengembalian Jatuh Tempo (Hari
+							Ini / Terlambat)
 						</h3>
-						<Badge variant="error" class="text-[10px] bg-red-100 text-red-800 border-red-200">{kasirData.todaysReturnsDue.length}</Badge>
+						<Badge variant="error" class="border-red-200 bg-red-100 text-[10px] text-red-800"
+							>{kasirData.todaysReturnsDue.length}</Badge
+						>
 					</div>
-					<div class="divide-y divide-[var(--color-border-light)] max-h-[300px] overflow-y-auto">
+					<div class="max-h-[300px] divide-y divide-[var(--color-border-light)] overflow-y-auto">
 						{#if kasirData.todaysReturnsDue.length === 0}
-							<div class="p-8 text-center text-[var(--color-stone)] italic text-xs flex flex-col items-center justify-center gap-2">
+							<div
+								class="flex flex-col items-center justify-center gap-2 p-8 text-center text-xs text-[var(--color-stone)] italic"
+							>
 								<CheckCircle size={32} class="text-[var(--color-success)] opacity-40" />
 								<span>Semua barang sewa jatuh tempo hari ini sudah kembali.</span>
 							</div>
 						{:else}
 							{#each kasirData.todaysReturnsDue as item}
-								{@const isOverdue = new Date(item.rental_end_date) < new Date(new Date().setHours(0,0,0,0))}
-								<div class="p-4 flex justify-between items-center hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
+								{@const isOverdue =
+									new Date(item.rental_end_date) < new Date(new Date().setHours(0, 0, 0, 0))}
+								<div
+									class="flex items-center justify-between p-4 transition-colors hover:bg-[var(--color-sand-lightest)]/30"
+								>
 									<div>
-										<p class="font-bold text-sm text-[var(--color-earth)]">{item.item_name}</p>
-										<p class="text-xs text-[var(--color-stone)] mt-0.5">Penyewa: {item.transaction?.customer?.full_name || 'Umum'} ({item.transaction?.customer?.phone || '-'})</p>
+										<p class="text-sm font-bold text-[var(--color-earth)]">{item.item_name}</p>
+										<p class="mt-0.5 text-xs text-[var(--color-stone)]">
+											Penyewa: {item.transaction?.customer?.full_name || 'Umum'} ({item.transaction
+												?.customer?.phone || '-'})
+										</p>
 									</div>
-									<div class="text-right flex flex-col items-end gap-1">
-										<span class="text-[10px] text-[var(--color-stone)]">Batas: {formatDate(item.rental_end_date, { day: '2-digit', month: 'short' })}</span>
+									<div class="flex flex-col items-end gap-1 text-right">
+										<span class="text-[10px] text-[var(--color-stone)]"
+											>Batas: {formatDate(item.rental_end_date, {
+												day: '2-digit',
+												month: 'short'
+											})}</span
+										>
 										{#if isOverdue}
-											<span class="inline-block px-2 py-0.5 bg-red-100 text-red-800 text-[9px] font-bold rounded animate-pulse">TELAT</span>
+											<span
+												class="inline-block animate-pulse rounded bg-red-100 px-2 py-0.5 text-[9px] font-bold text-red-800"
+												>TELAT</span
+											>
 										{:else}
-											<span class="inline-block px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-bold rounded">HARI INI</span>
+											<span
+												class="inline-block rounded bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-800"
+												>HARI INI</span
+											>
 										{/if}
 									</div>
 								</div>
@@ -551,172 +775,271 @@
 						{/if}
 					</div>
 				</div>
-				<div class="p-4 border-t border-[var(--color-border-light)] text-center">
+				<div class="border-t border-[var(--color-border-light)] p-4 text-center">
 					<!-- eslint-disable-next-line -->
-					<a href="/returns" class="text-xs font-bold text-[var(--color-forest)] hover:underline flex items-center justify-center gap-1">
+					<a
+						href="/returns"
+						class="flex items-center justify-center gap-1 text-xs font-bold text-[var(--color-forest)] hover:underline"
+					>
 						Proses Pengembalian Barang <ArrowRight size={12} />
 					</a>
 				</div>
 			</Card>
 		</div>
 
-	<!-- ================== 3. GUDANG LAYOUT ================== -->
+		<!-- ================== 3. GUDANG LAYOUT ================== -->
 	{:else if role === 'gudang' && gudangData}
-		
 		<!-- Gudang Stats Grid (Asset count cards) -->
-		<Card padding="md" class="border border-[var(--color-border)] shadow-sm bg-white">
-			<h3 class="font-bold text-[var(--color-earth)] mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+		<Card padding="md" class="border border-[var(--color-border)] bg-white shadow-sm">
+			<h3
+				class="mb-4 flex items-center gap-2 text-sm font-bold tracking-wider text-[var(--color-earth)] uppercase"
+			>
 				<PackageCheck size={18} /> Status Aset Fisik (Gudang)
 			</h3>
-			<div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+			<div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
 				<!-- Ready -->
-				<div class="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-[var(--color-success)]/20 bg-[var(--color-success)]/5 min-w-0">
-					<div class="flex items-center gap-1.5 text-[var(--color-success)] min-w-0">
-						<div class="p-1.5 bg-[var(--color-success)]/20 rounded-lg shrink-0"><Tent size={16} /></div>
-						<span class="font-bold text-[11px] sm:text-xs truncate">Siap Sewa</span>
+				<div
+					class="flex min-w-0 items-center justify-between rounded-xl border border-[var(--color-success)]/20 bg-[var(--color-success)]/5 p-3 sm:p-4"
+				>
+					<div class="flex min-w-0 items-center gap-1.5 text-[var(--color-success)]">
+						<div class="shrink-0 rounded-lg bg-[var(--color-success)]/20 p-1.5">
+							<Tent size={16} />
+						</div>
+						<span class="truncate text-[11px] font-bold sm:text-xs">Siap Sewa</span>
 					</div>
-					<span class="text-xl sm:text-2xl font-bold font-heading text-[var(--color-success)] shrink-0 ml-1">{assetStats.ready}</span>
+					<span
+						class="ml-1 shrink-0 font-heading text-xl font-bold text-[var(--color-success)] sm:text-2xl"
+						>{assetStats.ready}</span
+					>
 				</div>
 
 				<!-- Rented -->
-				<div class="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/5 min-w-0">
-					<div class="flex items-center gap-1.5 text-[var(--color-info)] min-w-0">
-						<div class="p-1.5 bg-[var(--color-info)]/20 rounded-lg shrink-0"><Activity size={16} /></div>
-						<span class="font-bold text-[11px] sm:text-xs truncate">Disewa</span>
+				<div
+					class="flex min-w-0 items-center justify-between rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/5 p-3 sm:p-4"
+				>
+					<div class="flex min-w-0 items-center gap-1.5 text-[var(--color-info)]">
+						<div class="shrink-0 rounded-lg bg-[var(--color-info)]/20 p-1.5">
+							<Activity size={16} />
+						</div>
+						<span class="truncate text-[11px] font-bold sm:text-xs">Disewa</span>
 					</div>
-					<span class="text-xl sm:text-2xl font-bold font-heading text-[var(--color-info)] shrink-0 ml-1">{assetStats.rented}</span>
+					<span
+						class="ml-1 shrink-0 font-heading text-xl font-bold text-[var(--color-info)] sm:text-2xl"
+						>{assetStats.rented}</span
+					>
 				</div>
 
 				<!-- Washing -->
-				<div class="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-[var(--color-warning)]/20 bg-[var(--color-warning)]/5 min-w-0">
-					<div class="flex items-center gap-1.5 text-[var(--color-warning)] min-w-0">
-						<div class="p-1.5 bg-[var(--color-warning)]/20 rounded-lg shrink-0"><Droplets size={16} /></div>
-						<span class="font-bold text-[11px] sm:text-xs truncate">Dicuci</span>
+				<div
+					class="flex min-w-0 items-center justify-between rounded-xl border border-[var(--color-warning)]/20 bg-[var(--color-warning)]/5 p-3 sm:p-4"
+				>
+					<div class="flex min-w-0 items-center gap-1.5 text-[var(--color-warning)]">
+						<div class="shrink-0 rounded-lg bg-[var(--color-warning)]/20 p-1.5">
+							<Droplets size={16} />
+						</div>
+						<span class="truncate text-[11px] font-bold sm:text-xs">Dicuci</span>
 					</div>
-					<span class="text-xl sm:text-2xl font-bold font-heading text-[var(--color-warning)] shrink-0 ml-1">{assetStats.washing}</span>
+					<span
+						class="ml-1 shrink-0 font-heading text-xl font-bold text-[var(--color-warning)] sm:text-2xl"
+						>{assetStats.washing}</span
+					>
 				</div>
 
 				<!-- Maintenance -->
-				<div class="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-[var(--color-error)]/20 bg-[var(--color-error)]/5 min-w-0">
-					<div class="flex items-center gap-1.5 text-[var(--color-error)] min-w-0">
-						<div class="p-1.5 bg-[var(--color-error)]/20 rounded-lg shrink-0"><Wrench size={16} /></div>
-						<span class="font-bold text-[11px] sm:text-xs truncate">Servis</span>
+				<div
+					class="flex min-w-0 items-center justify-between rounded-xl border border-[var(--color-error)]/20 bg-[var(--color-error)]/5 p-3 sm:p-4"
+				>
+					<div class="flex min-w-0 items-center gap-1.5 text-[var(--color-error)]">
+						<div class="shrink-0 rounded-lg bg-[var(--color-error)]/20 p-1.5">
+							<Wrench size={16} />
+						</div>
+						<span class="truncate text-[11px] font-bold sm:text-xs">Servis</span>
 					</div>
-					<span class="text-xl sm:text-2xl font-bold font-heading text-[var(--color-error)] shrink-0 ml-1">{assetStats.maintenance}</span>
+					<span
+						class="ml-1 shrink-0 font-heading text-xl font-bold text-[var(--color-error)] sm:text-2xl"
+						>{assetStats.maintenance}</span
+					>
 				</div>
 			</div>
 		</Card>
 
 		<!-- Gudang lists -->
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<!-- Washing List -->
-			<Card padding="none" class="border border-[var(--color-border)] shadow-sm bg-white overflow-hidden flex flex-col justify-between min-h-[300px]">
+			<Card
+				padding="none"
+				class="flex min-h-[300px] flex-col justify-between overflow-hidden border border-[var(--color-border)] bg-white shadow-sm"
+			>
 				<div>
-					<div class="p-4 border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] flex items-center justify-between">
-						<h3 class="font-bold text-[var(--color-earth)] text-xs uppercase tracking-wider flex items-center gap-1.5">
+					<div
+						class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] p-4"
+					>
+						<h3
+							class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-[var(--color-earth)] uppercase"
+						>
 							<Droplets size={16} class="text-[var(--color-warning)]" /> Antrean Pembersihan / Cuci
 						</h3>
 						<Badge variant="warning" class="text-[10px]">{gudangData.washingAssets.length}</Badge>
 					</div>
-					<div class="divide-y divide-[var(--color-border-light)] max-h-[300px] overflow-y-auto">
+					<div class="max-h-[300px] divide-y divide-[var(--color-border-light)] overflow-y-auto">
 						{#if gudangData.washingAssets.length === 0}
-							<div class="p-8 text-center text-[var(--color-stone)] italic text-xs flex flex-col items-center justify-center gap-2">
+							<div
+								class="flex flex-col items-center justify-center gap-2 p-8 text-center text-xs text-[var(--color-stone)] italic"
+							>
 								<CheckCircle size={32} class="text-[var(--color-success)] opacity-40" />
 								<span>Semua aset bersih & siap disewa.</span>
 							</div>
 						{:else}
 							{#each gudangData.washingAssets as asset}
-								<div class="p-3.5 hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
-									<div class="flex justify-between items-start">
-										<p class="font-bold text-xs text-[var(--color-earth)]">{asset.item?.name || 'Aset'}</p>
-										<span class="font-mono text-[10px] font-bold bg-[var(--color-sand)] px-1.5 py-0.5 rounded text-[var(--color-earth)]">{asset.asset_code}</span>
+								<div class="p-3.5 transition-colors hover:bg-[var(--color-sand-lightest)]/30">
+									<div class="flex items-start justify-between">
+										<p class="text-xs font-bold text-[var(--color-earth)]">
+											{asset.item?.name || 'Aset'}
+										</p>
+										<span
+											class="rounded bg-[var(--color-sand)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--color-earth)]"
+											>{asset.asset_code}</span
+										>
 									</div>
-									<p class="text-[10px] text-[var(--color-stone)] mt-1">Masuk antrean: {formatDate(asset.last_status_change, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+									<p class="mt-1 text-[10px] text-[var(--color-stone)]">
+										Masuk antrean: {formatDate(asset.last_status_change, {
+											day: '2-digit',
+											month: 'short',
+											hour: '2-digit',
+											minute: '2-digit'
+										})}
+									</p>
 								</div>
 							{/each}
 						{/if}
 					</div>
 				</div>
-				<div class="p-4 border-t border-[var(--color-border-light)]">
+				<div class="border-t border-[var(--color-border-light)] p-4">
 					<!-- eslint-disable-next-line -->
-					<a href="/asset-status" class="text-xs font-bold text-[var(--color-forest)] hover:underline flex items-center justify-center gap-1">
+					<a
+						href="/asset-status"
+						class="flex items-center justify-center gap-1 text-xs font-bold text-[var(--color-forest)] hover:underline"
+					>
 						Update Status Aset <ArrowRight size={12} />
 					</a>
 				</div>
 			</Card>
 
 			<!-- Maintenance List -->
-			<Card padding="none" class="border border-[var(--color-border)] shadow-sm bg-white overflow-hidden flex flex-col justify-between min-h-[300px]">
+			<Card
+				padding="none"
+				class="flex min-h-[300px] flex-col justify-between overflow-hidden border border-[var(--color-border)] bg-white shadow-sm"
+			>
 				<div>
-					<div class="p-4 border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] flex items-center justify-between">
-						<h3 class="font-bold text-[var(--color-earth)] text-xs uppercase tracking-wider flex items-center gap-1.5">
+					<div
+						class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] p-4"
+					>
+						<h3
+							class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-[var(--color-earth)] uppercase"
+						>
 							<Wrench size={16} class="text-[var(--color-error)]" /> Antrean Servis / Perbaikan
 						</h3>
-						<Badge variant="error" class="text-[10px] bg-red-100 text-red-800 border-red-200">{gudangData.maintenanceAssets.length}</Badge>
+						<Badge variant="error" class="border-red-200 bg-red-100 text-[10px] text-red-800"
+							>{gudangData.maintenanceAssets.length}</Badge
+						>
 					</div>
-					<div class="divide-y divide-[var(--color-border-light)] max-h-[300px] overflow-y-auto">
+					<div class="max-h-[300px] divide-y divide-[var(--color-border-light)] overflow-y-auto">
 						{#if gudangData.maintenanceAssets.length === 0}
-							<div class="p-8 text-center text-[var(--color-stone)] italic text-xs flex flex-col items-center justify-center gap-2">
+							<div
+								class="flex flex-col items-center justify-center gap-2 p-8 text-center text-xs text-[var(--color-stone)] italic"
+							>
 								<CheckCircle size={32} class="text-[var(--color-success)] opacity-40" />
 								<span>Tidak ada aset dalam perbaikan.</span>
 							</div>
 						{:else}
 							{#each gudangData.maintenanceAssets as asset}
-								<div class="p-3.5 hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
-									<div class="flex justify-between items-start">
-										<p class="font-bold text-xs text-[var(--color-earth)]">{asset.item?.name || 'Aset'}</p>
-										<span class="font-mono text-[10px] font-bold bg-[var(--color-sand)] px-1.5 py-0.5 rounded text-[var(--color-earth)]">{asset.asset_code}</span>
+								<div class="p-3.5 transition-colors hover:bg-[var(--color-sand-lightest)]/30">
+									<div class="flex items-start justify-between">
+										<p class="text-xs font-bold text-[var(--color-earth)]">
+											{asset.item?.name || 'Aset'}
+										</p>
+										<span
+											class="rounded bg-[var(--color-sand)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--color-earth)]"
+											>{asset.asset_code}</span
+										>
 									</div>
-									<p class="text-[10px] text-[var(--color-stone)] mt-1">Masuk servis: {formatDate(asset.last_status_change, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+									<p class="mt-1 text-[10px] text-[var(--color-stone)]">
+										Masuk servis: {formatDate(asset.last_status_change, {
+											day: '2-digit',
+											month: 'short',
+											hour: '2-digit',
+											minute: '2-digit'
+										})}
+									</p>
 								</div>
 							{/each}
 						{/if}
 					</div>
 				</div>
-				<div class="p-4 border-t border-[var(--color-border-light)]">
+				<div class="border-t border-[var(--color-border-light)] p-4">
 					<!-- eslint-disable-next-line -->
-					<a href="/asset-status" class="text-xs font-bold text-[var(--color-forest)] hover:underline flex items-center justify-center gap-1">
+					<a
+						href="/asset-status"
+						class="flex items-center justify-center gap-1 text-xs font-bold text-[var(--color-forest)] hover:underline"
+					>
 						Update Status Aset <ArrowRight size={12} />
 					</a>
 				</div>
 			</Card>
 
 			<!-- Shipments List -->
-			<Card padding="none" class="border border-[var(--color-border)] shadow-sm bg-white overflow-hidden flex flex-col justify-between min-h-[300px]">
+			<Card
+				padding="none"
+				class="flex min-h-[300px] flex-col justify-between overflow-hidden border border-[var(--color-border)] bg-white shadow-sm"
+			>
 				<div>
-					<div class="p-4 border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] flex items-center justify-between">
-						<h3 class="font-bold text-[var(--color-earth)] text-xs uppercase tracking-wider flex items-center gap-1.5">
-							<ClipboardList size={16} class="text-[var(--color-forest)]" /> Persiapan Kirim / Ambil (Hari Ini)
+					<div
+						class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)] p-4"
+					>
+						<h3
+							class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-[var(--color-earth)] uppercase"
+						>
+							<ClipboardList size={16} class="text-[var(--color-forest)]" /> Persiapan Kirim / Ambil (Hari
+							Ini)
 						</h3>
 						<Badge variant="info" class="text-[10px]">{gudangData.todaysShipments.length}</Badge>
 					</div>
-					<div class="divide-y divide-[var(--color-border-light)] max-h-[300px] overflow-y-auto">
+					<div class="max-h-[300px] divide-y divide-[var(--color-border-light)] overflow-y-auto">
 						{#if gudangData.todaysShipments.length === 0}
-							<div class="p-8 text-center text-[var(--color-stone)] italic text-xs flex flex-col items-center justify-center gap-2">
+							<div
+								class="flex flex-col items-center justify-center gap-2 p-8 text-center text-xs text-[var(--color-stone)] italic"
+							>
 								<CheckCircle size={32} class="text-[var(--color-success)] opacity-40" />
 								<span>Tidak ada pengiriman keluar hari ini.</span>
 							</div>
 						{:else}
 							{#each gudangData.todaysShipments as shipment}
-								<div class="p-3.5 hover:bg-[var(--color-sand-lightest)]/30 transition-colors">
-									<div class="flex justify-between items-start">
-										<p class="font-bold text-xs text-[var(--color-earth)]">{shipment.item_name}</p>
-										<span class="inline-block px-1.5 py-0.5 bg-[var(--color-forest)]/10 text-[var(--color-forest)] text-[9px] font-bold rounded">Kirim</span>
+								<div class="p-3.5 transition-colors hover:bg-[var(--color-sand-lightest)]/30">
+									<div class="flex items-start justify-between">
+										<p class="text-xs font-bold text-[var(--color-earth)]">{shipment.item_name}</p>
+										<span
+											class="inline-block rounded bg-[var(--color-forest)]/10 px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-forest)]"
+											>Kirim</span
+										>
 									</div>
-									<p class="text-[10px] text-[var(--color-stone)] mt-1">Penyewa: {shipment.transaction?.customer?.full_name || 'Umum'}</p>
+									<p class="mt-1 text-[10px] text-[var(--color-stone)]">
+										Penyewa: {shipment.transaction?.customer?.full_name || 'Umum'}
+									</p>
 								</div>
 							{/each}
 						{/if}
 					</div>
 				</div>
-				<div class="p-4 border-t border-[var(--color-border-light)]">
+				<div class="border-t border-[var(--color-border-light)] p-4">
 					<!-- eslint-disable-next-line -->
-					<a href="/booking" class="text-xs font-bold text-[var(--color-forest)] hover:underline flex items-center justify-center gap-1">
+					<a
+						href="/booking"
+						class="flex items-center justify-center gap-1 text-xs font-bold text-[var(--color-forest)] hover:underline"
+					>
 						Lihat Jadwal Booking <ArrowRight size={12} />
 					</a>
 				</div>
 			</Card>
 		</div>
-
 	{/if}
 </div>

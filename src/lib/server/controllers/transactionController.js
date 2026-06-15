@@ -9,7 +9,11 @@ export const transactionController = {
 	 * @param {string} search
 	 */
 	async getTransactionsList(supabase, profile, search = '') {
-		const transactions = await transactionModel.getTransactions(supabase, profile.branch_id, search);
+		const transactions = await transactionModel.getTransactions(
+			supabase,
+			profile.branch_id,
+			search
+		);
 		return {
 			transactions,
 			search
@@ -24,7 +28,11 @@ export const transactionController = {
 	 * @param {boolean} isSuccess
 	 */
 	async getTransactionDetails(supabase, profile, id, isSuccess) {
-		const transaction = await transactionModel.getTransactionDetail(supabase, id, profile.branch_id);
+		const transaction = await transactionModel.getTransactionDetail(
+			supabase,
+			id,
+			profile.branch_id
+		);
 
 		if (!transaction) {
 			return {

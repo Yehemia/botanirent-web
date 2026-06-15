@@ -26,11 +26,17 @@
 	onMount(() => {
 		if (isSuccess) {
 			// Slight delay for smooth modal animation
-			setTimeout(() => { showModal = true; }, 100);
+			setTimeout(() => {
+				showModal = true;
+			}, 100);
 		}
 
 		// Polling status jika transaksi masih pending dan metodenya QRIS
-		if (transaction && transaction.payment_status === 'pending' && transaction.payment_method === 'qris') {
+		if (
+			transaction &&
+			transaction.payment_status === 'pending' &&
+			transaction.payment_method === 'qris'
+		) {
 			pollingInterval = setInterval(async () => {
 				try {
 					const res = await fetch(`/api/midtrans/status/${transaction.id}`);
@@ -42,7 +48,7 @@
 						}
 					}
 				} catch (e) {
-					console.error("Gagal memeriksa status pembayaran:", e);
+					console.error('Gagal memeriksa status pembayaran:', e);
 				}
 			}, 4000);
 		}
@@ -149,16 +155,16 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="receipt-overlay"
-		onclick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+		onclick={(e) => {
+			if (e.target === e.currentTarget) closeModal();
+		}}
 	>
 		<div class="receipt-modal-container animate-modal-in">
 			{@render receiptPaper()}
 
 			<!-- Modal Actions -->
 			<div class="receipt-modal-actions">
-				<button class="receipt-btn receipt-btn-secondary" onclick={closeModal}>
-					Tutup
-				</button>
+				<button class="receipt-btn receipt-btn-secondary" onclick={closeModal}> Tutup </button>
 				<button class="receipt-btn receipt-btn-primary" onclick={handlePrint}>
 					<Printer size={18} />
 					Cetak Struk
@@ -171,11 +177,16 @@
 <!-- ============================================================
      HALAMAN DETAIL TRANSAKSI (Default view)
      ============================================================ -->
-<div class="max-w-5xl mx-auto pb-12 px-4">
+<div class="mx-auto max-w-5xl px-4 pb-12">
 	<!-- Action Bar (Hidden on Print) -->
-	<div class="print:hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+	<div
+		class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center print:hidden"
+	>
 		<!-- eslint-disable-next-line -->
-		<a href="/transactions" class="inline-flex items-center gap-2 text-[var(--color-stone)] hover:text-[var(--color-earth)] font-medium transition-colors">
+		<a
+			href="/transactions"
+			class="inline-flex items-center gap-2 font-medium text-[var(--color-stone)] transition-colors hover:text-[var(--color-earth)]"
+		>
 			<ArrowLeft size={18} /> Kembali ke Riwayat
 		</a>
 		<div class="flex items-center gap-3">
@@ -188,44 +199,71 @@
 					{transaction.payment_status?.toUpperCase()}
 				</span>
 			{/if}
-			<Button onclick={handlePrint} variant="secondary" class="border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-forest)]/10">
+			<Button
+				onclick={handlePrint}
+				variant="secondary"
+				class="border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-forest)]/10"
+			>
 				<Printer size={18} class="mr-2" /> Cetak Struk
 			</Button>
 		</div>
 	</div>
 
 	<!-- Layout Grid -->
-	<div class="grid grid-cols-1 {transaction.payment_status === 'pending' && transaction.payment_method === 'qris' && qrData() ? 'lg:grid-cols-12' : ''} gap-8 items-start">
-		
+	<div
+		class="grid grid-cols-1 {transaction.payment_status === 'pending' &&
+		transaction.payment_method === 'qris' &&
+		qrData()
+			? 'lg:grid-cols-12'
+			: ''} items-start gap-8"
+	>
 		<!-- Struk -->
-		<div class={transaction.payment_status === 'pending' && transaction.payment_method === 'qris' && qrData() ? 'lg:col-span-7' : 'max-w-md mx-auto w-full'}>
+		<div
+			class={transaction.payment_status === 'pending' &&
+			transaction.payment_method === 'qris' &&
+			qrData()
+				? 'lg:col-span-7'
+				: 'mx-auto w-full max-w-md'}
+		>
 			<!-- Receipt Paper (Page view & Print view) -->
-			<div class="receipt-page-wrapper print:shadow-none print:border-none print:p-0">
+			<div class="receipt-page-wrapper print:border-none print:p-0 print:shadow-none">
 				{@render receiptPaper()}
 			</div>
 		</div>
 
 		<!-- QRIS Code Sidebar (Hanya untuk QRIS Pending & Desktop/Web View) -->
 		{#if transaction.payment_status === 'pending' && transaction.payment_method === 'qris' && qrData()}
-			<div class="print:hidden lg:col-span-5 flex flex-col items-center gap-5 p-6 border border-[var(--color-border-light)] bg-white rounded-2xl shadow-sm">
-				<div class="flex items-center gap-3 w-full pb-4 border-b border-gray-100">
-					<div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shrink-0">
+			<div
+				class="flex flex-col items-center gap-5 rounded-2xl border border-[var(--color-border-light)] bg-white p-6 shadow-sm lg:col-span-5 print:hidden"
+			>
+				<div class="flex w-full items-center gap-3 border-b border-gray-100 pb-4">
+					<div
+						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600"
+					>
 						<QrCode size={20} />
 					</div>
 					<div>
-						<h3 class="font-bold font-heading text-[var(--color-earth)]">Menunggu Pembayaran</h3>
-						<p class="text-xs text-[var(--color-stone)] mt-0.5">Scan QRIS di bawah untuk membayar</p>
+						<h3 class="font-heading font-bold text-[var(--color-earth)]">Menunggu Pembayaran</h3>
+						<p class="mt-0.5 text-xs text-[var(--color-stone)]">
+							Scan QRIS di bawah untuk membayar
+						</p>
 					</div>
 				</div>
 
-				<div class="w-52 h-52 border-2 border-dashed border-gray-200 rounded-xl p-2 bg-white flex items-center justify-center shrink-0">
-					<img src={qrData().qr_url} alt="QRIS Code" class="w-full h-full object-contain" />
+				<div
+					class="flex h-52 w-52 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white p-2"
+				>
+					<img src={qrData().qr_url} alt="QRIS Code" class="h-full w-full object-contain" />
 				</div>
 
-				<div class="w-full space-y-3 bg-[var(--color-sand)] rounded-xl p-4 border border-[var(--color-border-light)]">
+				<div
+					class="w-full space-y-3 rounded-xl border border-[var(--color-border-light)] bg-[var(--color-sand)] p-4"
+				>
 					<div class="flex justify-between text-sm">
 						<span class="text-[var(--color-stone)]">Total Tagihan:</span>
-						<span class="font-bold text-[var(--color-forest)]">{formatCurrency(transaction.total_amount)}</span>
+						<span class="font-bold text-[var(--color-forest)]"
+							>{formatCurrency(transaction.total_amount)}</span
+						>
 					</div>
 					<div class="flex justify-between text-sm">
 						<span class="text-[var(--color-stone)]">Metode:</span>
@@ -233,13 +271,14 @@
 					</div>
 				</div>
 
-				<div class="w-full flex items-center justify-center gap-3 p-3 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-semibold">
-					<div class="checkout-spinner border-t-amber-800 w-4 h-4"></div>
+				<div
+					class="flex w-full items-center justify-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800"
+				>
+					<div class="checkout-spinner h-4 w-4 border-t-amber-800"></div>
 					<span>Menunggu notifikasi pembayaran otomatis...</span>
 				</div>
 			</div>
 		{/if}
-
 	</div>
 </div>
 
@@ -247,127 +286,129 @@
      RECEIPT PAPER SNIPPET (dipakai di modal & halaman)
      ============================================================ -->
 {#snippet receiptPaper()}
-<div class="receipt-paper">
-	<!-- ===== Header ===== -->
-	<div class="receipt-header">
-		<div class="receipt-logo">
-			<Leaf size={24} strokeWidth={2.5} />
-			<span class="receipt-brand">BOTANIRENT</span>
+	<div class="receipt-paper">
+		<!-- ===== Header ===== -->
+		<div class="receipt-header">
+			<div class="receipt-logo">
+				<Leaf size={24} strokeWidth={2.5} />
+				<span class="receipt-brand">BOTANIRENT</span>
+			</div>
+			<p class="receipt-branch-name">{branch.name || 'BotaniRent'}</p>
+			{#if branch.address}
+				<p class="receipt-branch-info">{branch.address}</p>
+			{/if}
+			{#if branch.phone}
+				<p class="receipt-branch-info">Telp: {branch.phone}</p>
+			{/if}
 		</div>
-		<p class="receipt-branch-name">{branch.name || 'BotaniRent'}</p>
-		{#if branch.address}
-			<p class="receipt-branch-info">{branch.address}</p>
-		{/if}
-		{#if branch.phone}
-			<p class="receipt-branch-info">Telp: {branch.phone}</p>
-		{/if}
-	</div>
 
-	<div class="receipt-dashes">{DASHES}</div>
+		<div class="receipt-dashes">{DASHES}</div>
 
-	<!-- ===== Transaction Info ===== -->
-	<div class="receipt-info-block">
-		<div class="receipt-info-row">
-			<span>No:</span>
-			<span class="font-mono font-semibold">{transaction.transaction_code}</span>
-		</div>
-		<div class="receipt-info-row">
-			<span>Tanggal:</span>
-			<span>{formatReceiptDate(transaction.created_at)}</span>
-		</div>
-		<div class="receipt-info-row">
-			<span>Kasir:</span>
-			<span>{transaction.cashier?.full_name || '-'}</span>
-		</div>
-		<div class="receipt-info-row">
-			<span>Tipe:</span>
-			<span>{typeLabel(transaction.type)}</span>
-		</div>
-		{#if transaction.customer}
+		<!-- ===== Transaction Info ===== -->
+		<div class="receipt-info-block">
 			<div class="receipt-info-row">
-				<span>Pelanggan:</span>
-				<span>{transaction.customer.full_name}</span>
+				<span>No:</span>
+				<span class="font-mono font-semibold">{transaction.transaction_code}</span>
 			</div>
-		{/if}
-	</div>
-
-	<div class="receipt-dashes">{DASHES}</div>
-
-	<!-- ===== Item List ===== -->
-	<div class="receipt-items">
-		{#each transaction.items as item}
-			<div class="receipt-item">
-				<div class="receipt-item-row">
-					<span class="receipt-item-name">{item.item_name}</span>
-					<span class="receipt-item-subtotal">{item.subtotal > 0 ? formatCurrency(item.subtotal) : '-'}</span>
+			<div class="receipt-info-row">
+				<span>Tanggal:</span>
+				<span>{formatReceiptDate(transaction.created_at)}</span>
+			</div>
+			<div class="receipt-info-row">
+				<span>Kasir:</span>
+				<span>{transaction.cashier?.full_name || '-'}</span>
+			</div>
+			<div class="receipt-info-row">
+				<span>Tipe:</span>
+				<span>{typeLabel(transaction.type)}</span>
+			</div>
+			{#if transaction.customer}
+				<div class="receipt-info-row">
+					<span>Pelanggan:</span>
+					<span>{transaction.customer.full_name}</span>
 				</div>
-				{#if item.quantity > 1 && item.unit_price > 0}
-					<span class="receipt-item-detail">
-						{item.quantity}x {formatCurrency(item.unit_price)}
-						{#if item.rental_days && item.rental_days > 0}
-							x {item.rental_days} hari
-						{/if}
-					</span>
-				{:else if item.rental_days && item.rental_days > 0 && item.unit_price > 0}
-					<span class="receipt-item-detail">
-						{formatCurrency(item.unit_price)} x {item.rental_days} hari
-					</span>
-				{/if}
-				{#if (item.type === 'rental' || item.type === 'package') && item.rental_start_date}
-					<span class="receipt-item-rental">
-						{formatShortDate(item.rental_start_date)} - {formatShortDate(item.rental_end_date)}
-						{#if item.rental_days}({item.rental_days} hari){/if}
-					</span>
-				{/if}
-			</div>
-		{/each}
-	</div>
-
-	<div class="receipt-dashes">{DASHES}</div>
-
-	<!-- ===== Totals ===== -->
-	<div class="receipt-totals">
-		<div class="receipt-total-row">
-			<span>Subtotal</span>
-			<span>{formatCurrency(transaction.subtotal)}</span>
+			{/if}
 		</div>
-		{#if transaction.discount_amount > 0}
-			<div class="receipt-total-row receipt-discount">
-				<span>Diskon</span>
-				<span>-{formatCurrency(transaction.discount_amount)}</span>
-			</div>
-		{/if}
-		<div class="receipt-total-row receipt-grand-total">
-			<span>TOTAL</span>
-			<span>{formatCurrency(transaction.total_amount)}</span>
-		</div>
-	</div>
 
-	<!-- ===== Payment Info ===== -->
-	<div class="receipt-payment">
-		<div class="receipt-total-row">
-			<span>Bayar: {paymentLabel(transaction.payment_method)}</span>
-			<span>{formatCurrency(transaction.paid_amount)}</span>
+		<div class="receipt-dashes">{DASHES}</div>
+
+		<!-- ===== Item List ===== -->
+		<div class="receipt-items">
+			{#each transaction.items as item}
+				<div class="receipt-item">
+					<div class="receipt-item-row">
+						<span class="receipt-item-name">{item.item_name}</span>
+						<span class="receipt-item-subtotal"
+							>{item.subtotal > 0 ? formatCurrency(item.subtotal) : '-'}</span
+						>
+					</div>
+					{#if item.quantity > 1 && item.unit_price > 0}
+						<span class="receipt-item-detail">
+							{item.quantity}x {formatCurrency(item.unit_price)}
+							{#if item.rental_days && item.rental_days > 0}
+								x {item.rental_days} hari
+							{/if}
+						</span>
+					{:else if item.rental_days && item.rental_days > 0 && item.unit_price > 0}
+						<span class="receipt-item-detail">
+							{formatCurrency(item.unit_price)} x {item.rental_days} hari
+						</span>
+					{/if}
+					{#if (item.type === 'rental' || item.type === 'package') && item.rental_start_date}
+						<span class="receipt-item-rental">
+							{formatShortDate(item.rental_start_date)} - {formatShortDate(item.rental_end_date)}
+							{#if item.rental_days}({item.rental_days} hari){/if}
+						</span>
+					{/if}
+				</div>
+			{/each}
 		</div>
-		{#if transaction.change_amount > 0}
+
+		<div class="receipt-dashes">{DASHES}</div>
+
+		<!-- ===== Totals ===== -->
+		<div class="receipt-totals">
 			<div class="receipt-total-row">
-				<span>Kembali:</span>
-				<span>{formatCurrency(transaction.change_amount)}</span>
+				<span>Subtotal</span>
+				<span>{formatCurrency(transaction.subtotal)}</span>
 			</div>
-		{/if}
+			{#if transaction.discount_amount > 0}
+				<div class="receipt-total-row receipt-discount">
+					<span>Diskon</span>
+					<span>-{formatCurrency(transaction.discount_amount)}</span>
+				</div>
+			{/if}
+			<div class="receipt-total-row receipt-grand-total">
+				<span>TOTAL</span>
+				<span>{formatCurrency(transaction.total_amount)}</span>
+			</div>
+		</div>
+
+		<!-- ===== Payment Info ===== -->
+		<div class="receipt-payment">
+			<div class="receipt-total-row">
+				<span>Bayar: {paymentLabel(transaction.payment_method)}</span>
+				<span>{formatCurrency(transaction.paid_amount)}</span>
+			</div>
+			{#if transaction.change_amount > 0}
+				<div class="receipt-total-row">
+					<span>Kembali:</span>
+					<span>{formatCurrency(transaction.change_amount)}</span>
+				</div>
+			{/if}
+		</div>
+
+		<div class="receipt-dashes">{DASHES}</div>
+
+		<!-- ===== Footer ===== -->
+		<div class="receipt-footer">
+			<p class="receipt-thankyou">"Terima kasih sudah berbelanja!"</p>
+
+			<!-- Barcode Visual -->
+			<div class="receipt-barcode" aria-label="Barcode"></div>
+			<p class="receipt-barcode-label">{transaction.transaction_code?.replace(/-/g, '') || ''}</p>
+		</div>
 	</div>
-
-	<div class="receipt-dashes">{DASHES}</div>
-
-	<!-- ===== Footer ===== -->
-	<div class="receipt-footer">
-		<p class="receipt-thankyou">"Terima kasih sudah berbelanja!"</p>
-
-		<!-- Barcode Visual -->
-		<div class="receipt-barcode" aria-label="Barcode"></div>
-		<p class="receipt-barcode-label">{transaction.transaction_code?.replace(/-/g, '') || ''}</p>
-	</div>
-</div>
 {/snippet}
 
 <!-- ============================================================
@@ -675,7 +716,9 @@
 		:global(body) {
 			background-color: white !important;
 		}
-		:global(nav), :global(aside), :global(header) {
+		:global(nav),
+		:global(aside),
+		:global(header) {
 			display: none !important;
 		}
 		:global(main) {

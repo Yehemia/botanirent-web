@@ -37,19 +37,34 @@ export const penaltiesController = {
 		const amount = formData.get('amount');
 
 		if (!id || amount === null) {
-			return { success: false, status: 400, error: 'ID dan Jumlah denda wajib diisi.', values: Object.fromEntries(formData) };
+			return {
+				success: false,
+				status: 400,
+				error: 'ID dan Jumlah denda wajib diisi.',
+				values: Object.fromEntries(formData)
+			};
 		}
 
 		const parsedAmount = parseFloat(amount.toString());
 		if (isNaN(parsedAmount) || parsedAmount < 0) {
-			return { success: false, status: 400, error: 'Jumlah denda harus berupa angka positif.', values: Object.fromEntries(formData) };
+			return {
+				success: false,
+				status: 400,
+				error: 'Jumlah denda harus berupa angka positif.',
+				values: Object.fromEntries(formData)
+			};
 		}
 
 		try {
 			await penaltyModel.updatePenaltyRule(supabase, id.toString(), parsedAmount);
 		} catch (err) {
-			console.error("Error updating penalty rule in controller:", err);
-			return { success: false, status: 500, error: 'Gagal memperbarui aturan denda.', values: Object.fromEntries(formData) };
+			console.error('Error updating penalty rule in controller:', err);
+			return {
+				success: false,
+				status: 500,
+				error: 'Gagal memperbarui aturan denda.',
+				values: Object.fromEntries(formData)
+			};
 		}
 
 		// Log activity

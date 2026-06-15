@@ -62,7 +62,7 @@ export const actions = {
 		// Login successful, safeGetSession will handle the rest on the next request
 		throw redirect(303, '/dashboard');
 	},
-	
+
 	googleOauth: async ({ locals: { supabase }, url }) => {
 		const { data, error } = await supabase.auth.signInWithOAuth({
 			provider: 'google',

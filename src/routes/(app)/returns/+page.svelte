@@ -1,6 +1,13 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { ArrowDownToLine, AlertTriangle, CheckCircle, Search, User, Calendar } from '@lucide/svelte';
+	import {
+		ArrowDownToLine,
+		AlertTriangle,
+		CheckCircle,
+		Search,
+		User,
+		Calendar
+	} from '@lucide/svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -16,12 +23,12 @@
 	let searchQuery = $state('');
 	/** @type {any} */
 	let selectedTrx = $state(null);
-	
+
 	// Form state per item inside selectedTrx
 	/** @type {Record<string, any>} */
-	let returnData = $state({}); 
+	let returnData = $state({});
 	// { itemId: { condition: 'good', actualReturnDate: 'YYYY-MM-DD', damagePenaltyOverride: null, notes: '' } }
-	
+
 	let loading = $state(false);
 
 	// Global penalty state
@@ -32,9 +39,10 @@
 	let globalNotes = $state('');
 
 	let filteredTransactions = $derived(
-		transactions.filter((/** @type {any} */ t) => 
-			t.transaction_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			t.customer_name.toLowerCase().includes(searchQuery.toLowerCase())
+		transactions.filter(
+			(/** @type {any} */ t) =>
+				t.transaction_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+				t.customer_name.toLowerCase().includes(searchQuery.toLowerCase())
 		)
 	);
 
@@ -42,7 +50,7 @@
 	function selectTransaction(trx) {
 		selectedTrx = trx;
 		const today = new Date().toISOString().split('T')[0];
-		
+
 		// Initialize form data
 		/** @type {Record<string, any>} */
 		let initData = {};
@@ -55,7 +63,7 @@
 			};
 		});
 		returnData = initData;
-		
+
 		// Reset global overrides
 		latePenaltyOverride = null;
 		paymentStatus = 'paid';
@@ -70,14 +78,14 @@
 	function calculateLateDays(expectedEndStr, actualReturnStr) {
 		const expected = new Date(expectedEndStr);
 		const actual = new Date(actualReturnStr);
-		
+
 		// Reset jam untuk perbandingan hari yang adil
-		expected.setHours(0,0,0,0);
-		actual.setHours(0,0,0,0);
-		
+		expected.setHours(0, 0, 0, 0);
+		actual.setHours(0, 0, 0, 0);
+
 		const diffTime = actual.getTime() - expected.getTime();
 		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-		
+
 		return diffDays > 0 ? diffDays : 0;
 	}
 
@@ -103,8 +111,8 @@
 	function getItemDamagePenalty(item) {
 		const rData = returnData[item.id];
 		if (!rData) return 0;
-		return rData.damagePenaltyOverride !== null 
-			? rData.damagePenaltyOverride 
+		return rData.damagePenaltyOverride !== null
+			? rData.damagePenaltyOverride
 			: getCalculatedDamagePenalty(item);
 	}
 
@@ -135,23 +143,27 @@
 
 	let totalPenalty = $derived(() => {
 		if (!selectedTrx) return 0;
-		const damageTotal = selectedTrx.items.reduce((/** @type {number} */ acc, /** @type {any} */ item) => acc + getItemDamagePenalty(item), 0);
+		const damageTotal = selectedTrx.items.reduce(
+			(/** @type {number} */ acc, /** @type {any} */ item) => acc + getItemDamagePenalty(item),
+			0
+		);
 		return damageTotal + currentLatePenalty;
 	});
 
 	let payloadStr = $derived(() => {
 		if (!selectedTrx) return '';
-		
+
 		const lateDaysVal = calculatedLateDays();
 		const latePenaltyVal = currentLatePenalty;
 		let latePenaltyApplied = false;
 
 		const payloadItems = selectedTrx.items.map((/** @type {any} */ item) => {
 			const cond = returnData[item.id]?.condition || 'good';
-			const actReturnDate = returnData[item.id]?.actualReturnDate || new Date().toISOString().split('T')[0];
+			const actReturnDate =
+				returnData[item.id]?.actualReturnDate || new Date().toISOString().split('T')[0];
 			const damagePenalty = getItemDamagePenalty(item);
 			const itemNotes = returnData[item.id]?.notes || '';
-			
+
 			let itemLateDays = 0;
 			let itemLatePenalty = 0;
 
@@ -183,56 +195,68 @@
 	});
 </script>
 
-<div class="space-y-6 max-w-7xl mx-auto pb-12">
+<div class="mx-auto max-w-7xl space-y-6 pb-12">
 	<!-- Header -->
 	<div>
-		<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)] flex items-center gap-2">
+		<h1 class="flex items-center gap-2 font-heading text-3xl font-bold text-[var(--color-earth)]">
 			<ArrowDownToLine size={28} /> Pengembalian Barang
 		</h1>
-		<p class="text-[var(--color-stone)] mt-1">Terima pengembalian alat, cek kondisi, dan hitung denda otomatis.</p>
+		<p class="mt-1 text-[var(--color-stone)]">
+			Terima pengembalian alat, cek kondisi, dan hitung denda otomatis.
+		</p>
 	</div>
 
 	{#if form?.success}
-		<div class="bg-[var(--color-success)]/10 text-[var(--color-success)] p-4 rounded-xl border border-[var(--color-success)]/20 font-medium flex items-center gap-2">
-			<CheckCircle size={20} /> 
-			Berhasil memproses pengembalian! Total denda yang harus ditagih: {formatCurrency(form.totalPenalty)}.
+		<div
+			class="flex items-center gap-2 rounded-xl border border-[var(--color-success)]/20 bg-[var(--color-success)]/10 p-4 font-medium text-[var(--color-success)]"
+		>
+			<CheckCircle size={20} />
+			Berhasil memproses pengembalian! Total denda yang harus ditagih: {formatCurrency(
+				form.totalPenalty
+			)}.
 		</div>
 	{/if}
 
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-		
+	<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 		<!-- Daftar Transaksi Aktif -->
-		<div class="lg:col-span-1 space-y-4">
+		<div class="space-y-4 lg:col-span-1">
 			<Card padding="md">
-				<Input 
-					bind:value={searchQuery} 
-					placeholder="Cari transaksi..." 
-					class="mb-4"
-				>
+				<Input bind:value={searchQuery} placeholder="Cari transaksi..." class="mb-4">
 					{#snippet iconLeft()}
 						<Search size={18} />
 					{/snippet}
 				</Input>
 
-				<div class="space-y-2 max-h-[600px] overflow-y-auto pr-2">
+				<div class="max-h-[600px] space-y-2 overflow-y-auto pr-2">
 					{#if filteredTransactions.length === 0}
-						<div class="text-center p-6 text-[var(--color-stone)] border-2 border-dashed border-[var(--color-border)] rounded-xl">
+						<div
+							class="rounded-xl border-2 border-dashed border-[var(--color-border)] p-6 text-center text-[var(--color-stone)]"
+						>
 							Tidak ada barang yang sedang disewa.
 						</div>
 					{:else}
 						{#each filteredTransactions as trx (trx.transaction_id)}
-							<button 
-								class="w-full text-left p-4 rounded-xl border transition-all {selectedTrx?.transaction_id === trx.transaction_id ? 'border-[var(--color-forest)] bg-[var(--color-sand-light)] shadow-sm' : 'border-[var(--color-border)] bg-white hover:border-[var(--color-forest)]/50'}"
+							<button
+								class="w-full rounded-xl border p-4 text-left transition-all {selectedTrx?.transaction_id ===
+								trx.transaction_id
+									? 'border-[var(--color-forest)] bg-[var(--color-sand-light)] shadow-sm'
+									: 'border-[var(--color-border)] bg-white hover:border-[var(--color-forest)]/50'}"
 								onclick={() => selectTransaction(trx)}
 							>
-								<div class="font-mono font-bold text-[var(--color-earth)] text-sm mb-1">{trx.transaction_code}</div>
-								<div class="flex items-center gap-1.5 text-sm text-[var(--color-stone)] mb-1">
+								<div class="mb-1 font-mono text-sm font-bold text-[var(--color-earth)]">
+									{trx.transaction_code}
+								</div>
+								<div class="mb-1 flex items-center gap-1.5 text-sm text-[var(--color-stone)]">
 									<User size={14} /> <span class="truncate">{trx.customer_name}</span>
 								</div>
-								<div class="flex items-center gap-1.5 mt-2">
+								<div class="mt-2 flex items-center gap-1.5">
 									<Badge variant="info" class="text-[10px]">{trx.items.length} Barang Sewa</Badge>
 									{#if trx.transaction_type === 'hybrid'}
-										<Badge variant="neutral" class="text-[10px] bg-[var(--color-sand)] text-[var(--color-earth)]">Hybrid</Badge>
+										<Badge
+											variant="neutral"
+											class="bg-[var(--color-sand)] text-[10px] text-[var(--color-earth)]"
+											>Hybrid</Badge
+										>
 									{/if}
 								</div>
 							</button>
@@ -246,18 +270,25 @@
 		<div class="lg:col-span-2">
 			{#if selectedTrx}
 				<Card padding="md" class="border-2 border-[var(--color-forest)]/20 shadow-md">
-					<div class="border-b border-[var(--color-border)] pb-4 mb-4">
-						<h2 class="text-xl font-bold font-heading text-[var(--color-earth)]">Detail Pengembalian</h2>
+					<div class="mb-4 border-b border-[var(--color-border)] pb-4">
+						<h2 class="font-heading text-xl font-bold text-[var(--color-earth)]">
+							Detail Pengembalian
+						</h2>
 						<p class="text-sm text-[var(--color-stone)]">
-							Kode Transaksi: <span class="font-mono font-bold">{selectedTrx.transaction_code}</span>
+							Kode Transaksi: <span class="font-mono font-bold">{selectedTrx.transaction_code}</span
+							>
 							{#if selectedTrx.transaction_type === 'hybrid'}
-								<span class="ml-2"><Badge variant="neutral" class="bg-[var(--color-sand)] text-[var(--color-earth)]">Sewa + Retail (Hybrid)</Badge></span>
+								<span class="ml-2"
+									><Badge variant="neutral" class="bg-[var(--color-sand)] text-[var(--color-earth)]"
+										>Sewa + Retail (Hybrid)</Badge
+									></span
+								>
 							{/if}
 						</p>
 					</div>
 
-					<form 
-						method="POST" 
+					<form
+						method="POST"
 						action="?/processReturn"
 						use:enhance={() => {
 							loading = true;
@@ -272,33 +303,46 @@
 					>
 						<input type="hidden" name="payload" value={payloadStr()} />
 
-						<div class="space-y-4 mb-6 max-h-[500px] overflow-y-auto pr-2">
+						<div class="mb-6 max-h-[500px] space-y-4 overflow-y-auto pr-2">
 							{#each selectedTrx.items as item (item.id)}
 								{@const calculatedDamagePenalty = getCalculatedDamagePenalty(item)}
 								{@const currentDamagePenalty = getItemDamagePenalty(item)}
-								<div class="bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl p-4">
-									<div class="flex justify-between items-start mb-3">
+								<div
+									class="rounded-xl border border-[var(--color-border)] bg-[var(--color-sand-lightest)] p-4"
+								>
+									<div class="mb-3 flex items-start justify-between">
 										<div>
 											<h4 class="font-bold text-[var(--color-earth)]">{item.item_name}</h4>
-											<div class="flex gap-4 mt-1 text-xs text-[var(--color-stone)]">
-												<span class="flex items-center gap-1"><Calendar size={12}/> Ambil: {formatDate(item.rental_start_date, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-												<span class="flex items-center gap-1"><Calendar size={12}/> Tenggat: {formatDate(item.rental_end_date, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+											<div class="mt-1 flex gap-4 text-xs text-[var(--color-stone)]">
+												<span class="flex items-center gap-1"
+													><Calendar size={12} /> Ambil: {formatDate(item.rental_start_date, {
+														day: '2-digit',
+														month: 'short',
+														year: 'numeric'
+													})}</span
+												>
+												<span class="flex items-center gap-1"
+													><Calendar size={12} /> Tenggat: {formatDate(item.rental_end_date, {
+														day: '2-digit',
+														month: 'short',
+														year: 'numeric'
+													})}</span
+												>
 											</div>
 										</div>
 									</div>
 
 									<!-- Form Interaktif per Item -->
-									<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 p-3 bg-white rounded-lg border border-[var(--color-border-light)]">
-										<Input 
-											type="date" 
+									<div
+										class="mt-4 grid grid-cols-1 gap-4 rounded-lg border border-[var(--color-border-light)] bg-white p-3 md:grid-cols-2"
+									>
+										<Input
+											type="date"
 											label="Tanggal Kembali Aktual"
 											bind:value={returnData[item.id].actualReturnDate}
 											size="md"
 										/>
-										<Select 
-											label="Kondisi Barang"
-											bind:value={returnData[item.id].condition}
-										>
+										<Select label="Kondisi Barang" bind:value={returnData[item.id].condition}>
 											<option value="good">Baik / Layak Pakai</option>
 											<option value="minor_damage">Rusak Ringan</option>
 											<option value="major_damage">Rusak Berat</option>
@@ -308,28 +352,31 @@
 
 									<!-- Input Manual Denda & Catatan Kerusakan jika tidak Baik -->
 									{#if returnData[item.id].condition !== 'good'}
-										<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 p-3 bg-[var(--color-error)]/5 rounded-lg border border-[var(--color-error)]/10">
+										<div
+											class="mt-3 grid grid-cols-1 gap-4 rounded-lg border border-[var(--color-error)]/10 bg-[var(--color-error)]/5 p-3 md:grid-cols-2"
+										>
 											<div>
-												<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+												<label class="mb-1 block text-xs font-bold text-[var(--color-earth)]">
 													Denda Kerusakan (Rp)
-													<input 
-														type="number" 
-														class="w-full mt-1 px-3 py-1.5 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+													<input
+														type="number"
+														class="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-normal focus:border-[var(--color-forest)] focus:outline-none"
 														value={currentDamagePenalty}
 														oninput={(e) => {
 															const val = e.currentTarget.value;
-															returnData[item.id].damagePenaltyOverride = val === '' ? null : parseFloat(val);
+															returnData[item.id].damagePenaltyOverride =
+																val === '' ? null : parseFloat(val);
 														}}
 														placeholder="Masukkan nominal denda"
 													/>
 												</label>
-												<span class="text-[10px] text-[var(--color-stone)] mt-0.5 block">
+												<span class="mt-0.5 block text-[10px] text-[var(--color-stone)]">
 													Default aturan: {formatCurrency(calculatedDamagePenalty)}
 													{#if returnData[item.id].damagePenaltyOverride !== null}
-														<button 
-															type="button" 
-															class="text-[var(--color-forest)] font-semibold hover:underline ml-1"
-															onclick={() => returnData[item.id].damagePenaltyOverride = null}
+														<button
+															type="button"
+															class="ml-1 font-semibold text-[var(--color-forest)] hover:underline"
+															onclick={() => (returnData[item.id].damagePenaltyOverride = null)}
 														>
 															(Reset)
 														</button>
@@ -337,11 +384,11 @@
 												</span>
 											</div>
 											<div>
-												<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+												<label class="mb-1 block text-xs font-bold text-[var(--color-earth)]">
 													Catatan Kerusakan
-													<input 
-														type="text" 
-														class="w-full mt-1 px-3 py-1.5 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+													<input
+														type="text"
+														class="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-normal focus:border-[var(--color-forest)] focus:outline-none"
 														bind:value={returnData[item.id].notes}
 														placeholder="Misal: frame patah 1 ruas, kain robek"
 													/>
@@ -355,22 +402,28 @@
 
 						<!-- Info & Kustomisasi Denda Keterlambatan Transaksi -->
 						{#if calculatedLatePenalty() > 0 || latePenaltyOverride !== null}
-							<div class="bg-[var(--color-error)]/5 text-[var(--color-earth)] p-4 rounded-xl border border-[var(--color-border)]/50 mb-6">
+							<div
+								class="mb-6 rounded-xl border border-[var(--color-border)]/50 bg-[var(--color-error)]/5 p-4 text-[var(--color-earth)]"
+							>
 								<div class="flex items-start gap-2.5">
-									<AlertTriangle size={20} class="text-[var(--color-error)] shrink-0 mt-0.5" />
+									<AlertTriangle size={20} class="mt-0.5 shrink-0 text-[var(--color-error)]" />
 									<div class="flex-1">
-										<p class="font-bold text-base text-[var(--color-error)]">Denda Keterlambatan Transaksi</p>
-										<p class="text-xs text-[var(--color-stone)] mt-0.5">
-											Terlambat {calculatedLateDays()} hari x {formatCurrency(rentalSettings?.late_fee_per_day_per_transaction || 10000)}/hari (Dihitung sekali per penyewaan).
+										<p class="text-base font-bold text-[var(--color-error)]">
+											Denda Keterlambatan Transaksi
 										</p>
-										
-										<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 max-w-md">
+										<p class="mt-0.5 text-xs text-[var(--color-stone)]">
+											Terlambat {calculatedLateDays()} hari x {formatCurrency(
+												rentalSettings?.late_fee_per_day_per_transaction || 10000
+											)}/hari (Dihitung sekali per penyewaan).
+										</p>
+
+										<div class="mt-3 grid max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
 											<div>
-												<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+												<label class="mb-1 block text-xs font-bold text-[var(--color-earth)]">
 													Nominal Denda Keterlambatan (Rp)
-													<input 
-														type="number" 
-														class="w-full mt-1 px-3 py-1.5 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+													<input
+														type="number"
+														class="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-normal focus:border-[var(--color-forest)] focus:outline-none"
 														value={currentLatePenalty}
 														oninput={(e) => {
 															const val = e.currentTarget.value;
@@ -379,13 +432,13 @@
 														placeholder="Nominal denda keterlambatan"
 													/>
 												</label>
-												<span class="text-[10px] text-[var(--color-stone)] mt-0.5 block">
+												<span class="mt-0.5 block text-[10px] text-[var(--color-stone)]">
 													Default aturan: {formatCurrency(calculatedLatePenalty())}
 													{#if latePenaltyOverride !== null}
-														<button 
-															type="button" 
-															class="text-[var(--color-forest)] font-semibold hover:underline ml-1"
-															onclick={() => latePenaltyOverride = null}
+														<button
+															type="button"
+															class="ml-1 font-semibold text-[var(--color-forest)] hover:underline"
+															onclick={() => (latePenaltyOverride = null)}
 														>
 															(Reset)
 														</button>
@@ -400,16 +453,20 @@
 
 						<!-- Seksi Pembayaran Denda (Jika ada denda) -->
 						{#if totalPenalty() > 0}
-							<div class="bg-[var(--color-sand-light)] border border-[var(--color-border)] rounded-xl p-4 mb-6">
-								<h3 class="font-bold text-[var(--color-earth)] mb-3 text-sm flex items-center gap-1.5">
+							<div
+								class="mb-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-sand-light)] p-4"
+							>
+								<h3
+									class="mb-3 flex items-center gap-1.5 text-sm font-bold text-[var(--color-earth)]"
+								>
 									💳 Pembayaran Denda
 								</h3>
-								<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+								<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 									<div>
-										<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+										<label class="mb-1 block text-xs font-bold text-[var(--color-earth)]">
 											Status Pembayaran Denda
-											<select 
-												class="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+											<select
+												class="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-normal focus:border-[var(--color-forest)] focus:outline-none"
 												bind:value={paymentStatus}
 											>
 												<option value="paid">Lunas (Bayar Sekarang)</option>
@@ -417,13 +474,13 @@
 											</select>
 										</label>
 									</div>
-									
+
 									{#if paymentStatus === 'paid'}
 										<div>
-											<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+											<label class="mb-1 block text-xs font-bold text-[var(--color-earth)]">
 												Metode Pembayaran
-												<select 
-													class="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+												<select
+													class="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-normal focus:border-[var(--color-forest)] focus:outline-none"
 													bind:value={paymentMethod}
 												>
 													<option value="Tunai">Tunai / Cash</option>
@@ -433,13 +490,13 @@
 											</label>
 										</div>
 									{/if}
-									
+
 									<div class={paymentStatus === 'paid' ? 'col-span-1' : 'col-span-2'}>
-										<label class="block text-xs font-bold text-[var(--color-earth)] mb-1">
+										<label class="mb-1 block text-xs font-bold text-[var(--color-earth)]">
 											Catatan Tambahan
-											<input 
-												type="text" 
-												class="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:border-[var(--color-forest)] bg-white font-normal"
+											<input
+												type="text"
+												class="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-normal focus:border-[var(--color-forest)] focus:outline-none"
 												bind:value={globalNotes}
 												placeholder="Misal: Diberi keringanan denda..."
 											/>
@@ -450,25 +507,29 @@
 						{/if}
 
 						<!-- Footer Submit -->
-						<div class="border-t border-[var(--color-border)] pt-4 flex items-center justify-between">
+						<div
+							class="flex items-center justify-between border-t border-[var(--color-border)] pt-4"
+						>
 							<div>
 								<p class="text-sm text-[var(--color-stone)]">Total Tagihan Denda</p>
-								<p class="text-2xl font-bold font-heading text-[var(--color-error)]">{formatCurrency(totalPenalty())}</p>
+								<p class="font-heading text-2xl font-bold text-[var(--color-error)]">
+									{formatCurrency(totalPenalty())}
+								</p>
 							</div>
 							<Button type="submit" disabled={loading} class="px-8 py-3">
 								{loading ? 'Memproses...' : 'Proses Pengembalian'}
 							</Button>
 						</div>
 					</form>
-
 				</Card>
 			{:else}
-				<div class="h-[400px] flex flex-col items-center justify-center text-[var(--color-stone)] opacity-50 bg-[var(--color-sand-lightest)]/50 rounded-2xl border-2 border-dashed border-[var(--color-border)]">
+				<div
+					class="flex h-[400px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-sand-lightest)]/50 text-[var(--color-stone)] opacity-50"
+				>
 					<ArrowDownToLine size={64} class="mb-4" />
 					<p class="text-lg">Pilih transaksi di sebelah kiri untuk mulai.</p>
 				</div>
 			{/if}
 		</div>
-
 	</div>
 </div>

@@ -38,9 +38,9 @@ export const handle = async ({ event, resolve }) => {
 		localsWithPromise._sessionPromise = (async () => {
 			try {
 				// Find the Supabase auth token cookie dynamically (supports chunked cookies)
-				const authCookie = event.cookies.getAll().find(
-					(c) => c.name.startsWith('sb-') && c.name.includes('-auth-token')
-				);
+				const authCookie = event.cookies
+					.getAll()
+					.find((c) => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
 				const tokenKey = authCookie ? authCookie.value : null;
 
 				// If there is no auth cookie, the user is definitely not logged in
@@ -130,7 +130,7 @@ export const handle = async ({ event, resolve }) => {
 				return result;
 			} catch (err) {
 				const message = err instanceof Error ? err.message : String(err);
-				console.error("[Supabase Connection Error/Offline]:", message);
+				console.error('[Supabase Connection Error/Offline]:', message);
 				return { session: null, user: null, profile: null };
 			}
 		})();

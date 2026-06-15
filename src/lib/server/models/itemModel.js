@@ -16,7 +16,7 @@ export const itemModel = {
 
 		const { data, error } = await query;
 		if (error) {
-			console.error("Error loading items:", error);
+			console.error('Error loading items:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -37,7 +37,7 @@ export const itemModel = {
 			.order('name');
 
 		if (error) {
-			console.error("Error fetching active sewa items in model:", error);
+			console.error('Error fetching active sewa items in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -57,7 +57,7 @@ export const itemModel = {
 			.order('name');
 
 		if (error) {
-			console.error("Error fetching active items in model:", error);
+			console.error('Error fetching active items in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -76,7 +76,7 @@ export const itemModel = {
 			.maybeSingle();
 
 		if (error) {
-			console.error("Error fetching item details in model:", error);
+			console.error('Error fetching item details in model:', error);
 			throw new Error(error.message);
 		}
 		return data;
@@ -88,14 +88,10 @@ export const itemModel = {
 	 * @param {object} itemData
 	 */
 	async insertItem(supabase, itemData) {
-		const { data, error } = await supabase
-			.from('items')
-			.insert(itemData)
-			.select()
-			.single();
+		const { data, error } = await supabase.from('items').insert(itemData).select().single();
 
 		if (error) {
-			console.error("Error inserting item in model:", error);
+			console.error('Error inserting item in model:', error);
 			throw new Error(error.message);
 		}
 		return data;
@@ -116,7 +112,7 @@ export const itemModel = {
 			.single();
 
 		if (error) {
-			console.error("Error updating item in model:", error);
+			console.error('Error updating item in model:', error);
 			throw new Error(error.message);
 		}
 		return data;
@@ -128,13 +124,10 @@ export const itemModel = {
 	 * @param {string} id
 	 */
 	async deleteItem(supabase, id) {
-		const { error } = await supabase
-			.from('items')
-			.delete()
-			.eq('id', id);
+		const { error } = await supabase.from('items').delete().eq('id', id);
 
 		if (error) {
-			console.error("Error deleting item in model:", error);
+			console.error('Error deleting item in model:', error);
 			throw new Error(error.message);
 		}
 		return true;
@@ -146,12 +139,10 @@ export const itemModel = {
 	 * @param {Array<object>} itemsList
 	 */
 	async bulkInsertItems(supabase, itemsList) {
-		const { error } = await supabase
-			.from('items')
-			.insert(itemsList);
+		const { error } = await supabase.from('items').insert(itemsList);
 
 		if (error) {
-			console.error("Error bulk inserting items in model:", error);
+			console.error('Error bulk inserting items in model:', error);
 			throw new Error(error.message);
 		}
 		return true;

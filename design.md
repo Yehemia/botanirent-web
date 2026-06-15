@@ -137,6 +137,7 @@ Micro-animations:
 ### 2.1 Buttons
 
 **Primary Button:**
+
 - Background: #2D5016 (Forest Green)
 - Text: #FFFFFF, font-weight: 600, font-size: 14px
 - Padding: 10px 20px
@@ -147,6 +148,7 @@ Micro-animations:
 - Icon support: 18px icon left/right with 8px gap
 
 **Secondary Button:**
+
 - Background: transparent
 - Border: 1.5px solid #2D5016
 - Text: #2D5016, font-weight: 600
@@ -154,19 +156,22 @@ Micro-animations:
 - Active: background #6B8F4E33
 
 **Danger Button:**
+
 - Background: #C44032
 - Text: #FFFFFF
 - Hover: background #A83428
 
 **Ghost Button:**
+
 - Background: transparent
 - Text: #7A7062
 - Hover: background #F0E8D8
 
 **Button Sizes:**
-- Small  : padding 6px 12px, font-size 13px, height 32px
+
+- Small : padding 6px 12px, font-size 13px, height 32px
 - Medium : padding 10px 20px, font-size 14px, height 40px
-- Large  : padding 12px 28px, font-size 16px, height 48px
+- Large : padding 12px 28px, font-size 16px, height 48px
 
 ### 2.2 Input Fields
 
@@ -198,6 +203,7 @@ Micro-animations:
 - Font-size: 12px, font-weight: 600
 
 Variants:
+
 - Success (Ready/Available): bg #4A7C3F1A, text #4A7C3F
 - Warning (Maintenance): bg #E8A8201A, text #E8A820
 - Error (Overdue/Rusak): bg #C440321A, text #C44032
@@ -305,12 +311,14 @@ Variants:
 ### Screen A1: Login Page
 
 **Layout:**
+
 - Full viewport height, centered content
 - Split layout: Left 55% — brand visual area, Right 45% — login form
 - Left side: Full-height background image (outdoor mountain/forest scene with dark overlay 40%), logo "BotaniRent" large, tagline "Sistem Manajemen Rental & Retail Outdoor" in white text
 - Right side: Warm Cream (#FAF6F0) background
 
 **Right Panel Content (centered, max-width 380px):**
+
 - Heading: "Selamat Datang" — H2, Outfit, Bold, color #2C2418
 - Subtext: "Masuk ke akun BotaniRent Anda" — Body, color #7A7062
 - Spacer 32px
@@ -327,6 +335,7 @@ Variants:
 - Secondary Button "Masuk dengan Google" — full width, with Google icon
 
 **Decorative Elements:**
+
 - Subtle leaf/mountain pattern watermark on right panel (opacity 0.03)
 - Logo mark (small) top-left of right panel
 
@@ -335,10 +344,12 @@ Variants:
 ### Screen A2: Forgot Password
 
 **Layout:**
+
 - Same right-panel style as Login, but simpler
 - Centered card (max-width 420px) on Warm Cream background
 
 **Content:**
+
 - Back arrow link "← Kembali ke Login"
 - Icon: Mail icon in a 64px circle, bg #6B8F4E1A, icon color #2D5016
 - Heading: "Reset Password" — H2
@@ -354,6 +365,7 @@ Variants:
 > **Layout utama kasir. Fullscreen, no sidebar visible. Touch-friendly.**
 
 **Layout:**
+
 - No sidebar (POS mode is fullscreen)
 - Top bar height: 56px, minimal — logo left, branch name center, user avatar + clock right
 - Below top bar: split into 2 columns
@@ -361,6 +373,7 @@ Variants:
   - **Right (35-40%)**: Keranjang/Cart panel
 
 **Top Bar POS:**
+
 - Background: #2D5016
 - Logo "BotaniRent" in #D4A843, left
 - Center: Branch name badge (pill, bg rgba(255,255,255,0.15), text white)
@@ -371,6 +384,7 @@ Variants:
 ### Screen B2: POS — Katalog Grid (Left Panel)
 
 **Layout (inside left area of POS):**
+
 - Top section:
   - Search bar (large, height 48px, placeholder "Cari barang atau scan barcode...")
   - Below search: Category filter tabs/pills in horizontal scroll
@@ -382,6 +396,7 @@ Variants:
   - Padding: 16px
 
 **Product Card (in grid):**
+
 - Size: ~180px wide, auto height
 - Border-radius: 8px
 - Background: #FFFFFF
@@ -403,12 +418,14 @@ Variants:
 ### Screen B3: POS — Keranjang/Cart (Right Panel)
 
 **Layout (inside right area of POS):**
+
 - Background: #FFFFFF
 - Border-left: 1px solid #E8DFC8
 - Full height (viewport - top bar)
 - Flex column layout
 
 **Header section:**
+
 - Padding: 16px 20px
 - Title: "Keranjang" — H4, with cart icon, and item count badge (pill, bg #C85A3A, text white, font 12px)
 - **Customer selector (WAJIB untuk sewa):**
@@ -418,11 +435,12 @@ Variants:
   - Click opens search modal to find existing customer or add new
 
 **Cart Items list (scrollable, flex-grow):**
+
 - Padding: 0 20px
 - Each cart item:
   - Row layout, padding 14px 0, border-bottom 1px solid #E8DFC8
   - Left: Small thumbnail 48x48px, border-radius 6px
-  - Middle: 
+  - Middle:
     - Item name: font 14px, font-weight 500
     - Type badge: small pill ("Sewa" / "Retail")
     - If sewa: "12 Jun - 15 Jun (3 hari)" in caption, color #7A7062
@@ -433,6 +451,7 @@ Variants:
 - Empty state: illustration + "Belum ada item" text
 
 **Footer section (sticky bottom):**
+
 - Border-top: 1px solid #D6CBBB
 - Padding: 20px
 - Background: #FFFFFF
@@ -454,6 +473,7 @@ Variants:
 > **Muncul saat item sewa ditambahkan ke cart. Untuk input tanggal sewa.**
 
 **Modal (medium size, 500px):**
+
 - Header: "Detail Penyewaan" + item name
 - Body:
   - Item preview: image + name + price per day
@@ -474,6 +494,7 @@ Variants:
 ### Screen B5: POS — Pembayaran Tunai (Modal)
 
 **Modal (medium size, 540px):**
+
 - Header: "Pembayaran Tunai"
 - Body:
   - Total section:
@@ -502,6 +523,7 @@ Variants:
 ### Screen B6: POS — Pembayaran QRIS (Modal)
 
 **Modal (medium size, 500px):**
+
 - Header: "Pembayaran QRIS"
 - Body:
   - Total: "Rp 350.000" — H3, monospace
@@ -524,6 +546,7 @@ Variants:
 ### Screen B7: POS — Struk Preview (Modal)
 
 **Modal (small size, 380px):**
+
 - Styled like a receipt/thermal print
 - White background, mono-spaced font throughout
 - Content:
@@ -549,10 +572,12 @@ Variants:
 ### Screen B8: Kalender Booking
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 - Main content area
 
 **Content:**
+
 - Page header: "Kalender Booking" — H2
 - Filter bar:
   - Dropdown "Pilih Aset" (select specific asset or "Semua Aset")
@@ -560,7 +585,7 @@ Variants:
   - Month/week toggle
 - Calendar view:
   - Monthly grid, 7 columns
-  - Each day cell: 
+  - Each day cell:
     - Date number top-left
     - Colored dots/bars for bookings
     - Color coding: Available (white), Booked (blue #3B82B0 bar), Maintenance (amber #E8A820 bar)
@@ -575,19 +600,23 @@ Variants:
 ### Screen B9: Pengembalian Barang Sewa
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Pengembalian Barang Sewa" — H2
 - Step wizard (3 steps horizontal stepper):
   - Step 1: "Cari Transaksi" → Step 2: "Cek Barang" → Step 3: "Konfirmasi"
 
 **Step 1 — Cari Transaksi:**
+
 - Search input: "Cari berdasarkan ID transaksi atau nama pelanggan"
 - Results list: cards showing transaction ID, customer name, rental date, items, status badge "Aktif"
 - Click to select → proceed to Step 2
 
 **Step 2 — Cek Barang:**
+
 - Transaction summary card at top (ID, customer, rental period)
 - Table of items:
   - Columns: Item Name, Qty, Tanggal Kembali Seharusnya, Kondisi (dropdown), Catatan
@@ -600,6 +629,7 @@ Variants:
     - **Total Denda: Rp XX.XXX** — bold
 
 **Step 3 — Konfirmasi:**
+
 - Summary of everything
 - Total denda to collect
 - Primary Button "Proses Pengembalian"
@@ -610,9 +640,11 @@ Variants:
 ### Screen B10: Riwayat Transaksi Kasir
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Riwayat Transaksi" — H2
 - Filter bar:
   - Date range picker (from — to)
@@ -633,9 +665,11 @@ Variants:
 ### Screen B11: Data Penyewa — Daftar Pelanggan
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Data Penyewa" — H2 + Primary Button "Tambah Penyewa" (right, icon +)
 - Stats row (3 small metric cards):
   - Card 1: "Total Penyewa" — 128 — icon user, green circle
@@ -651,7 +685,7 @@ Variants:
   - Avatar: 36px circle, initials if no photo, bg #6B8F4E1A text #2D5016
   - Status badges:
     - "Aktif Menyewa" — blue pill #3B82B01A
-    - "Selesai" — green pill #4A7C3F1A  
+    - "Selesai" — green pill #4A7C3F1A
     - "Ada Denda" — red pill #C440321A
     - "Baru" — neutral pill #F0E8D8
   - Example data rows (8 rows):
@@ -668,28 +702,33 @@ Variants:
 ### Screen B12: Data Penyewa — Tambah/Edit Penyewa (Modal)
 
 **Modal (medium size, 600px):**
+
 - Header: "Tambah Penyewa Baru" or "Edit Data Penyewa" + close button X
 - Body (single column form):
 
 **Section 1: Identitas**
+
 - Avatar upload area: circle 80px, dashed border, icon camera, "Upload Foto" text below
-- Nama Lengkap (text input, required *)
-- No. KTP / NIK (text input, 16 digit, required *)
+- Nama Lengkap (text input, required \*)
+- No. KTP / NIK (text input, 16 digit, required \*)
   - Helper text: "Nomor Induk Kependudukan untuk identifikasi"
 
 **Section 2: Kontak**
-- No. HP / WhatsApp (text input, required *, with phone icon left)
+
+- No. HP / WhatsApp (text input, required \*, with phone icon left)
   - Helper text: "Untuk konfirmasi dan follow-up pengembalian"
 - Email (text input, optional)
 - Alamat (textarea, 2 rows)
 
 **Section 3: Jaminan (Opsional)**
+
 - Jenis Jaminan (dropdown: "Tidak Ada", "KTP Asli", "SIM", "Kartu Mahasiswa", "Deposit Uang", "Lainnya")
 - Nominal Deposit (number input, Rp prefix — shown only if "Deposit Uang" selected)
 - Foto Jaminan (image upload area, small dashed box — shown only if jaminan selected)
 - Catatan (text input, optional, placeholder "Catatan tambahan...")
 
 **Footer:**
+
 - Secondary Button "Batal"
 - Primary Button "Simpan Penyewa"
 
@@ -698,13 +737,16 @@ Variants:
 ### Screen B13: Data Penyewa — Detail Penyewa
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Back link: "← Kembali ke Data Penyewa"
 - Two column layout:
 
 **Left Column (35%) — Profil Penyewa:**
+
 - Card (bg white, border-radius 12px, shadow-sm):
   - Avatar besar: 96px circle, centered, bg #6B8F4E1A, initials or photo
   - Nama: H3, centered, below avatar
@@ -722,9 +764,11 @@ Variants:
   - Footer card: tombol "Edit" (secondary) + tombol "Hapus" (danger ghost)
 
 **Right Column (65%) — Riwayat & Detail:**
+
 - Tabs: "Riwayat Sewa" | "Sewa Aktif" | "Denda"
 
 **Tab 1 — Riwayat Sewa:**
+
 - Table:
   - Columns: ID Transaksi, Tanggal, Barang (truncated list), Durasi, Total, Status (badge)
   - Status badges: "Selesai" (green), "Dikembalikan" (blue), "Terlambat" (red)
@@ -732,6 +776,7 @@ Variants:
   - Pagination
 
 **Tab 2 — Sewa Aktif:**
+
 - Cards for each active rental:
   - Card: border-left 4px #3B82B0, bg white
   - Transaction ID + date
@@ -741,6 +786,7 @@ Variants:
   - "Proses Pengembalian" button link
 
 **Tab 3 — Denda:**
+
 - Table of penalty history:
   - Columns: Tanggal, Transaksi ID, Tipe Denda, Nominal, Status Bayar
   - Status: "Lunas" (green badge), "Belum Bayar" (red badge)
@@ -751,9 +797,11 @@ Variants:
 ### Screen C1: Inventaris — Daftar Barang
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Inventaris Barang" — H2 + Primary Button "Tambah Barang" (right)
 - Secondary actions: "Bulk Upload" button (secondary style, with upload icon)
 - Filter bar:
@@ -774,11 +822,13 @@ Variants:
 ### Screen C2: Inventaris — Tambah/Edit Barang (Modal/Page)
 
 **Modal (large size, 860px) or Full Page:**
+
 - Header: "Tambah Barang Baru" or "Edit Barang"
 - Two column form layout:
 
 **Left column:**
-- Image upload area: 
+
+- Image upload area:
   - Dashed border box, 200x200px
   - Icon camera + "Upload Foto"
   - Drag & drop or click to browse
@@ -786,6 +836,7 @@ Variants:
 - Barcode field: text input + "Generate" button
 
 **Right column (form fields):**
+
 - Nama Barang (text input, required)
 - Kategori (dropdown: "Barang Sewa", "Retail Home Industry", "Retail Reseller")
 - Deskripsi (textarea, 3 rows)
@@ -796,6 +847,7 @@ Variants:
 - Status (toggle switch: Active/Inactive)
 
 **Footer:**
+
 - Secondary Button "Batal"
 - Primary Button "Simpan Barang"
 
@@ -804,6 +856,7 @@ Variants:
 ### Screen C3: Inventaris — Bulk Upload
 
 **Modal (large, 860px) or full page:**
+
 - Step 1: Upload
   - Drag & drop zone (large, dashed border, centered)
   - "Upload file Excel (.xlsx) atau CSV"
@@ -824,9 +877,11 @@ Variants:
 ### Screen C4: Paket Bundling — Daftar Paket
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Paket Bundling Sewa" — H2 + Primary Button "Buat Paket Baru"
 - Grid of package cards (2-3 columns):
   - Card:
@@ -843,10 +898,12 @@ Variants:
 ### Screen C5: Paket Bundling — Buat/Edit Paket
 
 **Full page or large modal:**
+
 - Header: "Buat Paket Baru"
 - Two column layout:
 
 **Left (40%):**
+
 - Package image upload
 - Nama Paket (text input)
 - Deskripsi (textarea)
@@ -854,6 +911,7 @@ Variants:
 - Comparison: "Total harga satuan: Rp 250.000" vs "Harga paket: Rp 200.000" with "Hemat 20%" badge
 
 **Right (60%):**
+
 - "Pilih Barang dalam Paket:"
 - Search input to find items
 - Available items list (scrollable):
@@ -863,6 +921,7 @@ Variants:
   - Sortable/reorderable
 
 **Footer:**
+
 - Secondary Button "Batal"
 - Primary Button "Simpan Paket"
 
@@ -871,9 +930,11 @@ Variants:
 ### Screen C6: Manajemen Status Aset
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Status Aset Sewa" — H2
 - Filter bar:
   - Search input
@@ -882,6 +943,7 @@ Variants:
 - Kanban-style board OR Table view toggle:
 
 **Kanban View (default):**
+
 - 4 columns: Ready | Disewa | Maintenance | Dicuci
 - Each column header has count and color indicator
 - Cards in each column:
@@ -891,6 +953,7 @@ Variants:
   - Click to expand: shows notes, history
 
 **Table View:**
+
 - Columns: Foto, Nama Aset, Status (dropdown to change), Terakhir Diperbarui, Catatan, Aksi
 - Inline status dropdown for quick change
 - Bulk select for batch status update
@@ -900,9 +963,11 @@ Variants:
 ### Screen D1: Dashboard Laporan Terpusat (Owner)
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Dashboard" — H1 + Branch filter dropdown (right) + Date range picker
 - Welcome banner:
   - "Selamat siang, [Owner Name] 👋" — H3
@@ -910,6 +975,7 @@ Variants:
   - Background: subtle gradient Forest Green to Sage Green, text white, border-radius 12px
 
 **KPI Cards Row (4 cards):**
+
 - Card style: bg white, border-radius 8px, padding 20px
 - Each card:
   - Icon in colored circle (48px)
@@ -923,6 +989,7 @@ Variants:
   4. "Denda Terkumpul" — Rp 350.000 — icon: alert-triangle, color red circle
 
 **Charts Row:**
+
 - Left (60%): Line/Bar chart "Revenue 30 Hari Terakhir"
   - Multi-line: satu garis per cabang (warna berbeda)
   - X-axis: tanggal, Y-axis: Rp
@@ -932,6 +999,7 @@ Variants:
   - Legend below with cabang names + percentages
 
 **Bottom Section:**
+
 - Left (50%): "Transaksi Terbaru" — mini table, 5 rows, with "Lihat Semua →" link
 - Right (50%): "Barang Populer" — horizontal bar chart or ranked list with progress bars
 
@@ -940,13 +1008,16 @@ Variants:
 ### Screen D2: Statistik Barang (Owner)
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Statistik Barang" — H2
 - Tabs: "Paling Sering Disewa" | "Sering Rusak/Hilang" | "Utilization Rate"
 
 **Tab 1 — Paling Sering Disewa:**
+
 - Ranked list with horizontal bar chart:
   - #1. Tenda Dome 4P — 45 kali — bar 100%
   - #2. Sleeping Bag — 38 kali — bar 84%
@@ -954,10 +1025,12 @@ Variants:
 - Date range filter
 
 **Tab 2 — Sering Rusak/Hilang:**
+
 - Table: Nama Barang, Total Insiden, Rusak Ringan, Rusak Berat, Hilang
 - Sortable, highlighted rows for high-incident items
 
 **Tab 3 — Utilization Rate:**
+
 - Cards per asset showing utilization percentage
 - Progress circle/ring showing % of time rented vs idle
 - Color coding: >80% green, 50-80% amber, <50% red
@@ -967,9 +1040,11 @@ Variants:
 ### Screen D3: Manajemen Cabang (Owner)
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Manajemen Cabang" — H2 + Primary Button "Tambah Cabang"
 - Cards grid (2 columns):
   - Each card:
@@ -984,6 +1059,7 @@ Variants:
     - Left accent border: 4px solid #2D5016 if active, #D6CBBB if inactive
 
 **Add/Edit Branch Modal (medium, 540px):**
+
 - Nama Cabang (text input)
 - Alamat (textarea)
 - No. Telepon (text input)
@@ -995,14 +1071,17 @@ Variants:
 ### Screen D4: Pengaturan Denda Dinamis (Owner)
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Pengaturan Denda" — H2
 - Info banner: (Info style, blue bg)
   - "Aturan denda yang Anda tetapkan di sini akan berlaku untuk semua cabang secara otomatis."
 
 **Penalty Rules Cards:**
+
 - Each rule as an editable card:
   - Card 1: "Denda Keterlambatan"
     - Icon: clock, amber
@@ -1025,9 +1104,11 @@ Variants:
 ### Screen D5: Log Aktivitas (Owner)
 
 **Layout:**
+
 - Standard layout with sidebar + top bar
 
 **Content:**
+
 - Page header: "Log Aktivitas" — H2
 - Filter bar:
   - Date range picker
@@ -1038,6 +1119,7 @@ Variants:
 - Timeline-style list or Table:
 
 **Timeline view:**
+
 - Vertical timeline line (left, 2px, #E8DFC8)
 - Each entry:
   - Dot on timeline (colored by type)
@@ -1047,6 +1129,7 @@ Variants:
   - Expandable details
 
 **Table view (alternative):**
+
 - Columns: Waktu, Kasir, Cabang, Aksi, Detail
 - Sortable, paginated
 
@@ -1055,6 +1138,7 @@ Variants:
 ### Screen E1: Sidebar Navigation
 
 **Structure (expanded view):**
+
 ```
 ┌──────────────────────┐
 │  🌿 BotaniRent       │  ← Logo area, bg slightly darker
@@ -1098,12 +1182,14 @@ Variants:
 ### Screen E2: Top Bar / Header
 
 **Layout:**
+
 - Height: 64px
 - Background: #FFFFFF
 - Border-bottom: 1px solid #E8DFC8
 - Padding: 0 24px
 
 **Left side:**
+
 - Sidebar toggle button (hamburger icon)
 - Breadcrumb: "Dashboard > Inventaris > Tambah Barang"
   - Separator: "/" or ">"
@@ -1111,6 +1197,7 @@ Variants:
   - Previous items: color #7A7062, clickable
 
 **Right side:**
+
 - Branch selector (if applicable): Dropdown showing current branch
 - Notification bell icon: with red dot badge if unread
 - User section:
@@ -1124,10 +1211,12 @@ Variants:
 ### Screen E3: 404 / Error Page
 
 **Layout:**
+
 - Centered on page, no sidebar
 - Max-width 480px
 
 **Content:**
+
 - Large illustration: lost hiker / compass / mountain with clouds
 - "404" — Display size, color #D6CBBB
 - "Halaman Tidak Ditemukan" — H2
@@ -1147,6 +1236,7 @@ Mobile            : < 640px   — Bottom navigation bar, stacked layout
 ```
 
 **POS View khusus:**
+
 - Minimum: 1024px (tablet landscape)
 - Below 1024px: Cart becomes a slide-up bottom sheet
 - Katalog grid: 2 columns on tablet, 3-4 on desktop
@@ -1163,6 +1253,7 @@ Color       : Inherits text color by default
 ```
 
 **Key icons used:**
+
 - POS: shopping-cart, barcode, credit-card, printer, calculator
 - Inventory: package, upload, image, edit, trash, search
 - Calendar: calendar, clock, check-circle
@@ -1176,6 +1267,7 @@ Color       : Inherits text color by default
 ## 6. Imagery & Brand Assets
 
 **Logo:**
+
 - "BotaniRent" wordmark
 - Icon: stylized leaf + tent combination
 - Primary version: Forest Green on white
@@ -1183,12 +1275,14 @@ Color       : Inherits text color by default
 - Accent mark: Warm Amber underline
 
 **Photography style:**
+
 - Outdoor adventure photography (mountains, camping, hiking)
 - Warm, golden-hour lighting
 - Used for: Login page background, empty states, marketing sections
 - Treatment: slight warm color grade overlay
 
 **Illustrations (for empty states & errors):**
+
 - Style: line art with earthy fill colors
 - Themes: hiking, camping, mountain, compass, backpack
 - Color limited to palette colors only
@@ -1199,65 +1293,66 @@ Color       : Inherits text color by default
 
 ```css
 :root {
-  /* Colors */
-  --color-primary: #2D5016;
-  --color-primary-light: #6B8F4E;
-  --color-secondary: #D4A843;
-  --color-accent: #C85A3A;
-  --color-bg: #FAF6F0;
-  --color-bg-dark: #1A1A1A;
-  --color-surface: #F0E8D8;
-  --color-surface-hover: #E8DFC8;
-  --color-text-primary: #2C2418;
-  --color-text-secondary: #7A7062;
-  --color-text-disabled: #B0A696;
-  --color-border: #D6CBBB;
-  --color-border-light: #E8DFC8;
-  --color-border-focus: #6B8F4E;
-  --color-success: #4A7C3F;
-  --color-warning: #E8A820;
-  --color-error: #C44032;
-  --color-info: #3B82B0;
+	/* Colors */
+	--color-primary: #2d5016;
+	--color-primary-light: #6b8f4e;
+	--color-secondary: #d4a843;
+	--color-accent: #c85a3a;
+	--color-bg: #faf6f0;
+	--color-bg-dark: #1a1a1a;
+	--color-surface: #f0e8d8;
+	--color-surface-hover: #e8dfc8;
+	--color-text-primary: #2c2418;
+	--color-text-secondary: #7a7062;
+	--color-text-disabled: #b0a696;
+	--color-border: #d6cbbb;
+	--color-border-light: #e8dfc8;
+	--color-border-focus: #6b8f4e;
+	--color-success: #4a7c3f;
+	--color-warning: #e8a820;
+	--color-error: #c44032;
+	--color-info: #3b82b0;
 
-  /* Typography */
-  --font-heading: 'Outfit', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+	/* Typography */
+	--font-heading: 'Outfit', sans-serif;
+	--font-body: 'Inter', sans-serif;
+	--font-mono: 'JetBrains Mono', monospace;
 
-  /* Spacing */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 12px;
-  --space-base: 16px;
-  --space-lg: 20px;
-  --space-xl: 24px;
-  --space-2xl: 32px;
-  --space-3xl: 40px;
-  --space-4xl: 48px;
+	/* Spacing */
+	--space-xs: 4px;
+	--space-sm: 8px;
+	--space-md: 12px;
+	--space-base: 16px;
+	--space-lg: 20px;
+	--space-xl: 24px;
+	--space-2xl: 32px;
+	--space-3xl: 40px;
+	--space-4xl: 48px;
 
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
+	/* Border Radius */
+	--radius-sm: 6px;
+	--radius-md: 8px;
+	--radius-lg: 12px;
+	--radius-xl: 16px;
+	--radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(44,36,24,0.06), 0 1px 2px rgba(44,36,24,0.04);
-  --shadow-md: 0 4px 6px rgba(44,36,24,0.07), 0 2px 4px rgba(44,36,24,0.04);
-  --shadow-lg: 0 10px 15px rgba(44,36,24,0.08), 0 4px 6px rgba(44,36,24,0.04);
-  --shadow-xl: 0 20px 25px rgba(44,36,24,0.10), 0 8px 10px rgba(44,36,24,0.04);
+	/* Shadows */
+	--shadow-sm: 0 1px 3px rgba(44, 36, 24, 0.06), 0 1px 2px rgba(44, 36, 24, 0.04);
+	--shadow-md: 0 4px 6px rgba(44, 36, 24, 0.07), 0 2px 4px rgba(44, 36, 24, 0.04);
+	--shadow-lg: 0 10px 15px rgba(44, 36, 24, 0.08), 0 4px 6px rgba(44, 36, 24, 0.04);
+	--shadow-xl: 0 20px 25px rgba(44, 36, 24, 0.1), 0 8px 10px rgba(44, 36, 24, 0.04);
 
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+	/* Transitions */
+	--transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+	--transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+	--transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 ```
 
 ---
 
 > **Catatan untuk AI Design Generator (Stitch):**
+>
 > - Gunakan semua spesifikasi warna, tipografi, dan komponen di atas secara konsisten di seluruh screen.
 > - Prioritaskan screen POS (B1-B7) karena ini adalah core feature yang paling sering digunakan.
 > - Pastikan semua elemen touch-friendly (minimum tap target 44x44px) untuk penggunaan di tablet.

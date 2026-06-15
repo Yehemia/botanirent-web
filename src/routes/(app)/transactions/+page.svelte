@@ -12,23 +12,21 @@
 	let search = $derived(data.search);
 </script>
 
-<div class="space-y-6 max-w-7xl mx-auto pb-12">
+<div class="mx-auto max-w-7xl space-y-6 pb-12">
 	<!-- Header -->
-	<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+	<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
 		<div>
-			<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)]">Riwayat Transaksi</h1>
-			<p class="text-[var(--color-stone)] mt-1">Pantau semua transaksi penyewaan dan penjualan cabang ini.</p>
+			<h1 class="font-heading text-3xl font-bold text-[var(--color-earth)]">Riwayat Transaksi</h1>
+			<p class="mt-1 text-[var(--color-stone)]">
+				Pantau semua transaksi penyewaan dan penjualan cabang ini.
+			</p>
 		</div>
 	</div>
 
 	<!-- Pencarian -->
 	<Card padding="md">
 		<form method="GET" class="relative max-w-md">
-			<Input 
-				name="q"
-				value={search} 
-				placeholder="Cari berdasarkan kode transaksi (TRX-...)" 
-			>
+			<Input name="q" value={search} placeholder="Cari berdasarkan kode transaksi (TRX-...)">
 				{#snippet iconLeft()}
 					<Search size={18} />
 				{/snippet}
@@ -40,7 +38,9 @@
 	<Card padding="none" class="overflow-hidden">
 		<div class="overflow-x-auto">
 			<table class="w-full text-left text-sm whitespace-nowrap">
-				<thead class="bg-[var(--color-sand-light)] text-[var(--color-earth)] font-semibold border-b border-[var(--color-border)]">
+				<thead
+					class="border-b border-[var(--color-border)] bg-[var(--color-sand-light)] font-semibold text-[var(--color-earth)]"
+				>
 					<tr>
 						<th class="px-6 py-4">Kode Transaksi</th>
 						<th class="px-6 py-4">Waktu</th>
@@ -58,21 +58,25 @@
 								<Receipt size={48} class="mx-auto mb-3 opacity-20" />
 								<p class="text-lg font-medium">Tidak ada transaksi ditemukan</p>
 								{#if search}
-									<p class="text-sm mt-1">Pencarian "{search}" tidak membuahkan hasil.</p>
+									<p class="mt-1 text-sm">Pencarian "{search}" tidak membuahkan hasil.</p>
 								{/if}
 							</td>
 						</tr>
 					{:else}
 						{#each transactions as trx (trx.id)}
-							<tr class="hover:bg-[var(--color-sand-lightest)]/50 transition-colors group">
+							<tr class="group transition-colors hover:bg-[var(--color-sand-lightest)]/50">
 								<td class="px-6 py-4">
-									<span class="font-mono font-bold text-[var(--color-earth)]">{trx.transaction_code}</span>
+									<span class="font-mono font-bold text-[var(--color-earth)]"
+										>{trx.transaction_code}</span
+									>
 								</td>
 								<td class="px-6 py-4 text-[var(--color-stone)]">
 									{formatDate(trx.created_at)}
 								</td>
 								<td class="px-6 py-4">
-									<div class="font-medium text-[var(--color-earth)]">{trx.customer?.full_name || '-'}</div>
+									<div class="font-medium text-[var(--color-earth)]">
+										{trx.customer?.full_name || '-'}
+									</div>
 								</td>
 								<td class="px-6 py-4">
 									{#if trx.type === 'retail'}
@@ -84,23 +88,31 @@
 									{/if}
 								</td>
 								<td class="px-6 py-4">
-									<div class="font-bold text-[var(--color-forest)]">{formatCurrency(trx.total_amount)}</div>
-									<div class="text-[10px] text-[var(--color-stone)] uppercase tracking-wider">{trx.payment_method}</div>
+									<div class="font-bold text-[var(--color-forest)]">
+										{formatCurrency(trx.total_amount)}
+									</div>
+									<div class="text-[10px] tracking-wider text-[var(--color-stone)] uppercase">
+										{trx.payment_method}
+									</div>
 								</td>
 								<td class="px-6 py-4">
 									{#if trx.payment_status === 'paid'}
-										<Badge variant="success" class="flex items-center gap-1 w-max">
+										<Badge variant="success" class="flex w-max items-center gap-1">
 											<CheckCircle size={12} /> Lunas
 										</Badge>
 									{:else}
-										<Badge variant="warning" class="flex items-center gap-1 w-max">
-											<Clock size={12} /> {trx.payment_status}
+										<Badge variant="warning" class="flex w-max items-center gap-1">
+											<Clock size={12} />
+											{trx.payment_status}
 										</Badge>
 									{/if}
 								</td>
 								<td class="px-6 py-4 text-right">
 									<!-- eslint-disable-next-line -->
-									<a href="/transactions/{trx.id}" class="inline-flex items-center justify-center p-2 text-[var(--color-forest)] hover:bg-[var(--color-forest)]/10 rounded-lg transition-colors font-medium">
+									<a
+										href="/transactions/{trx.id}"
+										class="inline-flex items-center justify-center rounded-lg p-2 font-medium text-[var(--color-forest)] transition-colors hover:bg-[var(--color-forest)]/10"
+									>
 										Lihat Detail <ArrowRight size={16} class="ml-1" />
 									</a>
 								</td>

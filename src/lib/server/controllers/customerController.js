@@ -21,7 +21,7 @@ export const customerController = {
 					selectedBranchId = branches[0].id;
 				}
 			} catch (error) {
-				console.error("Error fetching active branches in controller:", error);
+				console.error('Error fetching active branches in controller:', error);
 			}
 		} else {
 			selectedBranchId = profile.branch_id;
@@ -96,7 +96,7 @@ export const customerController = {
 
 			return { success: true };
 		} catch (error) {
-			console.error("Error in createCustomer controller:", error);
+			console.error('Error in createCustomer controller:', error);
 			return { success: false, status: 500, error: 'Gagal membuat data penyewa.' };
 		}
 	},
@@ -151,7 +151,7 @@ export const customerController = {
 
 			return { success: true };
 		} catch (error) {
-			console.error("Error in updateCustomer controller:", error);
+			console.error('Error in updateCustomer controller:', error);
 			return { success: false, status: 500, error: 'Gagal mengubah data penyewa.' };
 		}
 	},
@@ -187,8 +187,13 @@ export const customerController = {
 
 			return { success: true };
 		} catch (error) {
-			console.error("Error in deleteCustomer controller:", error);
-			return { success: false, status: 500, error: 'Gagal menghapus data penyewa. Pastikan pelanggan tidak memiliki riwayat transaksi aktif.' };
+			console.error('Error in deleteCustomer controller:', error);
+			return {
+				success: false,
+				status: 500,
+				error:
+					'Gagal menghapus data penyewa. Pastikan pelanggan tidak memiliki riwayat transaksi aktif.'
+			};
 		}
 	}
 };

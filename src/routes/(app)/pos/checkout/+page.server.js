@@ -25,7 +25,7 @@ export const actions = {
 		}
 
 		const formData = await request.formData();
-		
+
 		const midtransConfig = {
 			serverKey: MIDTRANS_SERVER_KEY,
 			env: PUBLIC_MIDTRANS_ENV,
@@ -39,7 +39,10 @@ export const actions = {
 				throw redirect(303, result.redirect);
 			}
 			const errorResult = /** @type {any} */ (result);
-			return fail(errorResult.status || 500, { error: errorResult.error, values: errorResult.values });
+			return fail(errorResult.status || 500, {
+				error: errorResult.error,
+				values: errorResult.values
+			});
 		}
 
 		if (result.redirect) {

@@ -2,21 +2,21 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { 
-		Search, 
-		Users, 
-		User, 
-		Plus, 
-		Eye, 
-		Edit, 
-		Trash2, 
-		ChevronLeft, 
-		ChevronRight, 
-		MapPin, 
-		Info, 
-		Calendar, 
-		CreditCard, 
-		AlertCircle, 
+	import {
+		Search,
+		Users,
+		User,
+		Plus,
+		Eye,
+		Edit,
+		Trash2,
+		ChevronLeft,
+		ChevronRight,
+		MapPin,
+		Info,
+		Calendar,
+		CreditCard,
+		AlertCircle,
 		CheckCircle,
 		X,
 		Activity,
@@ -25,7 +25,7 @@
 		Home,
 		FileText
 	} from '@lucide/svelte';
-	
+
 	// Import shared UI components
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -100,7 +100,7 @@
 		return name
 			.trim()
 			.split(/\s+/)
-			.map(n => n[0])
+			.map((n) => n[0])
 			.slice(0, 2)
 			.join('')
 			.toUpperCase();
@@ -108,7 +108,7 @@
 
 	// 1. Process customers: Parse serialized JSON notes & calculate summary metrics
 	let processedCustomers = $derived.by(() => {
-		return data.customers.map(c => {
+		return data.customers.map((c) => {
 			let total_rentals = 0;
 			let active_rentals_count = 0;
 			let unpaid_penalties_count = 0;
@@ -120,7 +120,7 @@
 			let guarantee_type = 'KTP Asli';
 			let deposit_amount = 0;
 			let customerNotes = '';
-			
+
 			if (c.notes) {
 				try {
 					const json = JSON.parse(c.notes);
@@ -138,28 +138,34 @@
 			}
 
 			// Parse rentals, status, and denda from customer transactions history
-			c.transactions?.forEach(/** @param {any} tx */ (tx) => {
-				const isRental = tx.type === 'rental' || tx.type === 'hybrid';
-				const isPaid = tx.payment_status === 'paid';
-				
-				if (isRental && isPaid) {
-					total_rentals++;
-					if (!last_rental_date || new Date(tx.created_at) > new Date(last_rental_date)) {
-						last_rental_date = tx.created_at;
-					}
-				}
+			c.transactions?.forEach(
+				/** @param {any} tx */ (tx) => {
+					const isRental = tx.type === 'rental' || tx.type === 'hybrid';
+					const isPaid = tx.payment_status === 'paid';
 
-				tx.transaction_items?.forEach(/** @param {any} item */ (item) => {
-					if (item.rental_status === 'active' || item.rental_status === 'overdue') {
-						active_rentals_count++;
-					}
-					item.penalties?.forEach(/** @param {any} penalty */ (penalty) => {
-						if (penalty.payment_status === 'unpaid') {
-							unpaid_penalties_count++;
+					if (isRental && isPaid) {
+						total_rentals++;
+						if (!last_rental_date || new Date(tx.created_at) > new Date(last_rental_date)) {
+							last_rental_date = tx.created_at;
 						}
-					});
-				});
-			});
+					}
+
+					tx.transaction_items?.forEach(
+						/** @param {any} item */ (item) => {
+							if (item.rental_status === 'active' || item.rental_status === 'overdue') {
+								active_rentals_count++;
+							}
+							item.penalties?.forEach(
+								/** @param {any} penalty */ (penalty) => {
+									if (penalty.payment_status === 'unpaid') {
+										unpaid_penalties_count++;
+									}
+								}
+							);
+						}
+					);
+				}
+			);
 
 			// Map transaction metrics to user-facing statuses
 			let status = 'Baru'; // Default if 0 rentals
@@ -192,20 +198,21 @@
 
 		// Filter by status tab selection
 		if (selectedStatus === 'aktif') {
-			list = list.filter(c => c.status === 'Aktif Menyewa');
+			list = list.filter((c) => c.status === 'Aktif Menyewa');
 		} else if (selectedStatus === 'riwayat') {
-			list = list.filter(c => c.status === 'Selesai');
+			list = list.filter((c) => c.status === 'Selesai');
 		} else if (selectedStatus === 'bermasalah') {
-			list = list.filter(c => c.status === 'Ada Denda');
+			list = list.filter((c) => c.status === 'Ada Denda');
 		}
 
 		// Filter by Search Query
 		const query = searchQuery.trim().toLowerCase();
 		if (query) {
-			list = list.filter(c => 
-				c.full_name?.toLowerCase().includes(query) ||
-				c.phone?.toLowerCase().includes(query) ||
-				c.ktp_number?.toLowerCase().includes(query)
+			list = list.filter(
+				(c) =>
+					c.full_name?.toLowerCase().includes(query) ||
+					c.phone?.toLowerCase().includes(query) ||
+					c.ktp_number?.toLowerCase().includes(query)
 			);
 		}
 
@@ -224,8 +231,8 @@
 	// 3. Compute counts for page cards dynamically
 	let stats = $derived.by(() => {
 		const total = processedCustomers.length;
-		const active = processedCustomers.filter(c => c.status === 'Aktif Menyewa').length;
-		const bermasalah = processedCustomers.filter(c => c.status === 'Ada Denda').length;
+		const active = processedCustomers.filter((c) => c.status === 'Aktif Menyewa').length;
+		const bermasalah = processedCustomers.filter((c) => c.status === 'Ada Denda').length;
 		return { total, active, bermasalah };
 	});
 
@@ -255,14 +262,18 @@
 		if (!selectedCustomer) return [];
 		/** @type {any[]} */
 		const list = [];
-		selectedCustomer.transactions?.forEach(/** @param {any} tx */ (tx) => {
-			if (tx.payment_status !== 'paid') return;
-			tx.transaction_items?.forEach(/** @param {any} item */ (item) => {
-				if (item.rental_status === 'active' || item.rental_status === 'overdue') {
-					list.push({ ...item, transaction_code: tx.transaction_code });
-				}
-			});
-		});
+		selectedCustomer.transactions?.forEach(
+			/** @param {any} tx */ (tx) => {
+				if (tx.payment_status !== 'paid') return;
+				tx.transaction_items?.forEach(
+					/** @param {any} item */ (item) => {
+						if (item.rental_status === 'active' || item.rental_status === 'overdue') {
+							list.push({ ...item, transaction_code: tx.transaction_code });
+						}
+					}
+				);
+			}
+		);
 		return list;
 	});
 
@@ -270,12 +281,20 @@
 		if (!selectedCustomer) return [];
 		/** @type {any[]} */
 		const list = [];
-		selectedCustomer.transactions?.forEach(/** @param {any} tx */ (tx) => {
-			if (tx.payment_status !== 'paid') return;
-			tx.transaction_items?.forEach(/** @param {any} item */ (item) => {
-				list.push({ ...item, transaction_code: tx.transaction_code, paid_at: tx.paid_at || tx.created_at });
-			});
-		});
+		selectedCustomer.transactions?.forEach(
+			/** @param {any} tx */ (tx) => {
+				if (tx.payment_status !== 'paid') return;
+				tx.transaction_items?.forEach(
+					/** @param {any} item */ (item) => {
+						list.push({
+							...item,
+							transaction_code: tx.transaction_code,
+							paid_at: tx.paid_at || tx.created_at
+						});
+					}
+				);
+			}
+		);
 		list.sort((a, b) => new Date(b.paid_at).getTime() - new Date(a.paid_at).getTime());
 		return list;
 	});
@@ -311,22 +330,25 @@
 	}
 </script>
 
-<div class="space-y-6 pb-12 animate-fade-in">
-	
+<div class="animate-fade-in space-y-6 pb-12">
 	<!-- Top Bar and Branch Switcher -->
-	<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+	<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
 		<div>
-			<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)]">Data Penyewa</h1>
-			<p class="text-[var(--color-stone)] mt-1">Kelola daftar pelanggan, informasi jaminan, dan riwayat transaksi sewa.</p>
+			<h1 class="font-heading text-3xl font-bold text-[var(--color-earth)]">Data Penyewa</h1>
+			<p class="mt-1 text-[var(--color-stone)]">
+				Kelola daftar pelanggan, informasi jaminan, dan riwayat transaksi sewa.
+			</p>
 		</div>
 
-		<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+		<div class="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
 			{#if role === 'owner' && branches.length > 0}
-				<div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-[var(--color-border)] shadow-sm shrink-0">
-					<MapPin size={18} class="text-[var(--color-forest)] shrink-0" />
-					<span class="text-[13px] font-medium text-[var(--color-stone)] mr-1">Cabang:</span>
-					<select 
-						class="bg-transparent font-bold text-sm text-[var(--color-forest)] focus:outline-none cursor-pointer"
+				<div
+					class="flex shrink-0 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 py-2 shadow-sm"
+				>
+					<MapPin size={18} class="shrink-0 text-[var(--color-forest)]" />
+					<span class="mr-1 text-[13px] font-medium text-[var(--color-stone)]">Cabang:</span>
+					<select
+						class="cursor-pointer bg-transparent text-sm font-bold text-[var(--color-forest)] focus:outline-none"
 						value={selectedBranchId}
 						onchange={handleBranchChange}
 					>
@@ -337,10 +359,10 @@
 				</div>
 			{/if}
 
-			<Button 
+			<Button
 				size="md"
-				class="flex items-center justify-center gap-2 shrink-0 font-semibold"
-				onclick={() => isAddModalOpen = true}
+				class="flex shrink-0 items-center justify-center gap-2 font-semibold"
+				onclick={() => (isAddModalOpen = true)}
 			>
 				<Plus size={18} /> Tambah Penyewa
 			</Button>
@@ -349,126 +371,166 @@
 
 	<!-- Error Banners -->
 	{#if form?.error}
-		<div class="bg-[var(--color-error-bg)] text-[var(--color-error)] p-4 rounded-xl border border-[var(--color-error)]/20 font-medium text-sm flex items-center gap-3">
+		<div
+			class="flex items-center gap-3 rounded-xl border border-[var(--color-error)]/20 bg-[var(--color-error-bg)] p-4 text-sm font-medium text-[var(--color-error)]"
+		>
 			<AlertCircle size={18} class="shrink-0" />
 			<span>{form.error}</span>
 		</div>
 	{/if}
 
 	<!-- Stats Counters Row -->
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+	<div class="grid grid-cols-1 gap-5 md:grid-cols-3">
 		<!-- Card 1: Total -->
-		<Card padding="md" class="border border-[var(--color-border)] shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+		<Card
+			padding="md"
+			class="group relative overflow-hidden border border-[var(--color-border)] shadow-sm transition-shadow hover:shadow-md"
+		>
 			<div class="flex items-center gap-4">
-				<div class="w-12 h-12 rounded-full bg-[var(--color-sage-10)] flex items-center justify-center text-[var(--color-forest)] shrink-0">
+				<div
+					class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-sage-10)] text-[var(--color-forest)]"
+				>
 					<Users size={22} />
 				</div>
 				<div>
-					<p class="text-[13px] font-semibold uppercase tracking-wider text-[var(--color-stone)]">Total Penyewa</p>
-					<p class="text-3xl font-bold font-mono text-[var(--color-earth)] mt-0.5">{stats.total}</p>
+					<p class="text-[13px] font-semibold tracking-wider text-[var(--color-stone)] uppercase">
+						Total Penyewa
+					</p>
+					<p class="mt-0.5 font-mono text-3xl font-bold text-[var(--color-earth)]">{stats.total}</p>
 				</div>
 			</div>
-			<div class="absolute right-0 bottom-0 translate-y-2 translate-x-2 text-[var(--color-sage)] opacity-10 group-hover:scale-110 transition-transform">
+			<div
+				class="absolute right-0 bottom-0 translate-x-2 translate-y-2 text-[var(--color-sage)] opacity-10 transition-transform group-hover:scale-110"
+			>
 				<Users size={80} />
 			</div>
 		</Card>
 
 		<!-- Card 2: Aktif -->
-		<Card padding="md" class="border border-[var(--color-border)] shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+		<Card
+			padding="md"
+			class="group relative overflow-hidden border border-[var(--color-border)] shadow-sm transition-shadow hover:shadow-md"
+		>
 			<div class="flex items-center gap-4">
-				<div class="w-12 h-12 rounded-full bg-[var(--color-info-bg)] flex items-center justify-center text-[var(--color-info)] shrink-0">
+				<div
+					class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-info-bg)] text-[var(--color-info)]"
+				>
 					<Activity size={22} />
 				</div>
 				<div>
-					<p class="text-[13px] font-semibold uppercase tracking-wider text-[var(--color-stone)]">Aktif Menyewa</p>
-					<p class="text-3xl font-bold font-mono text-[var(--color-earth)] mt-0.5">{stats.active}</p>
+					<p class="text-[13px] font-semibold tracking-wider text-[var(--color-stone)] uppercase">
+						Aktif Menyewa
+					</p>
+					<p class="mt-0.5 font-mono text-3xl font-bold text-[var(--color-earth)]">
+						{stats.active}
+					</p>
 				</div>
 			</div>
-			<div class="absolute right-0 bottom-0 translate-y-2 translate-x-2 text-[var(--color-info)] opacity-10 group-hover:scale-110 transition-transform">
+			<div
+				class="absolute right-0 bottom-0 translate-x-2 translate-y-2 text-[var(--color-info)] opacity-10 transition-transform group-hover:scale-110"
+			>
 				<Activity size={80} />
 			</div>
 		</Card>
 
 		<!-- Card 3: Ada Denda / Bermasalah -->
-		<Card padding="md" class="border border-[var(--color-border)] shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+		<Card
+			padding="md"
+			class="group relative overflow-hidden border border-[var(--color-border)] shadow-sm transition-shadow hover:shadow-md"
+		>
 			<div class="flex items-center gap-4">
-				<div class="w-12 h-12 rounded-full bg-[var(--color-error-bg)] flex items-center justify-center text-[var(--color-error)] shrink-0">
+				<div
+					class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-error-bg)] text-[var(--color-error)]"
+				>
 					<AlertCircle size={22} />
 				</div>
 				<div>
-					<p class="text-[13px] font-semibold uppercase tracking-wider text-[var(--color-stone)]">Penyewa Bermasalah</p>
-					<p class="text-3xl font-bold font-mono text-[var(--color-earth)] mt-0.5">{stats.bermasalah}</p>
+					<p class="text-[13px] font-semibold tracking-wider text-[var(--color-stone)] uppercase">
+						Penyewa Bermasalah
+					</p>
+					<p class="mt-0.5 font-mono text-3xl font-bold text-[var(--color-earth)]">
+						{stats.bermasalah}
+					</p>
 				</div>
 			</div>
-			<div class="absolute right-0 bottom-0 translate-y-2 translate-x-2 text-[var(--color-error)] opacity-10 group-hover:scale-110 transition-transform">
+			<div
+				class="absolute right-0 bottom-0 translate-x-2 translate-y-2 text-[var(--color-error)] opacity-10 transition-transform group-hover:scale-110"
+			>
 				<AlertCircle size={80} />
 			</div>
 		</Card>
 	</div>
 
 	<!-- Controls: Search and Filters -->
-	<div class="bg-white p-4 rounded-2xl border border-[var(--color-border)] shadow-[var(--shadow-sm)] flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+	<div
+		class="flex flex-col items-stretch justify-between gap-4 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-sm)] lg:flex-row lg:items-center"
+	>
 		<!-- Search Field -->
-		<div class="relative flex-grow max-w-lg">
-			<Search size={18} class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-stone)] pointer-events-none" />
-			<input 
+		<div class="relative max-w-lg flex-grow">
+			<Search
+				size={18}
+				class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-stone)]"
+			/>
+			<input
 				type="text"
 				placeholder="Cari nama, telepon, atau No. KTP..."
 				bind:value={searchQuery}
-				class="w-full bg-[var(--color-cream)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 py-2.5 text-[14px] text-[var(--color-earth)] transition-all placeholder:text-[var(--color-muted)] focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)]"
+				class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-cream)] py-2.5 pr-4 pl-10 text-[14px] text-[var(--color-earth)] transition-all placeholder:text-[var(--color-muted)] focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)] focus:outline-none"
 			/>
 		</div>
 
 		<!-- Status Category Filter pills -->
-		<div class="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide shrink-0">
-			<button 
+		<div class="scrollbar-hide flex shrink-0 items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0">
+			<button
 				type="button"
-				onclick={() => selectedStatus = 'all'}
-				class="px-4 py-2 rounded-full text-[13px] font-medium border transition-all shrink-0
-					{selectedStatus === 'all' 
-						? 'bg-[var(--color-forest)] text-white border-[var(--color-forest)] font-semibold shadow-sm' 
-						: 'bg-[var(--color-sand-lightest)] text-[var(--color-stone)] border-[var(--color-border-light)] hover:border-[var(--color-stone)]'}"
+				onclick={() => (selectedStatus = 'all')}
+				class="shrink-0 rounded-full border px-4 py-2 text-[13px] font-medium transition-all
+					{selectedStatus === 'all'
+					? 'border-[var(--color-forest)] bg-[var(--color-forest)] font-semibold text-white shadow-sm'
+					: 'border-[var(--color-border-light)] bg-[var(--color-sand-lightest)] text-[var(--color-stone)] hover:border-[var(--color-stone)]'}"
 			>
 				Semua ({processedCustomers.length})
 			</button>
-			<button 
+			<button
 				type="button"
-				onclick={() => selectedStatus = 'aktif'}
-				class="px-4 py-2 rounded-full text-[13px] font-medium border transition-all shrink-0
-					{selectedStatus === 'aktif' 
-						? 'bg-[var(--color-info)] text-white border-[var(--color-info)] font-semibold shadow-sm' 
-						: 'bg-[var(--color-sand-lightest)] text-[var(--color-info)] border-[var(--color-border-light)] hover:bg-[var(--color-info-bg)] hover:border-[var(--color-info)]'}"
+				onclick={() => (selectedStatus = 'aktif')}
+				class="shrink-0 rounded-full border px-4 py-2 text-[13px] font-medium transition-all
+					{selectedStatus === 'aktif'
+					? 'border-[var(--color-info)] bg-[var(--color-info)] font-semibold text-white shadow-sm'
+					: 'border-[var(--color-border-light)] bg-[var(--color-sand-lightest)] text-[var(--color-info)] hover:border-[var(--color-info)] hover:bg-[var(--color-info-bg)]'}"
 			>
-				Aktif Menyewa ({processedCustomers.filter(c => c.status === 'Aktif Menyewa').length})
+				Aktif Menyewa ({processedCustomers.filter((c) => c.status === 'Aktif Menyewa').length})
 			</button>
-			<button 
+			<button
 				type="button"
-				onclick={() => selectedStatus = 'riwayat'}
-				class="px-4 py-2 rounded-full text-[13px] font-medium border transition-all shrink-0
-					{selectedStatus === 'riwayat' 
-						? 'bg-[var(--color-success)] text-white border-[var(--color-success)] font-semibold shadow-sm' 
-						: 'bg-[var(--color-sand-lightest)] text-[var(--color-success)] border-[var(--color-border-light)] hover:bg-[var(--color-success-bg)] hover:border-[var(--color-success)]'}"
+				onclick={() => (selectedStatus = 'riwayat')}
+				class="shrink-0 rounded-full border px-4 py-2 text-[13px] font-medium transition-all
+					{selectedStatus === 'riwayat'
+					? 'border-[var(--color-success)] bg-[var(--color-success)] font-semibold text-white shadow-sm'
+					: 'border-[var(--color-border-light)] bg-[var(--color-sand-lightest)] text-[var(--color-success)] hover:border-[var(--color-success)] hover:bg-[var(--color-success-bg)]'}"
 			>
-				Riwayat ({processedCustomers.filter(c => c.status === 'Selesai').length})
+				Riwayat ({processedCustomers.filter((c) => c.status === 'Selesai').length})
 			</button>
-			<button 
+			<button
 				type="button"
-				onclick={() => selectedStatus = 'bermasalah'}
-				class="px-4 py-2 rounded-full text-[13px] font-medium border transition-all shrink-0
-					{selectedStatus === 'bermasalah' 
-						? 'bg-[var(--color-error)] text-white border-[var(--color-error)] font-semibold shadow-sm' 
-						: 'bg-[var(--color-sand-lightest)] text-[var(--color-error)] border-[var(--color-border-light)] hover:bg-[var(--color-error-bg)] hover:border-[var(--color-error)]'}"
+				onclick={() => (selectedStatus = 'bermasalah')}
+				class="shrink-0 rounded-full border px-4 py-2 text-[13px] font-medium transition-all
+					{selectedStatus === 'bermasalah'
+					? 'border-[var(--color-error)] bg-[var(--color-error)] font-semibold text-white shadow-sm'
+					: 'border-[var(--color-border-light)] bg-[var(--color-sand-lightest)] text-[var(--color-error)] hover:border-[var(--color-error)] hover:bg-[var(--color-error-bg)]'}"
 			>
-				Bermasalah ({processedCustomers.filter(c => c.status === 'Ada Denda').length})
+				Bermasalah ({processedCustomers.filter((c) => c.status === 'Ada Denda').length})
 			</button>
 		</div>
 
 		<!-- Sort dropdown -->
-		<div class="flex items-center gap-2 border-t lg:border-t-0 lg:border-l border-[var(--color-border-light)] pt-3 lg:pt-0 lg:pl-4 shrink-0">
-			<span class="text-[13px] text-[var(--color-stone)] whitespace-nowrap">Urutkan:</span>
-			<select 
+		<div
+			class="flex shrink-0 items-center gap-2 border-t border-[var(--color-border-light)] pt-3 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-4"
+		>
+			<span class="text-[13px] whitespace-nowrap text-[var(--color-stone)]">Urutkan:</span>
+			<select
 				bind:value={sortBy}
-				class="bg-transparent font-semibold text-sm text-[var(--color-earth)] focus:outline-none cursor-pointer pr-4"
+				class="cursor-pointer bg-transparent pr-4 text-sm font-semibold text-[var(--color-earth)] focus:outline-none"
 			>
 				<option value="newest">Terbaru</option>
 				<option value="alphabetical">Nama A-Z</option>
@@ -478,56 +540,85 @@
 	</div>
 
 	<!-- Data Table Container -->
-	<div class="bg-white rounded-2xl border border-[var(--color-border)] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col">
+	<div
+		class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-sm)]"
+	>
 		<div class="overflow-x-auto">
-			<table class="w-full text-left border-collapse">
+			<table class="w-full border-collapse text-left">
 				<thead>
-					<tr class="bg-[var(--color-sand)] border-b border-[var(--color-border)]">
-						<th class="py-3 px-4 w-12"></th>
-						<th class="py-3 px-4 font-heading text-xs font-bold uppercase tracking-wider text-[var(--color-stone)]">Nama Lengkap</th>
-						<th class="py-3 px-4 font-heading text-xs font-bold uppercase tracking-wider text-[var(--color-stone)]">No. HP</th>
-						<th class="py-3 px-4 font-heading text-xs font-bold uppercase tracking-wider text-[var(--color-stone)]">No. KTP</th>
-						<th class="py-3 px-4 font-heading text-xs font-bold uppercase tracking-wider text-[var(--color-stone)] text-right w-24">Total Sewa</th>
-						<th class="py-3 px-4 font-heading text-xs font-bold uppercase tracking-wider text-[var(--color-stone)] w-36">Status</th>
-						<th class="py-3 px-4 font-heading text-xs font-bold uppercase tracking-wider text-[var(--color-stone)]">Terakhir Sewa</th>
-						<th class="py-3 px-4 font-heading text-xs font-bold uppercase tracking-wider text-[var(--color-stone)] text-right w-28">Aksi</th>
+					<tr class="border-b border-[var(--color-border)] bg-[var(--color-sand)]">
+						<th class="w-12 px-4 py-3"></th>
+						<th
+							class="px-4 py-3 font-heading text-xs font-bold tracking-wider text-[var(--color-stone)] uppercase"
+							>Nama Lengkap</th
+						>
+						<th
+							class="px-4 py-3 font-heading text-xs font-bold tracking-wider text-[var(--color-stone)] uppercase"
+							>No. HP</th
+						>
+						<th
+							class="px-4 py-3 font-heading text-xs font-bold tracking-wider text-[var(--color-stone)] uppercase"
+							>No. KTP</th
+						>
+						<th
+							class="w-24 px-4 py-3 text-right font-heading text-xs font-bold tracking-wider text-[var(--color-stone)] uppercase"
+							>Total Sewa</th
+						>
+						<th
+							class="w-36 px-4 py-3 font-heading text-xs font-bold tracking-wider text-[var(--color-stone)] uppercase"
+							>Status</th
+						>
+						<th
+							class="px-4 py-3 font-heading text-xs font-bold tracking-wider text-[var(--color-stone)] uppercase"
+							>Terakhir Sewa</th
+						>
+						<th
+							class="w-28 px-4 py-3 text-right font-heading text-xs font-bold tracking-wider text-[var(--color-stone)] uppercase"
+							>Aksi</th
+						>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-[var(--color-border-light)]">
 					{#if paginatedCustomers.length === 0}
 						<tr>
-							<td colspan="8" class="text-center py-16 text-[var(--color-stone)]">
+							<td colspan="8" class="py-16 text-center text-[var(--color-stone)]">
 								<Users size={36} class="mx-auto mb-2 opacity-30" />
-								<p class="font-medium text-sm">Tidak ada data penyewa yang cocok</p>
+								<p class="text-sm font-medium">Tidak ada data penyewa yang cocok</p>
 							</td>
 						</tr>
 					{:else}
 						{#each paginatedCustomers as customer (customer.id)}
-							<tr class="hover:bg-[var(--color-sand)]/20 transition-colors group">
+							<tr class="group transition-colors hover:bg-[var(--color-sand)]/20">
 								<!-- Initials Avatar -->
-								<td class="py-3 px-4">
-									<div class="w-8 h-8 rounded-full bg-[var(--color-sand)] flex items-center justify-center font-bold text-xs text-[var(--color-forest)]">
+								<td class="px-4 py-3">
+									<div
+										class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-sand)] text-xs font-bold text-[var(--color-forest)]"
+									>
 										{getInitials(customer.full_name)}
 									</div>
 								</td>
 								<!-- Full name -->
-								<td class="py-3 px-4 font-semibold text-[var(--color-earth)] group-hover:text-[var(--color-forest)] transition-colors">
+								<td
+									class="px-4 py-3 font-semibold text-[var(--color-earth)] transition-colors group-hover:text-[var(--color-forest)]"
+								>
 									{customer.full_name}
 								</td>
 								<!-- Phone -->
-								<td class="py-3 px-4 font-mono text-[13px] text-[var(--color-stone)]">
+								<td class="px-4 py-3 font-mono text-[13px] text-[var(--color-stone)]">
 									{customer.phone || '-'}
 								</td>
 								<!-- KTP Number -->
-								<td class="py-3 px-4 font-mono text-[13px] text-[var(--color-stone)]">
+								<td class="px-4 py-3 font-mono text-[13px] text-[var(--color-stone)]">
 									{customer.ktp_number || '-'}
 								</td>
 								<!-- Total Rentals -->
-								<td class="py-3 px-4 font-mono text-[13px] text-[var(--color-earth)] text-right font-bold">
+								<td
+									class="px-4 py-3 text-right font-mono text-[13px] font-bold text-[var(--color-earth)]"
+								>
 									{customer.total_rentals}x
 								</td>
 								<!-- Status badge -->
-								<td class="py-3 px-4">
+								<td class="px-4 py-3">
 									{#if customer.status === 'Aktif Menyewa'}
 										<Badge variant="info">Aktif Menyewa</Badge>
 									{:else if customer.status === 'Ada Denda'}
@@ -539,32 +630,40 @@
 									{/if}
 								</td>
 								<!-- Last rental date -->
-								<td class="py-3 px-4 text-[13px] text-[var(--color-stone)]">
-									{customer.last_rental_date ? formatDate(customer.last_rental_date, { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+								<td class="px-4 py-3 text-[13px] text-[var(--color-stone)]">
+									{customer.last_rental_date
+										? formatDate(customer.last_rental_date, {
+												day: '2-digit',
+												month: 'short',
+												year: 'numeric'
+											})
+										: '-'}
 								</td>
 								<!-- Action buttons -->
-								<td class="py-3 px-4 text-right">
-									<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-										<button 
-											type="button" 
+								<td class="px-4 py-3 text-right">
+									<div
+										class="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+									>
+										<button
+											type="button"
 											onclick={() => openDetailModal(customer)}
-											class="p-1 text-[var(--color-stone)] hover:text-[var(--color-info)] hover:bg-[var(--color-info-bg)] rounded transition-all"
+											class="rounded p-1 text-[var(--color-stone)] transition-all hover:bg-[var(--color-info-bg)] hover:text-[var(--color-info)]"
 											title="Lihat Rincian"
 										>
 											<Eye size={18} />
 										</button>
-										<button 
-											type="button" 
+										<button
+											type="button"
 											onclick={() => openEditModal(customer)}
-											class="p-1 text-[var(--color-stone)] hover:text-[var(--color-forest)] hover:bg-[var(--color-sage-10)] rounded transition-all"
+											class="rounded p-1 text-[var(--color-stone)] transition-all hover:bg-[var(--color-sage-10)] hover:text-[var(--color-forest)]"
 											title="Ubah Data"
 										>
 											<Edit size={18} />
 										</button>
-										<button 
-											type="button" 
+										<button
+											type="button"
 											onclick={() => openDeleteModal(customer)}
-											class="p-1 text-[var(--color-stone)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-bg)] rounded transition-all"
+											class="rounded p-1 text-[var(--color-stone)] transition-all hover:bg-[var(--color-error-bg)] hover:text-[var(--color-error)]"
 											title="Hapus Penyewa"
 										>
 											<Trash2 size={18} />
@@ -580,27 +679,35 @@
 
 		<!-- Pagination Footer -->
 		{#if filteredAndSortedCustomers.length > 0}
-			<div class="p-4 border-t border-[var(--color-border-light)] bg-white flex justify-between items-center text-[var(--color-stone)]">
+			<div
+				class="flex items-center justify-between border-t border-[var(--color-border-light)] bg-white p-4 text-[var(--color-stone)]"
+			>
 				<span class="text-[13px]">
-					Menampilkan <strong class="text-[var(--color-earth)]">{(currentPage - 1) * pageSize + 1}</strong> sampai 
-					<strong class="text-[var(--color-earth)]">{Math.min(currentPage * pageSize, filteredAndSortedCustomers.length)}</strong> dari 
+					Menampilkan <strong class="text-[var(--color-earth)]"
+						>{(currentPage - 1) * pageSize + 1}</strong
+					>
+					sampai
+					<strong class="text-[var(--color-earth)]"
+						>{Math.min(currentPage * pageSize, filteredAndSortedCustomers.length)}</strong
+					>
+					dari
 					<strong class="text-[var(--color-earth)]">{filteredAndSortedCustomers.length}</strong> penyewa
 				</span>
 				<div class="flex items-center gap-1">
-					<button 
+					<button
 						type="button"
-						onclick={() => currentPage = Math.max(1, currentPage - 1)}
+						onclick={() => (currentPage = Math.max(1, currentPage - 1))}
 						disabled={currentPage === 1}
-						class="p-1.5 rounded-lg border border-[var(--color-border-light)] hover:bg-[var(--color-sand)] disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+						class="rounded-lg border border-[var(--color-border-light)] p-1.5 transition-colors hover:bg-[var(--color-sand)] disabled:opacity-40 disabled:hover:bg-transparent"
 					>
 						<ChevronLeft size={16} />
 					</button>
-					<span class="text-[13px] px-2 font-mono">Hal {currentPage} / {totalPages}</span>
-					<button 
+					<span class="px-2 font-mono text-[13px]">Hal {currentPage} / {totalPages}</span>
+					<button
 						type="button"
-						onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
+						onclick={() => (currentPage = Math.min(totalPages, currentPage + 1))}
 						disabled={currentPage === totalPages}
-						class="p-1.5 rounded-lg border border-[var(--color-border-light)] hover:bg-[var(--color-sand)] disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+						class="rounded-lg border border-[var(--color-border-light)] p-1.5 transition-colors hover:bg-[var(--color-sand)] disabled:opacity-40 disabled:hover:bg-transparent"
 					>
 						<ChevronRight size={16} />
 					</button>
@@ -614,9 +721,9 @@
 <!-- MODAL: TAMBAH PENYEWA -->
 <!-- ========================================== -->
 <Modal bind:open={isAddModalOpen} title="Tambah Penyewa Baru" size="md">
-	<form 
-		method="POST" 
-		action="?/createCustomer" 
+	<form
+		method="POST"
+		action="?/createCustomer"
 		use:enhance={() => {
 			isSubmitting = true;
 			return async ({ result, update }) => {
@@ -642,44 +749,40 @@
 		<!-- hidden branch fields if role is staff -->
 		<input type="hidden" name="branch_id" value={selectedBranchId} />
 
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-			<Input 
-				label="Nama Lengkap" 
-				name="full_name" 
-				placeholder="Budi Santoso" 
-				required 
-				bind:value={newCustomer.full_name} 
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<Input
+				label="Nama Lengkap"
+				name="full_name"
+				placeholder="Budi Santoso"
+				required
+				bind:value={newCustomer.full_name}
 			/>
-			<Input 
-				label="Nomor Handphone" 
-				name="phone" 
-				placeholder="0812-xxxx-xxxx" 
-				bind:value={newCustomer.phone} 
+			<Input
+				label="Nomor Handphone"
+				name="phone"
+				placeholder="0812-xxxx-xxxx"
+				bind:value={newCustomer.phone}
 			/>
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-			<Input 
-				label="Nomor KTP (NIK)" 
-				name="ktp_number" 
-				placeholder="3374xxxxxxxxxxxx" 
-				bind:value={newCustomer.ktp_number} 
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<Input
+				label="Nomor KTP (NIK)"
+				name="ktp_number"
+				placeholder="3374xxxxxxxxxxxx"
+				bind:value={newCustomer.ktp_number}
 			/>
-			<Input 
-				label="Email Address" 
-				name="email" 
+			<Input
+				label="Email Address"
+				name="email"
 				type="email"
-				placeholder="budi@example.com" 
-				bind:value={newCustomer.email} 
+				placeholder="budi@example.com"
+				bind:value={newCustomer.email}
 			/>
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-			<Select 
-				label="Jenis Jaminan" 
-				name="guarantee_type" 
-				bind:value={newCustomer.guarantee_type}
-			>
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<Select label="Jenis Jaminan" name="guarantee_type" bind:value={newCustomer.guarantee_type}>
 				<option value="KTP Asli">KTP Asli</option>
 				<option value="SIM Asli">SIM Asli</option>
 				<option value="KTM (Kartu Mahasiswa)">KTM (Kartu Mahasiswa)</option>
@@ -689,37 +792,41 @@
 				<option value="Tanpa Jaminan">Tanpa Jaminan</option>
 			</Select>
 
-			<Input 
-				label="Jumlah Uang Jaminan (Rp)" 
-				name="deposit_amount" 
+			<Input
+				label="Jumlah Uang Jaminan (Rp)"
+				name="deposit_amount"
 				type="number"
 				min="0"
-				placeholder="50000" 
-				bind:value={newCustomer.deposit_amount} 
+				placeholder="50000"
+				bind:value={newCustomer.deposit_amount}
 			/>
 		</div>
 
-		<Input 
-			label="Alamat Rumah" 
-			name="address" 
-			placeholder="Jl. Gunung Gede No. 42, Kota Bogor" 
-			bind:value={newCustomer.address} 
+		<Input
+			label="Alamat Rumah"
+			name="address"
+			placeholder="Jl. Gunung Gede No. 42, Kota Bogor"
+			bind:value={newCustomer.address}
 		/>
 
 		<div class="flex flex-col gap-1.5">
-			<label class="text-[13px] font-medium text-[var(--color-earth)]" for="notes-add">Catatan Internal / Keterangan Tambahan</label>
-			<textarea 
+			<label class="text-[13px] font-medium text-[var(--color-earth)]" for="notes-add"
+				>Catatan Internal / Keterangan Tambahan</label
+			>
+			<textarea
 				id="notes-add"
 				name="notes"
 				placeholder="Tulis catatan tambahan disini (seperti kontak darurat, preferensi, atau info blacklist)"
 				bind:value={newCustomer.notes}
 				rows="3"
-				class="w-full bg-white border border-[var(--color-border)] rounded-md px-3.5 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)]"
+				class="w-full rounded-md border border-[var(--color-border)] bg-white px-3.5 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)] focus:outline-none"
 			></textarea>
 		</div>
 
-		<div class="flex justify-end gap-3 pt-4 border-t border-[var(--color-border-light)]/50">
-			<Button variant="ghost" onclick={() => isAddModalOpen = false} disabled={isSubmitting}>Batal</Button>
+		<div class="flex justify-end gap-3 border-t border-[var(--color-border-light)]/50 pt-4">
+			<Button variant="ghost" onclick={() => (isAddModalOpen = false)} disabled={isSubmitting}
+				>Batal</Button
+			>
 			<Button type="submit" disabled={isSubmitting}>
 				{isSubmitting ? 'Menyimpan...' : 'Tambah Penyewa'}
 			</Button>
@@ -731,9 +838,9 @@
 <!-- MODAL: UBAH DATA PENYEWA -->
 <!-- ========================================== -->
 <Modal bind:open={isEditModalOpen} title="Ubah Data Penyewa" size="md">
-	<form 
-		method="POST" 
-		action="?/updateCustomer" 
+	<form
+		method="POST"
+		action="?/updateCustomer"
 		use:enhance={() => {
 			isSubmitting = true;
 			return async ({ result, update }) => {
@@ -749,40 +856,18 @@
 		<input type="hidden" name="id" value={editCustomer.id} />
 		<input type="hidden" name="branch_id" value={selectedBranchId} />
 
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-			<Input 
-				label="Nama Lengkap" 
-				name="full_name" 
-				required 
-				bind:value={editCustomer.full_name} 
-			/>
-			<Input 
-				label="Nomor Handphone" 
-				name="phone" 
-				bind:value={editCustomer.phone} 
-			/>
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<Input label="Nama Lengkap" name="full_name" required bind:value={editCustomer.full_name} />
+			<Input label="Nomor Handphone" name="phone" bind:value={editCustomer.phone} />
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-			<Input 
-				label="Nomor KTP (NIK)" 
-				name="ktp_number" 
-				bind:value={editCustomer.ktp_number} 
-			/>
-			<Input 
-				label="Email Address" 
-				name="email" 
-				type="email"
-				bind:value={editCustomer.email} 
-			/>
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<Input label="Nomor KTP (NIK)" name="ktp_number" bind:value={editCustomer.ktp_number} />
+			<Input label="Email Address" name="email" type="email" bind:value={editCustomer.email} />
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-			<Select 
-				label="Jenis Jaminan" 
-				name="guarantee_type" 
-				bind:value={editCustomer.guarantee_type}
-			>
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<Select label="Jenis Jaminan" name="guarantee_type" bind:value={editCustomer.guarantee_type}>
 				<option value="KTP Asli">KTP Asli</option>
 				<option value="SIM Asli">SIM Asli</option>
 				<option value="KTM (Kartu Mahasiswa)">KTM (Kartu Mahasiswa)</option>
@@ -792,34 +877,34 @@
 				<option value="Tanpa Jaminan">Tanpa Jaminan</option>
 			</Select>
 
-			<Input 
-				label="Jumlah Uang Jaminan (Rp)" 
-				name="deposit_amount" 
+			<Input
+				label="Jumlah Uang Jaminan (Rp)"
+				name="deposit_amount"
 				type="number"
 				min="0"
-				bind:value={editCustomer.deposit_amount} 
+				bind:value={editCustomer.deposit_amount}
 			/>
 		</div>
 
-		<Input 
-			label="Alamat Rumah" 
-			name="address" 
-			bind:value={editCustomer.address} 
-		/>
+		<Input label="Alamat Rumah" name="address" bind:value={editCustomer.address} />
 
 		<div class="flex flex-col gap-1.5">
-			<label class="text-[13px] font-medium text-[var(--color-earth)]" for="notes-edit">Catatan Internal / Keterangan Tambahan</label>
-			<textarea 
+			<label class="text-[13px] font-medium text-[var(--color-earth)]" for="notes-edit"
+				>Catatan Internal / Keterangan Tambahan</label
+			>
+			<textarea
 				id="notes-edit"
 				name="notes"
 				bind:value={editCustomer.notes}
 				rows="3"
-				class="w-full bg-white border border-[var(--color-border)] rounded-md px-3.5 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)]"
+				class="w-full rounded-md border border-[var(--color-border)] bg-white px-3.5 py-2 text-[14px] text-[var(--color-earth)] transition-colors focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)] focus:outline-none"
 			></textarea>
 		</div>
 
-		<div class="flex justify-end gap-3 pt-4 border-t border-[var(--color-border-light)]/50">
-			<Button variant="ghost" onclick={() => isEditModalOpen = false} disabled={isSubmitting}>Batal</Button>
+		<div class="flex justify-end gap-3 border-t border-[var(--color-border-light)]/50 pt-4">
+			<Button variant="ghost" onclick={() => (isEditModalOpen = false)} disabled={isSubmitting}
+				>Batal</Button
+			>
 			<Button type="submit" disabled={isSubmitting}>
 				{isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}
 			</Button>
@@ -832,9 +917,9 @@
 <!-- ========================================== -->
 <Modal bind:open={isDeleteModalOpen} title="Hapus Data Penyewa" size="sm">
 	{#if selectedCustomer}
-		<form 
-			method="POST" 
-			action="?/deleteCustomer" 
+		<form
+			method="POST"
+			action="?/deleteCustomer"
 			use:enhance={() => {
 				isSubmitting = true;
 				return async ({ result, update }) => {
@@ -850,19 +935,26 @@
 		>
 			<input type="hidden" name="id" value={selectedCustomer.id} />
 
-			<div class="bg-[var(--color-error-bg)]/50 border border-[var(--color-error)]/20 p-4 rounded-xl flex items-start gap-3">
-				<AlertCircle size={20} class="text-[var(--color-error)] shrink-0 mt-0.5" />
+			<div
+				class="flex items-start gap-3 rounded-xl border border-[var(--color-error)]/20 bg-[var(--color-error-bg)]/50 p-4"
+			>
+				<AlertCircle size={20} class="mt-0.5 shrink-0 text-[var(--color-error)]" />
 				<div>
-					<h4 class="font-bold text-sm text-[var(--color-error)]">Tindakan ini tidak bisa dibatalkan</h4>
-					<p class="text-xs text-[var(--color-stone)] mt-1">
-						Apakah Anda yakin ingin menghapus data penyewa <strong class="text-[var(--color-earth)]">{selectedCustomer.full_name}</strong>?
-						Data transaksi dan jaminan terkait akan terpengaruh jika data dihapus.
+					<h4 class="text-sm font-bold text-[var(--color-error)]">
+						Tindakan ini tidak bisa dibatalkan
+					</h4>
+					<p class="mt-1 text-xs text-[var(--color-stone)]">
+						Apakah Anda yakin ingin menghapus data penyewa <strong class="text-[var(--color-earth)]"
+							>{selectedCustomer.full_name}</strong
+						>? Data transaksi dan jaminan terkait akan terpengaruh jika data dihapus.
 					</p>
 				</div>
 			</div>
 
 			<div class="flex justify-end gap-3 pt-4">
-				<Button variant="ghost" onclick={() => isDeleteModalOpen = false} disabled={isSubmitting}>Batal</Button>
+				<Button variant="ghost" onclick={() => (isDeleteModalOpen = false)} disabled={isSubmitting}
+					>Batal</Button
+				>
 				<Button type="submit" variant="danger" disabled={isSubmitting}>
 					{isSubmitting ? 'Menghapus...' : 'Ya, Hapus'}
 				</Button>
@@ -876,18 +968,27 @@
 <!-- ========================================== -->
 <Modal bind:open={isDetailModalOpen} title="Rincian Profil Penyewa" size="lg">
 	{#if selectedCustomer}
-		<div class="flex flex-col h-full gap-5 pb-4">
-			
+		<div class="flex h-full flex-col gap-5 pb-4">
 			<!-- Avatar & Brief Summary Header -->
-			<div class="flex items-center gap-4 bg-[var(--color-sand)]/30 p-4 rounded-2xl border border-[var(--color-border-light)]">
-				<div class="w-14 h-14 rounded-full bg-[var(--color-sand)] flex items-center justify-center font-bold text-xl text-[var(--color-forest)] border-2 border-white shadow-sm shrink-0">
+			<div
+				class="flex items-center gap-4 rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-sand)]/30 p-4"
+			>
+				<div
+					class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-white bg-[var(--color-sand)] text-xl font-bold text-[var(--color-forest)] shadow-sm"
+				>
 					{getInitials(selectedCustomer.full_name)}
 				</div>
-				<div class="flex-grow min-w-0">
-					<h2 class="text-xl font-bold font-heading text-[var(--color-earth)] truncate">{selectedCustomer.full_name}</h2>
-					<div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-[13px] text-[var(--color-stone)]">
-						<span class="flex items-center gap-1"><Phone size={14} /> {selectedCustomer.phone || '-'}</span>
-						<span class="flex items-center gap-1"><Mail size={14} /> {selectedCustomer.email || '-'}</span>
+				<div class="min-w-0 flex-grow">
+					<h2 class="truncate font-heading text-xl font-bold text-[var(--color-earth)]">
+						{selectedCustomer.full_name}
+					</h2>
+					<div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-[var(--color-stone)]">
+						<span class="flex items-center gap-1"
+							><Phone size={14} /> {selectedCustomer.phone || '-'}</span
+						>
+						<span class="flex items-center gap-1"
+							><Mail size={14} /> {selectedCustomer.email || '-'}</span
+						>
 					</div>
 				</div>
 				<div class="shrink-0">
@@ -904,67 +1005,84 @@
 			</div>
 
 			<!-- Tab Selection Navigation -->
-			<div class="flex border-b border-[var(--color-border-light)] gap-1 shrink-0">
-				<button 
+			<div class="flex shrink-0 gap-1 border-b border-[var(--color-border-light)]">
+				<button
 					type="button"
-					onclick={() => detailActiveTab = 'general'}
-					class="px-5 py-2.5 text-[14px] font-semibold border-b-2 transition-colors flex items-center gap-2
-						{detailActiveTab === 'general' 
-							? 'border-[var(--color-forest)] text-[var(--color-forest)]' 
-							: 'border-transparent text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+					onclick={() => (detailActiveTab = 'general')}
+					class="flex items-center gap-2 border-b-2 px-5 py-2.5 text-[14px] font-semibold transition-colors
+						{detailActiveTab === 'general'
+						? 'border-[var(--color-forest)] text-[var(--color-forest)]'
+						: 'border-transparent text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
 				>
 					<User size={16} /> Informasi Umum
 				</button>
-				<button 
+				<button
 					type="button"
-					onclick={() => detailActiveTab = 'active_rentals'}
-					class="px-5 py-2.5 text-[14px] font-semibold border-b-2 transition-colors flex items-center gap-2 relative
-						{detailActiveTab === 'active_rentals' 
-							? 'border-[var(--color-forest)] text-[var(--color-forest)]' 
-							: 'border-transparent text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+					onclick={() => (detailActiveTab = 'active_rentals')}
+					class="relative flex items-center gap-2 border-b-2 px-5 py-2.5 text-[14px] font-semibold transition-colors
+						{detailActiveTab === 'active_rentals'
+						? 'border-[var(--color-forest)] text-[var(--color-forest)]'
+						: 'border-transparent text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
 				>
 					<Activity size={16} /> Sewa Aktif
 					{#if selectedCustomerActiveRentals.length > 0}
-						<span class="bg-[var(--color-info)] text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold font-mono">
+						<span
+							class="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-info)] font-mono text-[10px] font-bold text-white"
+						>
 							{selectedCustomerActiveRentals.length}
 						</span>
 					{/if}
 				</button>
-				<button 
+				<button
 					type="button"
-					onclick={() => detailActiveTab = 'history'}
-					class="px-5 py-2.5 text-[14px] font-semibold border-b-2 transition-colors flex items-center gap-2
-						{detailActiveTab === 'history' 
-							? 'border-[var(--color-forest)] text-[var(--color-forest)]' 
-							: 'border-transparent text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+					onclick={() => (detailActiveTab = 'history')}
+					class="flex items-center gap-2 border-b-2 px-5 py-2.5 text-[14px] font-semibold transition-colors
+						{detailActiveTab === 'history'
+						? 'border-[var(--color-forest)] text-[var(--color-forest)]'
+						: 'border-transparent text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
 				>
 					<FileText size={16} /> Riwayat Transaksi
 				</button>
 			</div>
 
 			<!-- Tab Contents Area -->
-			<div class="flex-grow min-h-[300px] overflow-y-auto">
+			<div class="min-h-[300px] flex-grow overflow-y-auto">
 				<!-- TAB 1: GENERAL INFO -->
 				{#if detailActiveTab === 'general'}
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-1">
+					<div class="grid grid-cols-1 gap-5 p-1 md:grid-cols-2">
 						<!-- Identity Info Card -->
 						<div class="space-y-4">
 							<div>
-								<span class="text-xs font-semibold uppercase tracking-wider text-[var(--color-stone)]">No. KTP / NIK</span>
-								<p class="font-mono font-medium text-sm text-[var(--color-earth)] mt-1 p-2.5 bg-[var(--color-cream)] rounded-lg border border-[var(--color-border-light)] select-all">
+								<span
+									class="text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+									>No. KTP / NIK</span
+								>
+								<p
+									class="mt-1 rounded-lg border border-[var(--color-border-light)] bg-[var(--color-cream)] p-2.5 font-mono text-sm font-medium text-[var(--color-earth)] select-all"
+								>
 									{selectedCustomer.ktp_number || '-'}
 								</p>
 							</div>
 							<div>
-								<span class="text-xs font-semibold uppercase tracking-wider text-[var(--color-stone)]">Alamat Rumah</span>
-								<div class="flex gap-2 font-medium text-sm text-[var(--color-earth)] mt-1 p-3 bg-[var(--color-cream)] rounded-lg border border-[var(--color-border-light)]">
-									<Home size={16} class="text-[var(--color-stone)] shrink-0 mt-0.5" />
+								<span
+									class="text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+									>Alamat Rumah</span
+								>
+								<div
+									class="mt-1 flex gap-2 rounded-lg border border-[var(--color-border-light)] bg-[var(--color-cream)] p-3 text-sm font-medium text-[var(--color-earth)]"
+								>
+									<Home size={16} class="mt-0.5 shrink-0 text-[var(--color-stone)]" />
 									<span>{selectedCustomer.address || '-'}</span>
 								</div>
 							</div>
 							<div>
-								<span class="text-xs font-semibold uppercase tracking-wider text-[var(--color-stone)]">Catatan Pelanggan / Internal</span>
-								<p class="font-medium text-sm text-[var(--color-earth)] mt-1 p-3 bg-[var(--color-cream)] rounded-lg border border-[var(--color-border-light)] italic whitespace-pre-line">
+								<span
+									class="text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+									>Catatan Pelanggan / Internal</span
+								>
+								<p
+									class="mt-1 rounded-lg border border-[var(--color-border-light)] bg-[var(--color-cream)] p-3 text-sm font-medium whitespace-pre-line text-[var(--color-earth)] italic"
+								>
 									{selectedCustomer.customerNotes || 'Tidak ada catatan tambahan.'}
 								</p>
 							</div>
@@ -973,65 +1091,130 @@
 						<!-- Guarantee Info Card -->
 						<div class="space-y-4">
 							<div>
-								<span class="text-xs font-semibold uppercase tracking-wider text-[var(--color-stone)]">Jaminan Tersimpan</span>
-								<div class="flex gap-2 items-center font-medium text-sm text-[var(--color-earth)] mt-1 p-3 bg-[var(--color-cream)] rounded-lg border border-[var(--color-border-light)]">
-									<CreditCard size={18} class="text-[var(--color-forest)] shrink-0" />
+								<span
+									class="text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+									>Jaminan Tersimpan</span
+								>
+								<div
+									class="mt-1 flex items-center gap-2 rounded-lg border border-[var(--color-border-light)] bg-[var(--color-cream)] p-3 text-sm font-medium text-[var(--color-earth)]"
+								>
+									<CreditCard size={18} class="shrink-0 text-[var(--color-forest)]" />
 									<div>
-										<span class="font-bold text-[var(--color-forest)]">{selectedCustomer.guarantee_type}</span>
-										<span class="text-xs text-[var(--color-stone)] block">Diverifikasi saat checkout rental</span>
+										<span class="font-bold text-[var(--color-forest)]"
+											>{selectedCustomer.guarantee_type}</span
+										>
+										<span class="block text-xs text-[var(--color-stone)]"
+											>Diverifikasi saat checkout rental</span
+										>
 									</div>
 								</div>
 							</div>
 
 							<div>
-								<span class="text-xs font-semibold uppercase tracking-wider text-[var(--color-stone)]">Uang Deposit</span>
-								<div class="font-mono font-bold text-lg text-[var(--color-earth)] mt-1 p-3 bg-[var(--color-cream)] rounded-lg border border-[var(--color-border-light)] flex justify-between items-center">
+								<span
+									class="text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+									>Uang Deposit</span
+								>
+								<div
+									class="mt-1 flex items-center justify-between rounded-lg border border-[var(--color-border-light)] bg-[var(--color-cream)] p-3 font-mono text-lg font-bold text-[var(--color-earth)]"
+								>
 									<span>{formatCurrency(selectedCustomer.deposit_amount)}</span>
-									<span class="text-xs font-normal font-sans text-[var(--color-stone)]">Deposit Jaminan</span>
+									<span class="font-sans text-xs font-normal text-[var(--color-stone)]"
+										>Deposit Jaminan</span
+									>
 								</div>
 							</div>
 
 							<!-- Rent aggregates -->
 							<div class="grid grid-cols-2 gap-3 pt-2">
-								<div class="p-3 bg-[var(--color-sage-10)] rounded-xl text-center border border-[var(--color-forest)]/10">
-									<span class="text-[11px] font-semibold text-[var(--color-forest)] uppercase tracking-wider block">Total Rental</span>
-									<span class="font-mono text-2xl font-bold text-[var(--color-forest)] block mt-1">{selectedCustomer.total_rentals}x</span>
+								<div
+									class="rounded-xl border border-[var(--color-forest)]/10 bg-[var(--color-sage-10)] p-3 text-center"
+								>
+									<span
+										class="block text-[11px] font-semibold tracking-wider text-[var(--color-forest)] uppercase"
+										>Total Rental</span
+									>
+									<span class="mt-1 block font-mono text-2xl font-bold text-[var(--color-forest)]"
+										>{selectedCustomer.total_rentals}x</span
+									>
 								</div>
-								<div class="p-3 bg-[var(--color-sand)] rounded-xl text-center border border-[var(--color-border-light)]">
-									<span class="text-[11px] font-semibold text-[var(--color-stone)] uppercase tracking-wider block">Denda Unpaid</span>
-									<span class="font-mono text-2xl font-bold text-[var(--color-error)] block mt-1">{selectedCustomer.unpaid_penalties_count}x</span>
+								<div
+									class="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-sand)] p-3 text-center"
+								>
+									<span
+										class="block text-[11px] font-semibold tracking-wider text-[var(--color-stone)] uppercase"
+										>Denda Unpaid</span
+									>
+									<span class="mt-1 block font-mono text-2xl font-bold text-[var(--color-error)]"
+										>{selectedCustomer.unpaid_penalties_count}x</span
+									>
 								</div>
 							</div>
 						</div>
 					</div>
 
-				<!-- TAB 2: ACTIVE RENTALS -->
+					<!-- TAB 2: ACTIVE RENTALS -->
 				{:else if detailActiveTab === 'active_rentals'}
 					{#if selectedCustomerActiveRentals.length === 0}
-						<div class="text-center py-16 text-[var(--color-stone)]">
+						<div class="py-16 text-center text-[var(--color-stone)]">
 							<Calendar size={36} class="mx-auto mb-2 opacity-30" />
-							<p class="font-semibold text-sm">Tidak ada barang sewa aktif saat ini</p>
-							<p class="text-xs mt-1">Pelanggan telah mengembalikan semua barang atau belum pernah menyewa.</p>
+							<p class="text-sm font-semibold">Tidak ada barang sewa aktif saat ini</p>
+							<p class="mt-1 text-xs">
+								Pelanggan telah mengembalikan semua barang atau belum pernah menyewa.
+							</p>
 						</div>
 					{:else}
-						<div class="border border-[var(--color-border)] rounded-xl overflow-hidden shadow-sm">
-							<table class="w-full text-left border-collapse text-sm">
+						<div class="overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm">
+							<table class="w-full border-collapse text-left text-sm">
 								<thead>
-									<tr class="bg-[var(--color-sand)] border-b border-[var(--color-border)]">
-										<th class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase">Nama Aset / Item</th>
-										<th class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase">No Nota</th>
-										<th class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase">Mulai</th>
-										<th class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase">Selesai</th>
-										<th class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase w-28">Status</th>
+									<tr class="border-b border-[var(--color-border)] bg-[var(--color-sand)]">
+										<th
+											class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase"
+											>Nama Aset / Item</th
+										>
+										<th
+											class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase"
+											>No Nota</th
+										>
+										<th
+											class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase"
+											>Mulai</th
+										>
+										<th
+											class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase"
+											>Selesai</th
+										>
+										<th
+											class="w-28 p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase"
+											>Status</th
+										>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-[var(--color-border-light)]">
 									{#each selectedCustomerActiveRentals as rent}
 										<tr class="hover:bg-[var(--color-cream)]">
 											<td class="p-3 font-medium text-[var(--color-earth)]">{rent.item_name}</td>
-											<td class="p-3 font-mono text-[13px] text-[var(--color-stone)]">{rent.transaction_code}</td>
-											<td class="p-3 text-[13px]">{rent.rental_start_date ? formatDate(rent.rental_start_date, { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</td>
-											<td class="p-3 text-[13px]">{rent.rental_end_date ? formatDate(rent.rental_end_date, { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</td>
+											<td class="p-3 font-mono text-[13px] text-[var(--color-stone)]"
+												>{rent.transaction_code}</td
+											>
+											<td class="p-3 text-[13px]"
+												>{rent.rental_start_date
+													? formatDate(rent.rental_start_date, {
+															day: 'numeric',
+															month: 'short',
+															year: 'numeric'
+														})
+													: '-'}</td
+											>
+											<td class="p-3 text-[13px]"
+												>{rent.rental_end_date
+													? formatDate(rent.rental_end_date, {
+															day: 'numeric',
+															month: 'short',
+															year: 'numeric'
+														})
+													: '-'}</td
+											>
 											<td class="p-3">
 												{#if rent.rental_status === 'overdue'}
 													<Badge variant="error">Terlambat</Badge>
@@ -1046,37 +1229,63 @@
 						</div>
 					{/if}
 
-				<!-- TAB 3: TRANSACTION HISTORY -->
+					<!-- TAB 3: TRANSACTION HISTORY -->
 				{:else if detailActiveTab === 'history'}
 					{#if selectedCustomerHistoryRentals.length === 0}
-						<div class="text-center py-16 text-[var(--color-stone)]">
+						<div class="py-16 text-center text-[var(--color-stone)]">
 							<FileText size={36} class="mx-auto mb-2 opacity-30" />
-							<p class="font-semibold text-sm">Belum ada riwayat transaksi</p>
-							<p class="text-xs mt-1">Transaksi yang dibayar lunas akan tercatat di riwayat ini.</p>
+							<p class="text-sm font-semibold">Belum ada riwayat transaksi</p>
+							<p class="mt-1 text-xs">Transaksi yang dibayar lunas akan tercatat di riwayat ini.</p>
 						</div>
 					{:else}
-						<div class="border border-[var(--color-border)] rounded-xl overflow-hidden shadow-sm">
-							<table class="w-full text-left border-collapse text-sm">
+						<div class="overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm">
+							<table class="w-full border-collapse text-left text-sm">
 								<thead>
-									<tr class="bg-[var(--color-sand)] border-b border(--color-border)">
-										<th class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase">Tanggal</th>
-										<th class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase">No Nota</th>
-										<th class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase">Barang Sewa</th>
-										<th class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase text-right">Subtotal</th>
-										<th class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase w-28">Kondisi Kembali</th>
+									<tr class="border(--color-border) border-b bg-[var(--color-sand)]">
+										<th
+											class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase"
+											>Tanggal</th
+										>
+										<th
+											class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase"
+											>No Nota</th
+										>
+										<th
+											class="p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase"
+											>Barang Sewa</th
+										>
+										<th
+											class="p-3 text-right font-heading text-xs font-bold text-[var(--color-stone)] uppercase"
+											>Subtotal</th
+										>
+										<th
+											class="w-28 p-3 font-heading text-xs font-bold text-[var(--color-stone)] uppercase"
+											>Kondisi Kembali</th
+										>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-[var(--color-border-light)]">
 									{#each selectedCustomerHistoryRentals as hist}
 										<tr class="hover:bg-[var(--color-cream)]">
 											<td class="p-3 text-[13px] text-[var(--color-stone)]">
-												{formatDate(hist.paid_at, { day: '2-digit', month: 'short', year: 'numeric' })}
+												{formatDate(hist.paid_at, {
+													day: '2-digit',
+													month: 'short',
+													year: 'numeric'
+												})}
 											</td>
-											<td class="p-3 font-mono text-[13px] text-[var(--color-stone)]">{hist.transaction_code}</td>
+											<td class="p-3 font-mono text-[13px] text-[var(--color-stone)]"
+												>{hist.transaction_code}</td
+											>
 											<td class="p-3 font-medium text-[var(--color-earth)]">
-												{hist.item_name} <span class="text-xs text-[var(--color-stone)] font-normal">(x{hist.quantity})</span>
+												{hist.item_name}
+												<span class="text-xs font-normal text-[var(--color-stone)]"
+													>(x{hist.quantity})</span
+												>
 											</td>
-											<td class="p-3 font-mono text-right text-[13px]">{formatCurrency(hist.subtotal)}</td>
+											<td class="p-3 text-right font-mono text-[13px]"
+												>{formatCurrency(hist.subtotal)}</td
+											>
 											<td class="p-3">
 												{#if hist.rental_status === 'returned'}
 													{#if hist.return_condition === 'good'}
@@ -1093,7 +1302,9 @@
 												{:else if hist.rental_status === 'active' || hist.rental_status === 'overdue'}
 													<Badge variant="info">Disewa</Badge>
 												{:else}
-													<span class="text-xs text-[var(--color-stone)] capitalize">{hist.rental_status || '-'}</span>
+													<span class="text-xs text-[var(--color-stone)] capitalize"
+														>{hist.rental_status || '-'}</span
+													>
 												{/if}
 											</td>
 										</tr>
@@ -1105,8 +1316,8 @@
 				{/if}
 			</div>
 
-			<div class="flex justify-end pt-4 border-t border-[var(--color-border-light)]/50 shrink-0">
-				<Button variant="ghost" onclick={() => isDetailModalOpen = false}>Tutup</Button>
+			<div class="flex shrink-0 justify-end border-t border-[var(--color-border-light)]/50 pt-4">
+				<Button variant="ghost" onclick={() => (isDetailModalOpen = false)}>Tutup</Button>
 			</div>
 		</div>
 	{/if}

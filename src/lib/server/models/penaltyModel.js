@@ -23,10 +23,7 @@ export const penaltyModel = {
 	 * @param {number} amount
 	 */
 	async updatePenaltyRule(supabase, id, amount) {
-		const { error } = await supabase
-			.from('penalty_rules')
-			.update({ amount })
-			.eq('id', id);
+		const { error } = await supabase.from('penalty_rules').update({ amount }).eq('id', id);
 
 		if (error) {
 			console.error('Update penalty rule error in model:', error);
@@ -41,9 +38,7 @@ export const penaltyModel = {
 	 * @param {object} penaltyData
 	 */
 	async insertPenalty(supabase, penaltyData) {
-		const { error } = await supabase
-			.from('penalties')
-			.insert(penaltyData);
+		const { error } = await supabase.from('penalties').insert(penaltyData);
 
 		if (error) {
 			console.error('Insert penalty error in model:', error);

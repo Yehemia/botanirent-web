@@ -25,14 +25,20 @@
 		...rest
 	} = $props();
 
-	const baseClasses = 'inline-flex items-center justify-center font-semibold rounded-md transition-all focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+	const baseClasses =
+		'inline-flex items-center justify-center font-semibold rounded-md transition-all focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
 	const variantClasses = {
-		primary: 'bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)] focus-visible:ring-[var(--color-forest)] active:bg-[var(--color-forest-dark)] active:scale-[0.97]',
-		secondary: 'bg-transparent border-[1.5px] border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-sage-10)] active:bg-[var(--color-sage-20)] focus-visible:ring-[var(--color-forest)]',
-		outline: 'bg-transparent border-[1.5px] border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-sage-10)] active:bg-[var(--color-sage-20)] focus-visible:ring-[var(--color-forest)]',
-		danger: 'bg-[var(--color-error)] text-white hover:bg-[#A83428] focus-visible:ring-[var(--color-error)]',
-		ghost: 'bg-transparent text-[var(--color-stone)] hover:bg-[var(--color-sand)] active:bg-[var(--color-sand-light)] focus-visible:ring-[var(--color-border)]'
+		primary:
+			'bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)] focus-visible:ring-[var(--color-forest)] active:bg-[var(--color-forest-dark)] active:scale-[0.97]',
+		secondary:
+			'bg-transparent border-[1.5px] border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-sage-10)] active:bg-[var(--color-sage-20)] focus-visible:ring-[var(--color-forest)]',
+		outline:
+			'bg-transparent border-[1.5px] border-[var(--color-forest)] text-[var(--color-forest)] hover:bg-[var(--color-sage-10)] active:bg-[var(--color-sage-20)] focus-visible:ring-[var(--color-forest)]',
+		danger:
+			'bg-[var(--color-error)] text-white hover:bg-[#A83428] focus-visible:ring-[var(--color-error)]',
+		ghost:
+			'bg-transparent text-[var(--color-stone)] hover:bg-[var(--color-sand)] active:bg-[var(--color-sand-light)] focus-visible:ring-[var(--color-border)]'
 	};
 
 	const sizeClasses = {
@@ -56,11 +62,11 @@
 			{@render iconLeft()}
 		</span>
 	{/if}
-	
+
 	{#if children}
 		{@render children()}
 	{/if}
-	
+
 	{#if iconRight}
 		<span class="flex-shrink-0">
 			{@render iconRight()}

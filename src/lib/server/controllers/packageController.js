@@ -76,18 +76,18 @@ export const packageController = {
 		if (image && typeof image !== 'string' && image.size > 0) {
 			const fileExt = image.name.split('.').pop();
 			const fileName = `packages/${profile.branch_id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-			
+
 			const { error: uploadError } = await supabase.storage
 				.from('item-images')
 				.upload(fileName, image, { cacheControl: '3600' });
 
 			if (!uploadError) {
-				const { data: { publicUrl } } = supabase.storage
-					.from('item-images')
-					.getPublicUrl(fileName);
+				const {
+					data: { publicUrl }
+				} = supabase.storage.from('item-images').getPublicUrl(fileName);
 				image_url = publicUrl;
 			} else {
-				console.error("Storage upload error during package creation:", uploadError);
+				console.error('Storage upload error during package creation:', uploadError);
 				return {
 					success: false,
 					status: 500,
@@ -109,7 +109,7 @@ export const packageController = {
 				is_active: true
 			});
 		} catch (err) {
-			console.error("Failed to insert package in controller:", err);
+			console.error('Failed to insert package in controller:', err);
 			return {
 				success: false,
 				status: 500,
@@ -120,21 +120,23 @@ export const packageController = {
 
 		try {
 			// Insert Package Items
-			const packageItemsData = parsedItems.map(/** @param {any} item @param {number} index */ (item, index) => ({
-				package_id: newPackage.id,
-				item_id: item.id,
-				quantity: parseInt(item.quantity, 10),
-				sort_order: index
-			}));
+			const packageItemsData = parsedItems.map(
+				/** @param {any} item @param {number} index */ (item, index) => ({
+					package_id: newPackage.id,
+					item_id: item.id,
+					quantity: parseInt(item.quantity, 10),
+					sort_order: index
+				})
+			);
 
 			await packageModel.insertPackageItems(supabase, packageItemsData);
 		} catch (err) {
-			console.error("Failed to insert package items in controller, initiating rollback:", err);
+			console.error('Failed to insert package items in controller, initiating rollback:', err);
 			// Rollback package deletion
 			try {
 				await packageModel.deletePackage(supabase, newPackage.id);
 			} catch (rollbackErr) {
-				console.error("Rollback failed for package ID:", newPackage.id, rollbackErr);
+				console.error('Rollback failed for package ID:', newPackage.id, rollbackErr);
 			}
 			return {
 				success: false,

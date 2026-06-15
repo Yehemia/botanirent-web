@@ -5,7 +5,7 @@
 	import { onMount } from 'svelte';
 
 	let { data, children } = $props();
-	
+
 	// Local state for sidebar toggle (handled by runes)
 	let sidebarExpanded = $state(false);
 
@@ -24,7 +24,7 @@
 
 		return unsubscribe;
 	});
-	
+
 	function toggleSidebar() {
 		sidebarExpanded = !sidebarExpanded;
 	}
@@ -51,36 +51,35 @@
 	});
 </script>
 
-<div class="flex h-screen overflow-hidden bg-[var(--color-cream)] relative">
-	<Sidebar 
-		bind:expanded={sidebarExpanded} 
-		userProfile={data.profile} 
-	/>
-	
+<div class="relative flex h-screen overflow-hidden bg-[var(--color-cream)]">
+	<Sidebar bind:expanded={sidebarExpanded} userProfile={data.profile} />
+
 	{#if sidebarExpanded}
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div 
-			class="md:hidden fixed inset-0 bg-black/40 z-30 transition-opacity duration-250"
+		<div
+			class="fixed inset-0 z-30 bg-black/40 transition-opacity duration-250 md:hidden"
 			onclick={toggleSidebar}
 		></div>
 	{/if}
-	
-	<div 
-		class="flex-1 flex flex-col min-w-0 transition-all duration-250 ml-0 {sidebarExpanded ? 'md:ml-[260px]' : 'md:ml-[72px]'}"
+
+	<div
+		class="ml-0 flex min-w-0 flex-1 flex-col transition-all duration-250 {sidebarExpanded
+			? 'md:ml-[260px]'
+			: 'md:ml-[72px]'}"
 	>
 		<!-- Default TopBar, but can be overridden by specific pages if needed (like POS) -->
-		<TopBar 
-			{sidebarExpanded} 
+		<TopBar
+			{sidebarExpanded}
 			title={pageTitle()}
 			userProfile={data.profile}
 			branch={data.branch}
 			branches={data.branches}
 			{toggleSidebar}
 		/>
-		
+
 		<main class="flex-1 overflow-y-auto p-4 md:p-6">
-			<div class="max-w-7xl mx-auto w-full">
+			<div class="mx-auto w-full max-w-7xl">
 				{@render children()}
 			</div>
 		</main>

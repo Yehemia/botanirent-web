@@ -1,11 +1,11 @@
 <script>
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
-	import { 
-		LayoutDashboard, 
-		MonitorSmartphone, 
-		Users, 
-		CalendarDays, 
+	import {
+		LayoutDashboard,
+		MonitorSmartphone,
+		Users,
+		CalendarDays,
 		RotateCcw,
 		History,
 		Package,
@@ -29,7 +29,7 @@
 
 	// Derived state to check current path
 	let currentPath = $derived($page.url.pathname);
-	
+
 	/** @param {string} path */
 	function isActive(path) {
 		if (path === '/' && currentPath === '/') return true;
@@ -38,7 +38,12 @@
 	}
 
 	const menuItems = [
-		{ icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', roles: ['owner', 'kasir', 'gudang'] },
+		{
+			icon: LayoutDashboard,
+			label: 'Dashboard',
+			href: '/dashboard',
+			roles: ['owner', 'kasir', 'gudang']
+		},
 
 		// --- KASIR ---
 		{ section: 'KASIR', roles: ['kasir'] },
@@ -64,76 +69,87 @@
 	];
 
 	// Filter menu items based on user role
-	let visibleItems = $derived(
-		menuItems.filter(item => item.roles.includes(userProfile?.role))
-	);
+	let visibleItems = $derived(menuItems.filter((item) => item.roles.includes(userProfile?.role)));
 </script>
 
-<aside 
-	class="bg-gradient-to-b from-[#182C0D] to-[#254514] border-r border-[#385624]/30 text-white transition-all duration-250 flex flex-col h-screen fixed left-0 top-0 z-40 overflow-hidden select-none
+<aside
+	class="fixed top-0 left-0 z-40 flex h-screen flex-col overflow-hidden border-r border-[#385624]/30 bg-gradient-to-b from-[#182C0D] to-[#254514] text-white transition-all duration-250 select-none
 		{expanded ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} 
 		w-[260px] {expanded ? 'md:w-[260px]' : 'md:w-[72px]'}"
 >
 	<!-- Logo Area -->
-	<button 
-		class="h-16 flex items-center px-5 shrink-0 bg-black/15 border-b border-white/5 group cursor-pointer w-full text-left focus:outline-none border-none"
-		onclick={() => expanded = !expanded}
-		title={expanded ? "Sembunyikan Menu" : "Tampilkan Menu"}
+	<button
+		class="group flex h-16 w-full shrink-0 cursor-pointer items-center border-b border-none border-white/5 bg-black/15 px-5 text-left focus:outline-none"
+		onclick={() => (expanded = !expanded)}
+		title={expanded ? 'Sembunyikan Menu' : 'Tampilkan Menu'}
 		aria-label="Toggle Sidebar"
 	>
-		<div class="flex items-center gap-3 w-full overflow-hidden">
+		<div class="flex w-full items-center gap-3 overflow-hidden">
 			<!-- Logo Image -->
-			<img 
-				src="/logo.svg" 
-				alt="Logo BotaniRent" 
-				class="w-7 h-7 shrink-0 object-contain transition-transform duration-300 group-hover:scale-105" 
+			<img
+				src="/logo.svg"
+				alt="Logo BotaniRent"
+				class="h-7 w-7 shrink-0 object-contain transition-transform duration-300 group-hover:scale-105"
 			/>
 			{#if expanded}
 				<!-- Wordmark Image (using brightness-0 invert for readability on dark background) -->
-				<img 
-					src="/wordmark.svg" 
-					alt="BotaniRent" 
-					class="h-6 object-contain brightness-0 invert transition-opacity duration-300" 
+				<img
+					src="/wordmark.svg"
+					alt="BotaniRent"
+					class="h-6 object-contain brightness-0 invert transition-opacity duration-300"
 				/>
 			{/if}
 		</div>
 	</button>
 
 	<!-- Navigation Links -->
-	<div class="flex-1 overflow-y-auto py-4 scrollbar-hide">
+	<div class="scrollbar-hide flex-1 overflow-y-auto py-4">
 		<nav class="flex flex-col gap-1">
 			{#each visibleItems as item (item.label || item.section)}
 				{#if item.section}
 					{#if expanded}
-						<div class="px-5 mt-5 mb-1.5 flex items-center">
-							<span class="text-[10px] uppercase tracking-[0.15em] text-white/30 font-bold font-heading">{item.section}</span>
+						<div class="mt-5 mb-1.5 flex items-center px-5">
+							<span
+								class="font-heading text-[10px] font-bold tracking-[0.15em] text-white/30 uppercase"
+								>{item.section}</span
+							>
 						</div>
 					{:else}
-						<div class="h-px bg-white/5 mx-4 my-3"></div>
+						<div class="mx-4 my-3 h-px bg-white/5"></div>
 					{/if}
 				{:else}
 					{@const active = isActive(item.href || '')}
 					<!-- eslint-disable-next-line -->
-					<a 
+					<a
 						href="{base}{item.href}"
-						class="flex items-center h-11 rounded-xl transition-all duration-200 group relative border border-transparent
-							{expanded ? 'px-4 mx-3' : 'justify-center mx-3'}
-							{active 
-								? 'bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] border-white/5' 
-								: 'text-white/60 hover:bg-white/5 hover:text-white'}"
+						class="group relative flex h-11 items-center rounded-xl border border-transparent transition-all duration-200
+							{expanded ? 'mx-3 px-4' : 'mx-3 justify-center'}
+							{active
+							? 'border-white/5 bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]'
+							: 'text-white/60 hover:bg-white/5 hover:text-white'}"
 						title={!expanded ? item.label : undefined}
 					>
 						{#if active}
-							<div class="absolute left-1.5 top-2.5 bottom-2.5 w-1 bg-[var(--color-amber)] rounded-full"></div>
+							<div
+								class="absolute top-2.5 bottom-2.5 left-1.5 w-1 rounded-full bg-[var(--color-amber)]"
+							></div>
 						{/if}
-						
+
 						{#if item.icon}
 							{@const Icon = item.icon}
-							<Icon size={20} class="shrink-0 transition-transform duration-200 group-hover:scale-105 {active ? 'text-[var(--color-amber)]' : 'text-white/60 group-hover:text-white'}" />
+							<Icon
+								size={20}
+								class="shrink-0 transition-transform duration-200 group-hover:scale-105 {active
+									? 'text-[var(--color-amber)]'
+									: 'text-white/60 group-hover:text-white'}"
+							/>
 						{/if}
-						
+
 						{#if expanded}
-							<span class="ml-3 text-[13.5px] font-medium whitespace-nowrap transition-colors duration-200">{item.label}</span>
+							<span
+								class="ml-3 text-[13.5px] font-medium whitespace-nowrap transition-colors duration-200"
+								>{item.label}</span
+							>
 						{/if}
 					</a>
 				{/if}
@@ -143,18 +159,26 @@
 
 	<!-- User Area -->
 	{#if expanded}
-		<div class="p-3 mx-3 mb-4 rounded-xl bg-white/5 border border-white/10 shrink-0 backdrop-blur-sm shadow-inner transition-all duration-200">
+		<div
+			class="mx-3 mb-4 shrink-0 rounded-xl border border-white/10 bg-white/5 p-3 shadow-inner backdrop-blur-sm transition-all duration-200"
+		>
 			<div class="flex items-center gap-3 overflow-hidden">
-				<div class="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--color-sage)] to-[var(--color-forest-light)] flex items-center justify-center text-white shrink-0 font-bold text-sm uppercase border border-white/15 shadow-sm">
+				<div
+					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-gradient-to-br from-[var(--color-sage)] to-[var(--color-forest-light)] text-sm font-bold text-white uppercase shadow-sm"
+				>
 					{userProfile?.full_name?.charAt(0) || 'U'}
 				</div>
-				<div class="flex flex-col min-w-0 flex-1">
-					<p class="text-xs font-semibold text-white truncate leading-tight">{userProfile?.full_name || 'User'}</p>
-					<p class="text-[10px] text-white/50 truncate capitalize mt-0.5 leading-none">{userProfile?.role || 'Guest'}</p>
+				<div class="flex min-w-0 flex-1 flex-col">
+					<p class="truncate text-xs leading-tight font-semibold text-white">
+						{userProfile?.full_name || 'User'}
+					</p>
+					<p class="mt-0.5 truncate text-[10px] leading-none text-white/50 capitalize">
+						{userProfile?.role || 'Guest'}
+					</p>
 				</div>
 				<form action="/logout" method="POST" class="m-0 shrink-0">
-					<button 
-						class="p-1.5 text-white/40 hover:text-[var(--color-terracotta)] hover:bg-white/10 rounded-lg transition-all duration-200 cursor-pointer"
+					<button
+						class="cursor-pointer rounded-lg p-1.5 text-white/40 transition-all duration-200 hover:bg-white/10 hover:text-[var(--color-terracotta)]"
 						title="Keluar"
 					>
 						<LogOut size={16} />
@@ -163,16 +187,16 @@
 			</div>
 		</div>
 	{:else}
-		<div class="mb-4 flex flex-col items-center gap-3 shrink-0 transition-all duration-200">
-			<div 
-				class="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--color-sage)] to-[var(--color-forest-light)] flex items-center justify-center text-white font-bold text-sm uppercase border border-white/15 shadow-md cursor-pointer hover:scale-105 transition-transform"
+		<div class="mb-4 flex shrink-0 flex-col items-center gap-3 transition-all duration-200">
+			<div
+				class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-gradient-to-br from-[var(--color-sage)] to-[var(--color-forest-light)] text-sm font-bold text-white uppercase shadow-md transition-transform hover:scale-105"
 				title="{userProfile?.full_name || 'User'} ({userProfile?.role || 'Guest'})"
 			>
 				{userProfile?.full_name?.charAt(0) || 'U'}
 			</div>
 			<form action="/logout" method="POST" class="m-0">
-				<button 
-					class="p-2 text-white/40 hover:text-[var(--color-terracotta)] hover:bg-white/10 rounded-lg transition-all duration-200 cursor-pointer"
+				<button
+					class="cursor-pointer rounded-lg p-2 text-white/40 transition-all duration-200 hover:bg-white/10 hover:text-[var(--color-terracotta)]"
 					title="Keluar"
 				>
 					<LogOut size={18} />
@@ -192,4 +216,3 @@
 		scrollbar-width: none;
 	}
 </style>
-

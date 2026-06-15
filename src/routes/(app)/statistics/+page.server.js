@@ -17,4 +17,3 @@ export async function load({ locals }) {
 
 	return stats;
 }
-

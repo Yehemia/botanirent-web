@@ -4,9 +4,7 @@ export const branchModel = {
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 */
 	async getAllBranches(supabase) {
-		const { data, error } = await supabase
-			.from('branches')
-			.select('id, name');
+		const { data, error } = await supabase.from('branches').select('id, name');
 
 		if (error) {
 			console.error('Fetch branches error:', error);
@@ -38,10 +36,7 @@ export const branchModel = {
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 */
 	async getBranches(supabase) {
-		const { data, error } = await supabase
-			.from('branches')
-			.select('*')
-			.order('name');
+		const { data, error } = await supabase.from('branches').select('*').order('name');
 
 		if (error) {
 			console.error('Fetch branches error:', error);
@@ -56,10 +51,7 @@ export const branchModel = {
 	 * @param {object} branchData
 	 */
 	async insertBranch(supabase, branchData) {
-		const { data, error } = await supabase
-			.from('branches')
-			.insert([branchData])
-			.select();
+		const { data, error } = await supabase.from('branches').insert([branchData]).select();
 
 		if (error) {
 			console.error('Insert branch error:', error);
@@ -94,10 +86,7 @@ export const branchModel = {
 	 * @param {string} id
 	 */
 	async deleteBranch(supabase, id) {
-		const { error } = await supabase
-			.from('branches')
-			.delete()
-			.eq('id', id);
+		const { error } = await supabase.from('branches').delete().eq('id', id);
 
 		if (error) {
 			console.error('Delete branch error:', error);
@@ -141,4 +130,3 @@ export const branchModel = {
 		return data;
 	}
 };
-

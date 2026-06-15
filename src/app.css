@@ -9,43 +9,43 @@
 
 @theme {
 	/* === Warna Utama (Primary) === */
-	--color-forest: #2D5016;
+	--color-forest: #2d5016;
 	--color-forest-dark: #244012;
-	--color-forest-light: #3A6A1E;
-	--color-sage: #6B8F4E;
+	--color-forest-light: #3a6a1e;
+	--color-sage: #6b8f4e;
 	--color-sage-10: rgba(107, 143, 78, 0.1);
 	--color-sage-20: rgba(107, 143, 78, 0.2);
 
 	/* === Warna Sekunder === */
-	--color-amber: #D4A843;
-	--color-terracotta: #C85A3A;
+	--color-amber: #d4a843;
+	--color-terracotta: #c85a3a;
 
 	/* === Background === */
-	--color-cream: #FAF6F0;
-	--color-charcoal: #1A1A1A;
-	--color-sand: #F0E8D8;
-	--color-sand-light: #E8DFC8;
-	--color-sand-lightest: #FDFBF7;
+	--color-cream: #faf6f0;
+	--color-charcoal: #1a1a1a;
+	--color-sand: #f0e8d8;
+	--color-sand-light: #e8dfc8;
+	--color-sand-lightest: #fdfbf7;
 
 	/* === Teks === */
-	--color-earth: #2C2418;
-	--color-stone: #7A7062;
-	--color-muted: #B0A696;
+	--color-earth: #2c2418;
+	--color-stone: #7a7062;
+	--color-muted: #b0a696;
 
 	/* === Status (Semantic) === */
-	--color-success: #4A7C3F;
+	--color-success: #4a7c3f;
 	--color-success-bg: rgba(74, 124, 63, 0.1);
-	--color-warning: #E8A820;
+	--color-warning: #e8a820;
 	--color-warning-bg: rgba(232, 168, 32, 0.1);
-	--color-error: #C44032;
+	--color-error: #c44032;
 	--color-error-bg: rgba(196, 64, 50, 0.1);
-	--color-info: #3B82B0;
+	--color-info: #3b82b0;
 	--color-info-bg: rgba(59, 130, 176, 0.1);
 
 	/* === Border === */
-	--color-border: #D6CBBB;
-	--color-border-light: #E8DFC8;
-	--color-border-focus: #6B8F4E;
+	--color-border: #d6cbbb;
+	--color-border-light: #e8dfc8;
+	--color-border-focus: #6b8f4e;
 
 	/* === Font Family === */
 	--font-heading: 'Outfit', sans-serif;

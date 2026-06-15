@@ -12,13 +12,16 @@ export const returnsController = {
 	 * @param {{ branch_id: string|null }} profile
 	 */
 	async getReturnsPageData(supabase, profile) {
-		const activeRentals = await transactionModel.getActiveRentalsForReturns(supabase, profile.branch_id);
+		const activeRentals = await transactionModel.getActiveRentalsForReturns(
+			supabase,
+			profile.branch_id
+		);
 
 		// Group by transaction
 		/** @type {Record<string, any>} */
 		const grouped = {};
 		if (activeRentals) {
-			activeRentals.forEach(item => {
+			activeRentals.forEach((item) => {
 				const trxId = item.transaction_id;
 				if (!grouped[trxId]) {
 					grouped[trxId] = {
@@ -63,7 +66,7 @@ export const returnsController = {
 			console.error('[Returns] Failed to parse return payload JSON:', e);
 			return { success: false, status: 400, error: 'Format payload tidak valid.' };
 		}
-		
+
 		let items = [];
 		let paymentStatus = 'unpaid';
 		let paymentMethod = 'Tunai';
@@ -83,7 +86,8 @@ export const returnsController = {
 
 		// Fetch settings for late fee per day per transaction
 		const rentalSettings = await settingsModel.getRentalSettings(supabase);
-		const lateRate = parseFloat(rentalSettings.late_fee_per_day_per_transaction?.toString() || '10000') || 10000;
+		const lateRate =
+			parseFloat(rentalSettings.late_fee_per_day_per_transaction?.toString() || '10000') || 10000;
 
 		// Fetch penalty rules for damage/lost
 		const penaltyRules = await penaltyModel.getPenaltyRules(supabase);
@@ -105,12 +109,13 @@ export const returnsController = {
 
 		// Insert transaction-wide late penalty if any
 		if (maxLateDays > 0 && latePenaltyItemId) {
-			const calculatedLateAmount = totalLatePenaltyOverridden !== null && totalLatePenaltyOverridden !== undefined
-				? parseFloat(totalLatePenaltyOverridden.toString())
-				: maxLateDays * lateRate;
+			const calculatedLateAmount =
+				totalLatePenaltyOverridden !== null && totalLatePenaltyOverridden !== undefined
+					? parseFloat(totalLatePenaltyOverridden.toString())
+					: maxLateDays * lateRate;
 
-			const rule = penaltyRules?.find(r => r.type === 'late');
-			
+			const rule = penaltyRules?.find((r) => r.type === 'late');
+
 			// Build late penalty notes
 			let notesStr = `Keterlambatan transaksi selama ${maxLateDays} hari.`;
 			if (calculatedLateAmount === 0) {
@@ -134,12 +139,15 @@ export const returnsController = {
 					late_days: maxLateDays,
 					calculated_amount: calculatedLateAmount,
 					payment_status: calculatedLateAmount === 0 ? 'paid' : paymentStatus,
-					paid_at: (paymentStatus === 'paid' || calculatedLateAmount === 0) ? new Date().toISOString() : null,
+					paid_at:
+						paymentStatus === 'paid' || calculatedLateAmount === 0
+							? new Date().toISOString()
+							: null,
 					notes: notesStr
 				});
 				totalPenalty += calculatedLateAmount;
 			} catch (err) {
-				console.error("Failed to insert late penalty in controller:", err);
+				console.error('Failed to insert late penalty in controller:', err);
 			}
 		}
 
@@ -148,9 +156,10 @@ export const returnsController = {
 			let finalRentalStatus = 'returned';
 			if (item.condition === 'lost') finalRentalStatus = 'lost';
 
-			let returnNotes = item.condition === 'lost' 
-				? 'Barang dinyatakan hilang' 
-				: `Kondisi kembali: ${item.condition}`;
+			let returnNotes =
+				item.condition === 'lost'
+					? 'Barang dinyatakan hilang'
+					: `Kondisi kembali: ${item.condition}`;
 			if (item.notes) {
 				returnNotes += ` (${item.notes})`;
 			}
@@ -167,15 +176,18 @@ export const returnsController = {
 				// Update calendar booking status to 'completed'
 				await bookingModel.updateBookingStatusByTransactionItem(supabase, item.id, 'completed');
 			} catch (err) {
-				console.error(`Failed to update transaction item / booking status for item ID ${item.id}:`, err);
+				console.error(
+					`Failed to update transaction item / booking status for item ID ${item.id}:`,
+					err
+				);
 			}
 
 			// Insert damage/lost penalty per-item if applicable
 			if (item.condition !== 'good') {
-				const rule = penaltyRules?.find(r => r.type === item.condition);
+				const rule = penaltyRules?.find((r) => r.type === item.condition);
 				if (rule) {
 					let calculatedAmount = 0;
-					
+
 					if (item.damage_penalty_amount !== undefined && item.damage_penalty_amount !== null) {
 						calculatedAmount = parseFloat(item.damage_penalty_amount.toString());
 					} else {
@@ -209,7 +221,10 @@ export const returnsController = {
 							type: item.condition,
 							calculated_amount: calculatedAmount,
 							payment_status: calculatedAmount === 0 ? 'paid' : paymentStatus,
-							paid_at: (paymentStatus === 'paid' || calculatedAmount === 0) ? new Date().toISOString() : null,
+							paid_at:
+								paymentStatus === 'paid' || calculatedAmount === 0
+									? new Date().toISOString()
+									: null,
 							notes: itemNotesStr
 						});
 						totalPenalty += calculatedAmount;
@@ -221,7 +236,11 @@ export const returnsController = {
 
 			// Update physical asset status
 			let assetStatus = 'ready'; // Default Good
-			if (item.condition === 'minor_damage' || item.condition === 'major_damage' || item.condition === 'lost') {
+			if (
+				item.condition === 'minor_damage' ||
+				item.condition === 'major_damage' ||
+				item.condition === 'lost'
+			) {
 				assetStatus = 'maintenance';
 			} else if (item.condition === 'good') {
 				assetStatus = 'washing'; // default wash first
@@ -243,12 +262,12 @@ export const returnsController = {
 					action: 'item_returned',
 					entityType: 'transaction_item',
 					entityId: item.id,
-					metadata: { 
+					metadata: {
 						condition: item.condition
 					}
 				});
 			} catch (err) {
-				console.error("Failed to log activity for returned item:", err);
+				console.error('Failed to log activity for returned item:', err);
 			}
 		}
 

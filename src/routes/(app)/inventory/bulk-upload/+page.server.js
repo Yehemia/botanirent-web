@@ -11,8 +11,8 @@ export async function load({ locals }) {
 	}
 
 	const categories = await categoryModel.getCategories(supabase);
-	
-	return { 
+
+	return {
 		categories
 	};
 }

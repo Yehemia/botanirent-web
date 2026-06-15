@@ -1,12 +1,12 @@
 <script>
 	import { onMount } from 'svelte';
-	import { 
-		Search, 
-		ShoppingCart, 
-		Trash2, 
-		Package, 
-		Boxes, 
-		CreditCard, 
+	import {
+		Search,
+		ShoppingCart,
+		Trash2,
+		Package,
+		Boxes,
+		CreditCard,
 		CalendarClock,
 		Minus,
 		Plus,
@@ -100,17 +100,25 @@
 		// Filter pencarian
 		if (searchQuery) {
 			const q = searchQuery.toLowerCase();
-			list = list.filter((/** @type {any} */ item) => 
-				item.name.toLowerCase().includes(q) || 
-				(item.barcode && item.barcode.toLowerCase().includes(q))
+			list = list.filter(
+				(/** @type {any} */ item) =>
+					item.name.toLowerCase().includes(q) ||
+					(item.barcode && item.barcode.toLowerCase().includes(q))
 			);
 		}
 		return list;
 	});
 
-	let cartHasRental = $derived(cart.some((/** @type {any} */ c) => c.type === 'rental' || c.type === 'package'));
-	let cartTotal = $derived(cart.reduce((/** @type {number} */ acc, /** @type {any} */ curr) => acc + (curr.price * curr.quantity), 0));
-	
+	let cartHasRental = $derived(
+		cart.some((/** @type {any} */ c) => c.type === 'rental' || c.type === 'package')
+	);
+	let cartTotal = $derived(
+		cart.reduce(
+			(/** @type {number} */ acc, /** @type {any} */ curr) => acc + curr.price * curr.quantity,
+			0
+		)
+	);
+
 	// --- ACTIONS ---
 	/**
 	 * @param {any} item
@@ -120,10 +128,15 @@
 		if (type === 'sewa') type = 'rental'; // Normalize 'sewa' to 'rental'
 		const id = item.id;
 		const existingIdx = cart.findIndex((/** @type {any} */ c) => c.id === id && c.type === type);
-		
-		let price = type === 'retail' ? item.sell_price : (type === 'package' ? item.package_price : item.rental_price_per_day);
+
+		let price =
+			type === 'retail'
+				? item.sell_price
+				: type === 'package'
+					? item.package_price
+					: item.rental_price_per_day;
 		let maxQty = type === 'package' ? 999 : item.stock_available; // Asumsi paket tidak limitasi realtime UI dulu
-		
+
 		if (maxQty <= 0) {
 			toast.error('Stok barang habis!', {
 				description: `${item.name} tidak tersedia saat ini.`
@@ -136,15 +149,18 @@
 				cart[existingIdx].quantity += 1;
 			}
 		} else {
-			cart = [...cart, {
-				id: item.id,
-				type: type, // 'retail', 'rental', 'package'
-				name: item.name,
-				price: price,
-				quantity: 1,
-				maxQty: maxQty,
-				rawData: item
-			}];
+			cart = [
+				...cart,
+				{
+					id: item.id,
+					type: type, // 'retail', 'rental', 'package'
+					name: item.name,
+					price: price,
+					quantity: 1,
+					maxQty: maxQty,
+					rawData: item
+				}
+			];
 		}
 	}
 
@@ -162,8 +178,6 @@
 		}
 	}
 
-
-
 	function checkout() {
 		if (cart.length === 0) return;
 		// Simpan keranjang di sessionStorage agar bisa diproses di halaman checkout
@@ -175,208 +189,303 @@
 <svelte:window on:keydown={handleKeydown} />
 
 {#if !data.currentBranchId}
-	<div class="h-[calc(100vh-4rem)] -mt-6 -mx-8 flex flex-col items-center justify-center bg-[var(--color-sand-lightest)] p-6 text-center z-20 w-[calc(100%+4rem)]">
-		<div class="bg-white p-8 rounded-3xl border border-[var(--color-border)] shadow-xl max-w-md flex flex-col items-center">
-			<div class="w-16 h-16 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] flex items-center justify-center mb-6">
+	<div
+		class="z-20 -mx-8 -mt-6 flex h-[calc(100vh-4rem)] w-[calc(100%+4rem)] flex-col items-center justify-center bg-[var(--color-sand-lightest)] p-6 text-center"
+	>
+		<div
+			class="flex max-w-md flex-col items-center rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-xl"
+		>
+			<div
+				class="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)]"
+			>
 				<ShoppingCart size={32} />
 			</div>
-			<h2 class="text-2xl font-bold font-heading text-[var(--color-earth)] mb-3">Pilih Cabang Terlebih Dahulu</h2>
-			<p class="text-sm text-[var(--color-stone)] mb-6 leading-relaxed">
-				Anda saat ini berada di tampilan <strong>Semua Cabang</strong>. Transaksi penjualan (POS) hanya dapat dilakukan pada cabang tertentu. 
-				Silakan pilih salah satu cabang aktif pada menu dropdown <strong>Cabang</strong> di bagian atas (TopBar) untuk memulai transaksi.
+			<h2 class="mb-3 font-heading text-2xl font-bold text-[var(--color-earth)]">
+				Pilih Cabang Terlebih Dahulu
+			</h2>
+			<p class="mb-6 text-sm leading-relaxed text-[var(--color-stone)]">
+				Anda saat ini berada di tampilan <strong>Semua Cabang</strong>. Transaksi penjualan (POS)
+				hanya dapat dilakukan pada cabang tertentu. Silakan pilih salah satu cabang aktif pada menu
+				dropdown <strong>Cabang</strong> di bagian atas (TopBar) untuk memulai transaksi.
 			</p>
 		</div>
 	</div>
 {:else}
-	<div class="h-[calc(100vh-4rem)] -mt-6 -mx-8 flex overflow-hidden">
-	
-	<!-- BAGIAN KIRI: KATALOG BARANG (70%) -->
-	<div class="w-[65%] flex flex-col bg-[var(--color-sand-lightest)] border-r border-[var(--color-border)] relative">
-		
-		<!-- Top Bar Katalog -->
-		<div class="bg-white p-4 border-b border-[var(--color-border)] flex flex-col gap-4 z-10">
-			<div class="flex items-center justify-between">
-				<h1 class="text-2xl font-bold font-heading text-[var(--color-earth)]">Point of Sales</h1>
-				<Input 
-					bind:value={searchQuery} 
-					placeholder="Cari atau scan barcode..." 
-					class="w-64"
-				>
-					{#snippet iconLeft()}
-						<Search size={18} />
-					{/snippet}
-					{#snippet iconRight()}
-						{#if isMobile}
-							<button 
-								type="button" 
-								class="text-[var(--color-forest)] hover:text-[var(--color-forest-light)] transition-colors p-1 flex items-center justify-center" 
-								onclick={handleMobileScan}
-								title="Pindai Barcode via Kamera"
-							>
-								<Camera size={18} />
-							</button>
-						{/if}
-					{/snippet}
-				</Input>
-			</div>
-
-			<!-- Filter Tabs -->
-			<div class="flex gap-2">
-				<button class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors {activeTab === 'all' ? 'bg-[var(--color-earth)] text-white' : 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}" onclick={() => activeTab = 'all'}>Semua</button>
-				<button class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors {activeTab === 'sewa' ? 'bg-[var(--color-earth)] text-white' : 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}" onclick={() => activeTab = 'sewa'}>Sewa Alat</button>
-				<button class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors {activeTab === 'package' ? 'bg-[var(--color-earth)] text-white' : 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}" onclick={() => activeTab = 'package'}>Paket Bundling</button>
-				<button class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors {activeTab === 'retail' ? 'bg-[var(--color-earth)] text-white' : 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}" onclick={() => activeTab = 'retail'}>Retail / Jual</button>
-			</div>
-		</div>
-
-		<!-- Grid Produk (Scrollable) -->
-		<div class="flex-1 overflow-y-auto p-4 sm:p-6">
-			{#if displayItems().length === 0}
-				<div class="h-full flex flex-col items-center justify-center text-[var(--color-stone)] opacity-50">
-					<Package size={64} class="mb-4" />
-					<p class="text-lg">Tidak ada barang ditemukan</p>
+	<div class="-mx-8 -mt-6 flex h-[calc(100vh-4rem)] overflow-hidden">
+		<!-- BAGIAN KIRI: KATALOG BARANG (70%) -->
+		<div
+			class="relative flex w-[65%] flex-col border-r border-[var(--color-border)] bg-[var(--color-sand-lightest)]"
+		>
+			<!-- Top Bar Katalog -->
+			<div class="z-10 flex flex-col gap-4 border-b border-[var(--color-border)] bg-white p-4">
+				<div class="flex items-center justify-between">
+					<h1 class="font-heading text-2xl font-bold text-[var(--color-earth)]">Point of Sales</h1>
+					<Input bind:value={searchQuery} placeholder="Cari atau scan barcode..." class="w-64">
+						{#snippet iconLeft()}
+							<Search size={18} />
+						{/snippet}
+						{#snippet iconRight()}
+							{#if isMobile}
+								<button
+									type="button"
+									class="flex items-center justify-center p-1 text-[var(--color-forest)] transition-colors hover:text-[var(--color-forest-light)]"
+									onclick={handleMobileScan}
+									title="Pindai Barcode via Kamera"
+								>
+									<Camera size={18} />
+								</button>
+							{/if}
+						{/snippet}
+					</Input>
 				</div>
-			{:else}
-				<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-					{#each displayItems() as item (item.id + item.__displayType)}
-						<button 
-							class="text-left bg-white rounded-2xl border border-[var(--color-border-light)] overflow-hidden shadow-sm hover:shadow-md hover:border-[var(--color-forest)]/50 transition-all group flex flex-col h-full"
-							onclick={() => addToCart(item, item.__displayType)}
-						>
-							<div class="h-32 bg-[var(--color-sand)] relative overflow-hidden">
-								{#if item.image_url}
-									<img src={item.image_url} alt={item.name} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-								{:else}
-									<div class="absolute inset-0 flex items-center justify-center text-[var(--color-stone)] opacity-30">
-										{#if item.__displayType === 'package'}
-											<Boxes size={40} />
-										{:else}
-											<Package size={40} />
+
+				<!-- Filter Tabs -->
+				<div class="flex gap-2">
+					<button
+						class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors {activeTab ===
+						'all'
+							? 'bg-[var(--color-earth)] text-white'
+							: 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+						onclick={() => (activeTab = 'all')}>Semua</button
+					>
+					<button
+						class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors {activeTab ===
+						'sewa'
+							? 'bg-[var(--color-earth)] text-white'
+							: 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+						onclick={() => (activeTab = 'sewa')}>Sewa Alat</button
+					>
+					<button
+						class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors {activeTab ===
+						'package'
+							? 'bg-[var(--color-earth)] text-white'
+							: 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+						onclick={() => (activeTab = 'package')}>Paket Bundling</button
+					>
+					<button
+						class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors {activeTab ===
+						'retail'
+							? 'bg-[var(--color-earth)] text-white'
+							: 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+						onclick={() => (activeTab = 'retail')}>Retail / Jual</button
+					>
+				</div>
+			</div>
+
+			<!-- Grid Produk (Scrollable) -->
+			<div class="flex-1 overflow-y-auto p-4 sm:p-6">
+				{#if displayItems().length === 0}
+					<div
+						class="flex h-full flex-col items-center justify-center text-[var(--color-stone)] opacity-50"
+					>
+						<Package size={64} class="mb-4" />
+						<p class="text-lg">Tidak ada barang ditemukan</p>
+					</div>
+				{:else}
+					<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+						{#each displayItems() as item (item.id + item.__displayType)}
+							<button
+								class="group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white text-left shadow-sm transition-all hover:border-[var(--color-forest)]/50 hover:shadow-md"
+								onclick={() => addToCart(item, item.__displayType)}
+							>
+								<div class="relative h-32 overflow-hidden bg-[var(--color-sand)]">
+									{#if item.image_url}
+										<img
+											src={item.image_url}
+											alt={item.name}
+											class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+										/>
+									{:else}
+										<div
+											class="absolute inset-0 flex items-center justify-center text-[var(--color-stone)] opacity-30"
+										>
+											{#if item.__displayType === 'package'}
+												<Boxes size={40} />
+											{:else}
+												<Package size={40} />
+											{/if}
+										</div>
+									{/if}
+
+									<!-- Badge Tipe -->
+									<div class="absolute top-2 left-2">
+										{#if item.__displayType === 'sewa'}
+											<Badge variant="info" class="px-1.5 py-0 text-[10px]">Sewa</Badge>
+										{:else if item.__displayType === 'retail'}
+											<Badge variant="warning" class="px-1.5 py-0 text-[10px]">Jual</Badge>
+										{:else if item.__displayType === 'package'}
+											<Badge variant="success" class="px-1.5 py-0 text-[10px]">Paket</Badge>
 										{/if}
 									</div>
-								{/if}
-								
-								<!-- Badge Tipe -->
-								<div class="absolute top-2 left-2">
-									{#if item.__displayType === 'sewa'}
-										<Badge variant="info" class="text-[10px] px-1.5 py-0">Sewa</Badge>
-									{:else if item.__displayType === 'retail'}
-										<Badge variant="warning" class="text-[10px] px-1.5 py-0">Jual</Badge>
-									{:else if item.__displayType === 'package'}
-										<Badge variant="success" class="text-[10px] px-1.5 py-0">Paket</Badge>
+									<!-- Stok -->
+									{#if item.__displayType !== 'package'}
+										<div
+											class="absolute top-2 right-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur"
+										>
+											{item.stock_available}
+										</div>
 									{/if}
 								</div>
-								<!-- Stok -->
-								{#if item.__displayType !== 'package'}
-									<div class="absolute top-2 right-2 bg-black/60 backdrop-blur text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-										{item.stock_available}
+								<div class="flex flex-1 flex-col p-3">
+									<h3
+										class="mb-1 line-clamp-2 text-sm font-bold text-[var(--color-earth)] transition-colors group-hover:text-[var(--color-forest)]"
+									>
+										{item.name}
+									</h3>
+									<div class="mt-auto pt-2">
+										{#if item.__displayType === 'sewa'}
+											<span class="font-bold text-[var(--color-forest)]"
+												>{formatCurrency(item.rental_price_per_day)}<span
+													class="text-[10px] font-normal text-[var(--color-stone)]">/siklus</span
+												></span
+											>
+										{:else if item.__displayType === 'retail'}
+											<span class="font-bold text-[var(--color-terracotta)]"
+												>{formatCurrency(item.sell_price)}</span
+											>
+										{:else}
+											<span class="font-bold text-[var(--color-forest)]"
+												>{formatCurrency(item.package_price)}<span
+													class="text-[10px] font-normal text-[var(--color-stone)]">/siklus</span
+												></span
+											>
+										{/if}
 									</div>
-								{/if}
-							</div>
-							<div class="p-3 flex-1 flex flex-col">
-								<h3 class="font-bold text-[var(--color-earth)] text-sm line-clamp-2 mb-1 group-hover:text-[var(--color-forest)] transition-colors">{item.name}</h3>
-								<div class="mt-auto pt-2">
-									{#if item.__displayType === 'sewa'}
-										<span class="font-bold text-[var(--color-forest)]">{formatCurrency(item.rental_price_per_day)}<span class="text-[10px] text-[var(--color-stone)] font-normal">/siklus</span></span>
-									{:else if item.__displayType === 'retail'}
-										<span class="font-bold text-[var(--color-terracotta)]">{formatCurrency(item.sell_price)}</span>
+								</div>
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		<!-- BAGIAN KANAN: KERANJANG (35%) -->
+		<div
+			class="relative z-20 flex h-full w-[35%] flex-col bg-white shadow-[-4px_0_15px_-5px_rgba(0,0,0,0.05)]"
+		>
+			<!-- Cart Header -->
+			<div
+				class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-sand-lightest)]/30 p-4"
+			>
+				<div class="flex items-center gap-2 text-[var(--color-earth)]">
+					<ShoppingCart size={20} />
+					<h2 class="font-heading text-lg font-bold">Keranjang</h2>
+				</div>
+				<Badge variant="neutral" class="bg-[var(--color-sand)]">{cart.length} Item</Badge>
+			</div>
+
+			<!-- Cart Items List (Scrollable) -->
+			<div class="flex-1 space-y-3 overflow-y-auto p-4">
+				{#if cart.length === 0}
+					<div
+						class="flex h-full flex-col items-center justify-center text-[var(--color-stone)] opacity-50"
+					>
+						<ShoppingCart size={48} class="mb-3" />
+						<p class="text-sm">Keranjang masih kosong</p>
+						<p class="mt-1 max-w-[200px] text-center text-[10px]">
+							Pilih barang di sebelah kiri atau scan barcode.
+						</p>
+					</div>
+				{:else}
+					{#each cart as item, i}
+						<div
+							class="group relative flex flex-col gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-sand-lightest)] p-3"
+						>
+							<!-- Hapus -->
+							<button
+								class="absolute top-2 right-2 text-[var(--color-stone)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--color-error)]"
+								onclick={() => {
+									cart = cart.filter((_, idx) => idx !== i);
+								}}
+							>
+								<Trash2 size={14} />
+							</button>
+
+							<div>
+								<h4 class="pr-6 text-sm leading-tight font-bold text-[var(--color-earth)]">
+									{item.name}
+								</h4>
+								<div class="mt-1 flex items-center gap-2">
+									{#if item.type === 'rental'}
+										<span
+											class="rounded bg-[var(--color-info)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-info)]"
+											>Sewa</span
+										>
+									{:else if item.type === 'retail'}
+										<span
+											class="rounded bg-[var(--color-warning)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-warning)]"
+											>Jual</span
+										>
 									{:else}
-										<span class="font-bold text-[var(--color-forest)]">{formatCurrency(item.package_price)}<span class="text-[10px] text-[var(--color-stone)] font-normal">/siklus</span></span>
+										<span
+											class="rounded bg-[var(--color-success)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-success)]"
+											>Paket</span
+										>
 									{/if}
+									<span class="text-sm font-semibold text-[var(--color-forest)]"
+										>{formatCurrency(item.price)}</span
+									>
 								</div>
 							</div>
-						</button>
+
+							<div class="mt-1 flex items-center justify-between">
+								<span class="text-xs font-bold text-[var(--color-earth)]"
+									>{formatCurrency(item.price * item.quantity)}</span
+								>
+
+								<!-- Qty Controls -->
+								<div
+									class="flex items-center overflow-hidden rounded-lg border border-[var(--color-border)] bg-white"
+								>
+									<button
+										class="px-2 py-1 text-[var(--color-stone)] transition-colors hover:bg-[var(--color-sand)]"
+										onclick={() => updateCartQty(i, -1)}
+									>
+										<Minus size={14} />
+									</button>
+									<span class="w-8 text-center text-sm font-bold text-[var(--color-earth)]"
+										>{item.quantity}</span
+									>
+									<button
+										class="px-2 py-1 text-[var(--color-stone)] transition-colors hover:bg-[var(--color-sand)]"
+										onclick={() => updateCartQty(i, 1)}
+									>
+										<Plus size={14} />
+									</button>
+								</div>
+							</div>
+						</div>
 					{/each}
-				</div>
-			{/if}
-		</div>
-	</div>
-
-	<!-- BAGIAN KANAN: KERANJANG (35%) -->
-	<div class="w-[35%] bg-white flex flex-col h-full shadow-[-4px_0_15px_-5px_rgba(0,0,0,0.05)] relative z-20">
-		<!-- Cart Header -->
-		<div class="p-4 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-sand-lightest)]/30">
-			<div class="flex items-center gap-2 text-[var(--color-earth)]">
-				<ShoppingCart size={20} />
-				<h2 class="font-bold font-heading text-lg">Keranjang</h2>
+				{/if}
 			</div>
-			<Badge variant="neutral" class="bg-[var(--color-sand)]">{cart.length} Item</Badge>
-		</div>
 
-		<!-- Cart Items List (Scrollable) -->
-		<div class="flex-1 overflow-y-auto p-4 space-y-3">
-			{#if cart.length === 0}
-				<div class="h-full flex flex-col items-center justify-center text-[var(--color-stone)] opacity-50">
-					<ShoppingCart size={48} class="mb-3" />
-					<p class="text-sm">Keranjang masih kosong</p>
-					<p class="text-[10px] mt-1 text-center max-w-[200px]">Pilih barang di sebelah kiri atau scan barcode.</p>
-				</div>
-			{:else}
-				{#each cart as item, i}
-					<div class="bg-[var(--color-sand-lightest)] border border-[var(--color-border)] rounded-xl p-3 flex flex-col gap-2 relative group">
-						<!-- Hapus -->
-						<button 
-							class="absolute top-2 right-2 text-[var(--color-stone)] hover:text-[var(--color-error)] opacity-0 group-hover:opacity-100 transition-opacity"
-							onclick={() => { cart = cart.filter((_, idx) => idx !== i) }}
-						>
-							<Trash2 size={14} />
-						</button>
-						
-						<div>
-							<h4 class="font-bold text-[var(--color-earth)] text-sm pr-6 leading-tight">{item.name}</h4>
-							<div class="flex items-center gap-2 mt-1">
-								{#if item.type === 'rental'}
-									<span class="text-[10px] bg-[var(--color-info)]/10 text-[var(--color-info)] px-1.5 py-0.5 rounded font-medium">Sewa</span>
-								{:else if item.type === 'retail'}
-									<span class="text-[10px] bg-[var(--color-warning)]/10 text-[var(--color-warning)] px-1.5 py-0.5 rounded font-medium">Jual</span>
-								{:else}
-									<span class="text-[10px] bg-[var(--color-success)]/10 text-[var(--color-success)] px-1.5 py-0.5 rounded font-medium">Paket</span>
-								{/if}
-								<span class="font-semibold text-[var(--color-forest)] text-sm">{formatCurrency(item.price)}</span>
-							</div>
-						</div>
-
-						<div class="flex items-center justify-between mt-1">
-							<span class="text-xs font-bold text-[var(--color-earth)]">{formatCurrency(item.price * item.quantity)}</span>
-							
-							<!-- Qty Controls -->
-							<div class="flex items-center border border-[var(--color-border)] rounded-lg overflow-hidden bg-white">
-								<button class="px-2 py-1 hover:bg-[var(--color-sand)] text-[var(--color-stone)] transition-colors" onclick={() => updateCartQty(i, -1)}>
-									<Minus size={14} />
-								</button>
-								<span class="w-8 text-center text-sm font-bold text-[var(--color-earth)]">{item.quantity}</span>
-								<button class="px-2 py-1 hover:bg-[var(--color-sand)] text-[var(--color-stone)] transition-colors" onclick={() => updateCartQty(i, 1)}>
-									<Plus size={14} />
-								</button>
-							</div>
-						</div>
-					</div>
-				{/each}
-			{/if}
-		</div>
-
-		<!-- Cart Footer / Summary -->
-		<div class="border-t border-[var(--color-border)] bg-[var(--color-sand-lightest)] p-4 flex flex-col gap-4 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] z-10">
-			{#if cartHasRental}
-				<div class="flex items-center gap-2 text-xs text-[var(--color-info)] bg-[var(--color-info)]/10 p-2 rounded-lg font-medium">
-					<CalendarClock size={16} class="shrink-0" />
-					<span>Keranjang ini memiliki item sewa. Tanggal booking akan ditentukan di tahap selanjutnya.</span>
-				</div>
-			{/if}
-			
-			<div class="flex justify-between items-end">
-				<span class="text-[var(--color-stone)] text-sm font-medium">Subtotal</span>
-				<span class="text-2xl font-bold font-heading text-[var(--color-forest)]">{formatCurrency(cartTotal)}</span>
-			</div>
-			
-			<Button 
-				class="w-full py-4 text-base" 
-				disabled={cart.length === 0}
-				onclick={checkout}
+			<!-- Cart Footer / Summary -->
+			<div
+				class="z-10 flex flex-col gap-4 border-t border-[var(--color-border)] bg-[var(--color-sand-lightest)] p-4 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]"
 			>
-				<CreditCard size={20} class="mr-2" /> Lanjut ke Pembayaran
-			</Button>
+				{#if cartHasRental}
+					<div
+						class="flex items-center gap-2 rounded-lg bg-[var(--color-info)]/10 p-2 text-xs font-medium text-[var(--color-info)]"
+					>
+						<CalendarClock size={16} class="shrink-0" />
+						<span
+							>Keranjang ini memiliki item sewa. Tanggal booking akan ditentukan di tahap
+							selanjutnya.</span
+						>
+					</div>
+				{/if}
+
+				<div class="flex items-end justify-between">
+					<span class="text-sm font-medium text-[var(--color-stone)]">Subtotal</span>
+					<span class="font-heading text-2xl font-bold text-[var(--color-forest)]"
+						>{formatCurrency(cartTotal)}</span
+					>
+				</div>
+
+				<Button class="w-full py-4 text-base" disabled={cart.length === 0} onclick={checkout}>
+					<CreditCard size={20} class="mr-2" /> Lanjut ke Pembayaran
+				</Button>
+			</div>
 		</div>
 	</div>
-</div>
 {/if}

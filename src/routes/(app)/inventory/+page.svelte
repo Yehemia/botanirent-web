@@ -1,13 +1,5 @@
 <script>
-	import { 
-		Plus, 
-		Search, 
-		Package, 
-		Filter, 
-		MoreHorizontal, 
-		Edit, 
-		Trash2 
-	} from '@lucide/svelte';
+	import { Plus, Search, Package, Filter, MoreHorizontal, Edit, Trash2 } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -25,24 +17,23 @@
 	// Filter items based on search and category
 	let filteredItems = $derived(
 		items.filter((/** @type {any} */ item) => {
-			const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-								(item.barcode && item.barcode.toLowerCase().includes(searchQuery.toLowerCase()));
+			const matchSearch =
+				item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+				(item.barcode && item.barcode.toLowerCase().includes(searchQuery.toLowerCase()));
 			const matchCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
 			return matchSearch && matchCategory;
 		})
 	);
-
-
 </script>
 
-<div class="space-y-6 max-w-7xl mx-auto pb-12">
+<div class="mx-auto max-w-7xl space-y-6 pb-12">
 	<!-- Header -->
-	<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+	<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
 		<div>
-			<h1 class="text-3xl font-bold font-heading text-[var(--color-earth)]">Data Barang</h1>
-			<p class="text-[var(--color-stone)] mt-1">Kelola master data barang sewa dan retail.</p>
+			<h1 class="font-heading text-3xl font-bold text-[var(--color-earth)]">Data Barang</h1>
+			<p class="mt-1 text-[var(--color-stone)]">Kelola master data barang sewa dan retail.</p>
 		</div>
-		<div class="flex items-center gap-3 w-full sm:w-auto">
+		<div class="flex w-full items-center gap-3 sm:w-auto">
 			<!-- eslint-disable-next-line -->
 			<a href="/inventory/bulk-upload" class="flex-1 sm:flex-none">
 				<Button variant="secondary" class="w-full">Bulk Upload</Button>
@@ -58,21 +49,14 @@
 
 	<!-- Controls (Search & Category) -->
 	<Card padding="md">
-		<div class="flex flex-col md:flex-row gap-4">
-			<Input 
-				bind:value={searchQuery} 
-				placeholder="Cari nama barang atau barcode..." 
-				class="flex-1"
-			>
+		<div class="flex flex-col gap-4 md:flex-row">
+			<Input bind:value={searchQuery} placeholder="Cari nama barang atau barcode..." class="flex-1">
 				{#snippet iconLeft()}
 					<Search size={18} />
 				{/snippet}
 			</Input>
-			
-			<Select 
-				bind:value={selectedCategory}
-				class="w-full md:w-64"
-			>
+
+			<Select bind:value={selectedCategory} class="w-full md:w-64">
 				<option value="all">Semua Kategori</option>
 				{#each categories as cat (cat.id)}
 					<option value={cat.id}>{cat.name} ({cat.type})</option>
@@ -85,7 +69,9 @@
 	<Card padding="none" class="overflow-hidden">
 		<div class="overflow-x-auto">
 			<table class="w-full text-left text-sm whitespace-nowrap">
-				<thead class="bg-[var(--color-sand-light)] text-[var(--color-earth)] font-semibold border-b border-[var(--color-border)]">
+				<thead
+					class="border-b border-[var(--color-border)] bg-[var(--color-sand-light)] font-semibold text-[var(--color-earth)]"
+				>
 					<tr>
 						<th class="px-6 py-4">Barang</th>
 						<th class="px-6 py-4">Kategori</th>
@@ -101,24 +87,39 @@
 							<td colspan="6" class="px-6 py-12 text-center text-[var(--color-stone)]">
 								<Package size={48} class="mx-auto mb-3 opacity-20" />
 								<p class="text-lg font-medium">Tidak ada barang ditemukan</p>
-								<p class="text-sm mt-1">Coba sesuaikan kata kunci pencarian atau tambah barang baru.</p>
+								<p class="mt-1 text-sm">
+									Coba sesuaikan kata kunci pencarian atau tambah barang baru.
+								</p>
 							</td>
 						</tr>
 					{:else}
 						{#each filteredItems as item (item.id)}
-							<tr class="hover:bg-[var(--color-sand-lightest)]/50 transition-colors group">
+							<tr class="group transition-colors hover:bg-[var(--color-sand-lightest)]/50">
 								<td class="px-6 py-4">
 									<div class="flex items-center gap-3">
-										<div class="w-10 h-10 rounded-lg bg-[var(--color-sand)] flex items-center justify-center overflow-hidden border border-[var(--color-border-light)] shrink-0">
+										<div
+											class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border-light)] bg-[var(--color-sand)]"
+										>
 											{#if item.image_url}
-												<img src={item.image_url} alt={item.name} class="w-full h-full object-cover" />
+												<img
+													src={item.image_url}
+													alt={item.name}
+													class="h-full w-full object-cover"
+												/>
 											{:else}
 												<Package size={20} class="text-[var(--color-stone)] opacity-50" />
 											{/if}
 										</div>
 										<div>
-											<div class="font-semibold text-[var(--color-earth)] truncate max-w-[200px]" title={item.name}>{item.name}</div>
-											<div class="text-xs text-[var(--color-stone)] font-mono">{item.barcode || '-'}</div>
+											<div
+												class="max-w-[200px] truncate font-semibold text-[var(--color-earth)]"
+												title={item.name}
+											>
+												{item.name}
+											</div>
+											<div class="font-mono text-xs text-[var(--color-stone)]">
+												{item.barcode || '-'}
+											</div>
 										</div>
 									</div>
 								</td>
@@ -129,14 +130,24 @@
 								</td>
 								<td class="px-6 py-4">
 									{#if item.category?.type === 'sewa'}
-										<div class="text-[var(--color-forest)] font-medium">{formatCurrency(item.rental_price_per_day)}<span class="text-xs text-[var(--color-stone)] font-normal">/siklus</span></div>
+										<div class="font-medium text-[var(--color-forest)]">
+											{formatCurrency(item.rental_price_per_day)}<span
+												class="text-xs font-normal text-[var(--color-stone)]">/siklus</span
+											>
+										</div>
 									{:else}
-										<div class="text-[var(--color-terracotta)] font-medium">{formatCurrency(item.sell_price)}</div>
+										<div class="font-medium text-[var(--color-terracotta)]">
+											{formatCurrency(item.sell_price)}
+										</div>
 									{/if}
 								</td>
 								<td class="px-6 py-4">
 									<div class="flex items-center gap-1.5">
-										<span class="font-bold {item.stock_available > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}">
+										<span
+											class="font-bold {item.stock_available > 0
+												? 'text-[var(--color-success)]'
+												: 'text-[var(--color-error)]'}"
+										>
 											{item.stock_available}
 										</span>
 										<span class="text-[var(--color-stone)]">/ {item.stock_total}</span>
@@ -150,12 +161,22 @@
 									{/if}
 								</td>
 								<td class="px-6 py-4 text-right">
-									<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+									<div
+										class="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100"
+									>
 										<!-- eslint-disable-next-line -->
-										<a href="/inventory/{item.id}" class="p-1.5 text-[var(--color-stone)] hover:text-[var(--color-forest)] hover:bg-[var(--color-forest)]/10 rounded-md transition-colors" title="Edit">
+										<a
+											href="/inventory/{item.id}"
+											class="rounded-md p-1.5 text-[var(--color-stone)] transition-colors hover:bg-[var(--color-forest)]/10 hover:text-[var(--color-forest)]"
+											title="Edit"
+										>
 											<Edit size={16} />
 										</a>
-										<button type="button" class="p-1.5 text-[var(--color-stone)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 rounded-md transition-colors" title="Hapus">
+										<button
+											type="button"
+											class="rounded-md p-1.5 text-[var(--color-stone)] transition-colors hover:bg-[var(--color-error)]/10 hover:text-[var(--color-error)]"
+											title="Hapus"
+										>
 											<Trash2 size={16} />
 										</button>
 									</div>

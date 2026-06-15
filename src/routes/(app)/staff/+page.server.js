@@ -35,7 +35,7 @@ export const load = async ({ locals: { supabase, safeGetSession } }) => {
 export const actions = {
 	invite: async ({ request, locals: { safeGetSession } }) => {
 		const { profile } = await safeGetSession();
-		
+
 		if (profile?.role !== 'owner') {
 			return fail(403, { error: 'Akses ditolak.' });
 		}
@@ -104,10 +104,7 @@ export const actions = {
 			return fail(400, { error: 'Anda tidak dapat menonaktifkan akun Anda sendiri.' });
 		}
 
-		const { error } = await supabase
-			.from('profiles')
-			.update({ is_active })
-			.eq('id', id);
+		const { error } = await supabase.from('profiles').update({ is_active }).eq('id', id);
 
 		if (error) {
 			return fail(500, { error: 'Gagal mengubah status staff.' });

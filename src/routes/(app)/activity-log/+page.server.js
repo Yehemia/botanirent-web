@@ -15,4 +15,3 @@ export async function load({ locals, url }) {
 
 	return activityLogController.getActivityLogData(supabase, profile, url.searchParams);
 }
-

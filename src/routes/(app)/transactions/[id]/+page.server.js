@@ -12,7 +12,12 @@ export async function load({ locals, params, url }) {
 	const { id } = params;
 	const isSuccess = url.searchParams.get('success') === 'true';
 
-	const result = await transactionController.getTransactionDetails(supabase, profile, id, isSuccess);
+	const result = await transactionController.getTransactionDetails(
+		supabase,
+		profile,
+		id,
+		isSuccess
+	);
 
 	if (!result.success) {
 		throw redirect(303, result.redirect || '/transactions');

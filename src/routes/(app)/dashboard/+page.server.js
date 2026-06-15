@@ -11,4 +11,3 @@ export async function load({ locals }) {
 
 	return dashboardController.getDashboardData(supabase, profile);
 }
-

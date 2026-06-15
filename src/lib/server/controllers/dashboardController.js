@@ -74,7 +74,7 @@ export const dashboardController = {
 			}
 
 			if (allTrx) {
-				allTrx.forEach(t => {
+				allTrx.forEach((t) => {
 					if (t.payment_status === 'paid') {
 						const trxDateObj = new Date(t.created_at);
 						if (trxDateObj >= startOfMonth) {
@@ -82,8 +82,10 @@ export const dashboardController = {
 							successfulTrxCountMonth++;
 						}
 
-						const tDateStr = new Date(trxDateObj.getTime() - (trxDateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-						const chartItem = last7Days.find(d => d.date === tDateStr);
+						const tDateStr = new Date(trxDateObj.getTime() - trxDateObj.getTimezoneOffset() * 60000)
+							.toISOString()
+							.split('T')[0];
+						const chartItem = last7Days.find((d) => d.date === tDateStr);
 						if (chartItem) {
 							chartItem.revenue += Number(t.total_amount) || 0;
 						}
@@ -92,7 +94,7 @@ export const dashboardController = {
 			}
 
 			if (allPenalties) {
-				allPenalties.forEach(p => {
+				allPenalties.forEach((p) => {
 					const penaltyDateObj = new Date(p.created_at);
 					const amount = Number(p.calculated_amount) || 0;
 
@@ -100,8 +102,12 @@ export const dashboardController = {
 						totalPenaltyRevenueMonth += amount;
 					}
 
-					const pDateStr = new Date(penaltyDateObj.getTime() - (penaltyDateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-					const chartItem = last7Days.find(d => d.date === pDateStr);
+					const pDateStr = new Date(
+						penaltyDateObj.getTime() - penaltyDateObj.getTimezoneOffset() * 60000
+					)
+						.toISOString()
+						.split('T')[0];
+					const chartItem = last7Days.find((d) => d.date === pDateStr);
 					if (chartItem) {
 						chartItem.penalty += amount;
 					}
@@ -117,9 +123,9 @@ export const dashboardController = {
 					monthlyRevenueTarget
 				},
 				chartData: {
-					labels: last7Days.map(d => d.label),
-					revenueData: last7Days.map(d => d.revenue),
-					penaltyData: last7Days.map(d => d.penalty)
+					labels: last7Days.map((d) => d.label),
+					revenueData: last7Days.map((d) => d.revenue),
+					penaltyData: last7Days.map((d) => d.penalty)
 				},
 				staffCount,
 				branchCount,
@@ -132,7 +138,7 @@ export const dashboardController = {
 		let kasirData = null;
 		if (profile.role === 'kasir') {
 			if (!branchId) {
-				console.error("Cashier has no branch_id assigned.");
+				console.error('Cashier has no branch_id assigned.');
 				kasirData = {
 					todayRevenue: 0,
 					todayTrxCount: 0,
@@ -144,12 +150,7 @@ export const dashboardController = {
 				const startOfToday = new Date();
 				startOfToday.setHours(0, 0, 0, 0);
 
-				const [
-					todayTrx,
-					activeRentalsCount,
-					todaysPickups,
-					todaysReturnsDue
-				] = await Promise.all([
+				const [todayTrx, activeRentalsCount, todaysPickups, todaysReturnsDue] = await Promise.all([
 					transactionModel.getTodayPaidTransactions(supabase, branchId, startOfToday.toISOString()),
 					transactionModel.getActiveRentalsCount(supabase, branchId),
 					transactionModel.getTodaysPickups(supabase, branchId, todayStr),
@@ -172,18 +173,14 @@ export const dashboardController = {
 		let gudangData = null;
 		if (profile.role === 'gudang') {
 			if (!branchId) {
-				console.error("Warehouse staff has no branch_id assigned.");
+				console.error('Warehouse staff has no branch_id assigned.');
 				gudangData = {
 					washingAssets: [],
 					maintenanceAssets: [],
 					todaysShipments: []
 				};
 			} else {
-				const [
-					washingAssets,
-					maintenanceAssets,
-					todaysShipments
-				] = await Promise.all([
+				const [washingAssets, maintenanceAssets, todaysShipments] = await Promise.all([
 					assetModel.getWashingAssets(supabase, branchId),
 					assetModel.getMaintenanceAssets(supabase, branchId),
 					transactionModel.getTodaysPickups(supabase, branchId, todayStr)

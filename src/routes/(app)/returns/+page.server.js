@@ -17,7 +17,7 @@ export const actions = {
 	processReturn: async ({ request, locals }) => {
 		const { supabase } = locals;
 		const { session, profile } = await locals.safeGetSession();
-		
+
 		if (!session || !profile) {
 			return fail(401, { error: 'Unauthorized' });
 		}

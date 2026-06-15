@@ -16,7 +16,7 @@ export const packageModel = {
 
 		const { data, error } = await query;
 		if (error) {
-			console.error("Error fetching packages:", error);
+			console.error('Error fetching packages:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -36,7 +36,7 @@ export const packageModel = {
 			.order('name');
 
 		if (error) {
-			console.error("Error fetching active packages in model:", error);
+			console.error('Error fetching active packages in model:', error);
 			throw new Error(error.message);
 		}
 		return data || [];
@@ -48,14 +48,10 @@ export const packageModel = {
 	 * @param {object} packageData
 	 */
 	async insertPackage(supabase, packageData) {
-		const { data, error } = await supabase
-			.from('packages')
-			.insert(packageData)
-			.select()
-			.single();
+		const { data, error } = await supabase.from('packages').insert(packageData).select().single();
 
 		if (error) {
-			console.error("Error inserting package in model:", error);
+			console.error('Error inserting package in model:', error);
 			throw new Error(error.message);
 		}
 		return data;
@@ -67,12 +63,10 @@ export const packageModel = {
 	 * @param {Array<object>} packageItemsData
 	 */
 	async insertPackageItems(supabase, packageItemsData) {
-		const { error } = await supabase
-			.from('package_items')
-			.insert(packageItemsData);
+		const { error } = await supabase.from('package_items').insert(packageItemsData);
 
 		if (error) {
-			console.error("Error inserting package items in model:", error);
+			console.error('Error inserting package items in model:', error);
 			throw new Error(error.message);
 		}
 		return true;
@@ -84,13 +78,10 @@ export const packageModel = {
 	 * @param {string} id
 	 */
 	async deletePackage(supabase, id) {
-		const { error } = await supabase
-			.from('packages')
-			.delete()
-			.eq('id', id);
+		const { error } = await supabase.from('packages').delete().eq('id', id);
 
 		if (error) {
-			console.error("Error deleting package in model:", error);
+			console.error('Error deleting package in model:', error);
 			throw new Error(error.message);
 		}
 		return true;
