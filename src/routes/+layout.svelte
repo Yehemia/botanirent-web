@@ -1,9 +1,12 @@
 <script>
 	import '../app.css';
 	import { Toaster } from 'svelte-sonner';
+	import { browser } from '$app/environment';
 	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
 
-	injectSpeedInsights();
+	if (browser && !window.location.hostname.includes('localhost') && window.location.hostname !== '127.0.0.1') {
+		injectSpeedInsights();
+	}
 
 	let { children } = $props();
 </script>
