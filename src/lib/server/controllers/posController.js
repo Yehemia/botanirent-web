@@ -133,11 +133,11 @@ export const posController = {
 			};
 		}
 
-		// Log activity
+		// Log activity — QRIS masih pending, jadi statusnya 'created' bukan 'completed'
 		await activityLogModel.logActivity(supabase, {
 			userId: profile.id,
 			branchId: profile.branch_id,
-			action: 'transaction_completed',
+			action: payload.payment_method === 'qris' ? 'transaction_created' : 'transaction_completed',
 			entityType: 'transaction',
 			entityId: data.transaction_id,
 			metadata: { code: payload.transaction_code, amount: payload.total_amount }

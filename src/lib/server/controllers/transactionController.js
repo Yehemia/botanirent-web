@@ -53,7 +53,8 @@ export const transactionController = {
 			success: true,
 			transaction,
 			branch: branch || { name: 'BotaniRent', address: '', phone: '' },
-			isSuccess
+			// isSuccess hanya true jika query param success=true DAN payment sudah benar-benar paid
+			isSuccess: isSuccess && transaction.payment_status === 'paid'
 		};
 	}
 };

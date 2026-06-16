@@ -485,7 +485,6 @@
 												>
 													<option value="Tunai">Tunai / Cash</option>
 													<option value="QRIS">QRIS</option>
-													<option value="Transfer">Transfer Bank</option>
 												</select>
 											</label>
 										</div>

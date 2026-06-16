@@ -122,7 +122,11 @@
 		if (timerInterval) clearInterval(timerInterval);
 		showQrisModal = false;
 		if (qrisTxnId) {
-			handleSuccess();
+			// Hanya bersihkan cart jika pembayaran sudah sukses
+			if (paymentSuccess) {
+				handleSuccess();
+			}
+			// Redirect ke detail tanpa ?success=true — status asli ditentukan oleh database
 			window.location.href = `/transactions/${qrisTxnId}`;
 		}
 	}
@@ -256,13 +260,6 @@
 			sublabel: 'Bayar dengan uang cash',
 			icon: Banknote,
 			color: 'var(--color-forest)'
-		},
-		{
-			id: 'transfer',
-			label: 'Transfer',
-			sublabel: 'BCA / Mandiri',
-			icon: Landmark,
-			color: 'var(--color-info)'
 		},
 		{ id: 'qris', label: 'QRIS', sublabel: 'Scan QR Midtrans', icon: QrCode, color: '#7C3AED' }
 	];
@@ -503,7 +500,7 @@
 						</div>
 
 						<!-- Cash Input & Shortcuts -->
-						{#if paymentMethod === 'cash' || paymentMethod === 'transfer'}
+						{#if paymentMethod === 'cash'}
 							<div class="mt-5 space-y-4">
 								<div class="relative">
 									<label
@@ -657,7 +654,7 @@
 								<div class="checkout-payment-info">
 									<div class="flex justify-between text-sm">
 										<span class="text-[var(--color-stone)]"
-											>Dibayar ({paymentMethod === 'cash' ? 'Tunai' : 'Transfer'})</span
+											>Dibayar (Tunai)</span
 										>
 										<span class="font-semibold text-[var(--color-earth)] tabular-nums"
 											>{formatCurrency(parseFloat(paidAmount))}</span
