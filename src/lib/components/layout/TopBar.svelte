@@ -134,6 +134,7 @@
 			<a
 				href="/dashboard"
 				class="flex items-center gap-1 text-[var(--color-stone)] transition-colors hover:text-[var(--color-forest)]"
+				aria-label="Dashboard"
 			>
 				<Home size={14} class="translate-y-[-1px]" />
 			</a>

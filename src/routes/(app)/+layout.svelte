@@ -8,6 +8,7 @@
 
 	// Local state for sidebar toggle (handled by runes)
 	let sidebarExpanded = $state(false);
+	let isReady = $state(false);
 
 	onMount(() => {
 		// Default to expanded on desktop viewports
@@ -21,6 +22,10 @@
 				sidebarExpanded = false;
 			}
 		});
+
+		setTimeout(() => {
+			isReady = true;
+		}, 100);
 
 		return unsubscribe;
 	});
@@ -64,7 +69,7 @@
 	{/if}
 
 	<div
-		class="ml-0 flex min-w-0 flex-1 flex-col transition-all duration-250 {sidebarExpanded
+		class="ml-0 flex min-w-0 flex-1 flex-col {isReady ? 'transition-all duration-250' : ''} {sidebarExpanded
 			? 'md:ml-[260px]'
 			: 'md:ml-[72px]'}"
 	>

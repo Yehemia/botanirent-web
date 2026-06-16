@@ -17,11 +17,11 @@ export const dashboardController = {
 		const branchId = profile.branch_id;
 		const todayStr = new Date().toISOString().split('T')[0];
 
-		// 1. Get physical asset status counts
-		const assetStats = await assetModel.getAssetsStatusCounts(supabase, branchId);
-
-		// 2. Fetch 5 recent transactions
-		const recentTransactions = await transactionModel.getRecentTransactions(supabase, branchId, 5);
+		// 1. Get physical asset status counts & 2. Fetch 5 recent transactions in parallel
+		const [assetStats, recentTransactions] = await Promise.all([
+			assetModel.getAssetsStatusCounts(supabase, branchId),
+			transactionModel.getRecentTransactions(supabase, branchId, 5)
+		]);
 
 		// 3. Compile owner specific data
 		let ownerData = null;

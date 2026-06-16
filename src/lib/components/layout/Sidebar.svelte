@@ -1,4 +1,5 @@
 <script>
+	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
 	import {
@@ -26,6 +27,14 @@
 
 	/** @type {Props} */
 	let { userProfile, expanded = $bindable(true) } = $props();
+
+	let isReady = $state(false);
+
+	onMount(() => {
+		setTimeout(() => {
+			isReady = true;
+		}, 100);
+	});
 
 	// Derived state to check current path
 	let currentPath = $derived($page.url.pathname);
@@ -73,7 +82,8 @@
 </script>
 
 <aside
-	class="fixed top-0 left-0 z-40 flex h-screen flex-col overflow-hidden border-r border-[#385624]/30 bg-gradient-to-b from-[#182C0D] to-[#254514] text-white transition-all duration-250 select-none
+	class="fixed top-0 left-0 z-40 flex h-screen flex-col overflow-hidden border-r border-[#385624]/30 bg-gradient-to-b from-[#182C0D] to-[#254514] text-white select-none
+		{isReady ? 'transition-all duration-250' : ''}
 		{expanded ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} 
 		w-[260px] {expanded ? 'md:w-[260px]' : 'md:w-[72px]'}"
 >
@@ -89,6 +99,8 @@
 			<img
 				src="/logo.svg"
 				alt="Logo BotaniRent"
+				width="28"
+				height="28"
 				class="h-7 w-7 shrink-0 object-contain transition-transform duration-300 group-hover:scale-105"
 			/>
 			{#if expanded}
@@ -96,6 +108,8 @@
 				<img
 					src="/wordmark.svg"
 					alt="BotaniRent"
+					width="110"
+					height="24"
 					class="h-6 object-contain brightness-0 invert transition-opacity duration-300"
 				/>
 			{/if}
@@ -128,6 +142,7 @@
 							? 'border-white/5 bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]'
 							: 'text-white/60 hover:bg-white/5 hover:text-white'}"
 						title={!expanded ? item.label : undefined}
+						aria-label={item.label}
 					>
 						{#if active}
 							<div

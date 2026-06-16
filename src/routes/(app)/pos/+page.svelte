@@ -19,6 +19,7 @@
 	import { formatCurrency } from '$lib/utils/format';
 	import { toast } from 'svelte-sonner';
 	import { isMobileApp, scanBarcodeFromMobile } from '$lib/utils/mobileBridge';
+	import { getOptimizedImageUrl } from '$lib/utils/image';
 
 	let { data } = $props();
 	let items = $derived(data.items);
@@ -231,6 +232,7 @@
 									class="flex items-center justify-center p-1 text-[var(--color-forest)] transition-colors hover:text-[var(--color-forest-light)]"
 									onclick={handleMobileScan}
 									title="Pindai Barcode via Kamera"
+									aria-label="Pindai barcode via kamera"
 								>
 									<Camera size={18} />
 								</button>
@@ -245,28 +247,28 @@
 						class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors {activeTab ===
 						'all'
 							? 'bg-[var(--color-earth)] text-white'
-							: 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+							: 'bg-[var(--color-sand)] text-[var(--color-earth)]/75 hover:text-[var(--color-earth)]'}"
 						onclick={() => (activeTab = 'all')}>Semua</button
 					>
 					<button
 						class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors {activeTab ===
 						'sewa'
 							? 'bg-[var(--color-earth)] text-white'
-							: 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+							: 'bg-[var(--color-sand)] text-[var(--color-earth)]/75 hover:text-[var(--color-earth)]'}"
 						onclick={() => (activeTab = 'sewa')}>Sewa Alat</button
 					>
 					<button
 						class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors {activeTab ===
 						'package'
 							? 'bg-[var(--color-earth)] text-white'
-							: 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+							: 'bg-[var(--color-sand)] text-[var(--color-earth)]/75 hover:text-[var(--color-earth)]'}"
 						onclick={() => (activeTab = 'package')}>Paket Bundling</button
 					>
 					<button
 						class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors {activeTab ===
 						'retail'
 							? 'bg-[var(--color-earth)] text-white'
-							: 'bg-[var(--color-sand)] text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+							: 'bg-[var(--color-sand)] text-[var(--color-earth)]/75 hover:text-[var(--color-earth)]'}"
 						onclick={() => (activeTab = 'retail')}>Retail / Jual</button
 					>
 				</div>
@@ -283,7 +285,7 @@
 					</div>
 				{:else}
 					<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-						{#each displayItems() as item (item.id + item.__displayType)}
+						{#each displayItems() as item, i (item.id + item.__displayType)}
 							<button
 								class="group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white text-left shadow-sm transition-all hover:border-[var(--color-forest)]/50 hover:shadow-md"
 								onclick={() => addToCart(item, item.__displayType)}
@@ -291,9 +293,17 @@
 								<div class="relative h-32 overflow-hidden bg-[var(--color-sand)]">
 									{#if item.image_url}
 										<img
-											src={item.image_url}
+											src={getOptimizedImageUrl(item.image_url, { width: 300 })}
 											alt={item.name}
 											class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+											loading={i < 4 ? 'eager' : 'lazy'}
+											fetchpriority={i < 4 ? 'high' : 'low'}
+											onerror={(e) => {
+												const img = /** @type {HTMLImageElement} */ (e.currentTarget);
+												if (img.src !== item.image_url) {
+													img.src = item.image_url;
+												}
+											}}
 										/>
 									{:else}
 										<div
@@ -327,11 +337,11 @@
 									{/if}
 								</div>
 								<div class="flex flex-1 flex-col p-3">
-									<h3
+									<span
 										class="mb-1 line-clamp-2 text-sm font-bold text-[var(--color-earth)] transition-colors group-hover:text-[var(--color-forest)]"
 									>
 										{item.name}
-									</h3>
+									</span>
 									<div class="mt-auto pt-2">
 										{#if item.__displayType === 'sewa'}
 											<span class="font-bold text-[var(--color-forest)]"
@@ -378,11 +388,11 @@
 			<div class="flex-1 space-y-3 overflow-y-auto p-4">
 				{#if cart.length === 0}
 					<div
-						class="flex h-full flex-col items-center justify-center text-[var(--color-stone)] opacity-50"
+						class="flex h-full flex-col items-center justify-center"
 					>
-						<ShoppingCart size={48} class="mb-3" />
-						<p class="text-sm">Keranjang masih kosong</p>
-						<p class="mt-1 max-w-[200px] text-center text-[10px]">
+						<ShoppingCart size={48} class="mb-3 text-[var(--color-earth)]/40" />
+						<p class="text-sm font-bold text-[var(--color-earth)]/80">Keranjang masih kosong</p>
+						<p class="mt-1 max-w-[200px] text-center text-[10px] text-[var(--color-earth)]/70">
 							Pilih barang di sebelah kiri atau scan barcode.
 						</p>
 					</div>
@@ -397,14 +407,15 @@
 								onclick={() => {
 									cart = cart.filter((_, idx) => idx !== i);
 								}}
+								aria-label="Hapus {item.name} dari keranjang"
 							>
 								<Trash2 size={14} />
 							</button>
 
 							<div>
-								<h4 class="pr-6 text-sm leading-tight font-bold text-[var(--color-earth)]">
+								<span class="pr-6 text-sm leading-tight font-bold text-[var(--color-earth)] block">
 									{item.name}
-								</h4>
+								</span>
 								<div class="mt-1 flex items-center gap-2">
 									{#if item.type === 'rental'}
 										<span

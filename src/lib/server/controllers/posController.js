@@ -24,10 +24,12 @@ export const posController = {
 			};
 		}
 
-		const categories = await categoryModel.getCategories(supabase);
-		const items = await itemModel.getActiveItems(supabase, profile.branch_id);
-		const packages = await packageModel.getActivePackages(supabase, profile.branch_id);
-		const customers = await customerModel.getCustomersMinimal(supabase, profile.branch_id);
+		const [categories, items, packages, customers] = await Promise.all([
+			categoryModel.getCategories(supabase),
+			itemModel.getActiveItems(supabase, profile.branch_id),
+			packageModel.getActivePackages(supabase, profile.branch_id),
+			customerModel.getCustomersMinimal(supabase, profile.branch_id)
+		]);
 
 		return {
 			categories,
@@ -44,8 +46,10 @@ export const posController = {
 	 * @param {{ branch_id: string }} profile
 	 */
 	async getCheckoutData(supabase, profile) {
-		const customers = await customerModel.getCustomersMinimal(supabase, profile.branch_id);
-		const rentalSettings = await settingsModel.getRentalSettings(supabase);
+		const [customers, rentalSettings] = await Promise.all([
+			customerModel.getCustomersMinimal(supabase, profile.branch_id),
+			settingsModel.getRentalSettings(supabase)
+		]);
 
 		return {
 			customers,
