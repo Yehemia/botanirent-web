@@ -1,6 +1,9 @@
 <script>
 	import '../app.css';
 	import { Toaster } from 'svelte-sonner';
+	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
+
+	injectSpeedInsights();
 
 	let { children } = $props();
 </script>
