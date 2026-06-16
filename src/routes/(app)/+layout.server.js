@@ -7,32 +7,21 @@ export const load = async ({ locals }) => {
 		throw redirect(303, '/login');
 	}
 
-	let branch = null;
-	if (profile?.branch_id) {
-		const { data } = await locals.supabase
-			.from('branches')
-			.select('name')
-			.eq('id', profile.branch_id)
-			.single();
-		if (data) {
-			branch = data;
-		}
-	}
+	const branchPromise = profile?.branch_id
+		? locals.supabase.from('branches').select('name').eq('id', profile.branch_id).single()
+		: Promise.resolve({ data: null });
 
-	/** @type {any[]} */
-	let branches = [];
-	if (profile?.role === 'owner') {
-		const { data } = await locals.supabase.from('branches').select('id, name').order('name');
-		if (data) {
-			branches = data;
-		}
-	}
+	const branchesPromise = profile?.role === 'owner'
+		? locals.supabase.from('branches').select('id, name').order('name')
+		: Promise.resolve({ data: null });
+
+	const [branchRes, branchesRes] = await Promise.all([branchPromise, branchesPromise]);
 
 	return {
 		session,
 		user,
 		profile,
-		branch,
-		branches
+		branch: branchRes.data,
+		branches: branchesRes.data || []
 	};
 };
