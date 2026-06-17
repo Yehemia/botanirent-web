@@ -1,5 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
+import { cacheGet, cacheInvalidate, cacheInvalidatePrefix } from '$lib/server/cache.js';
 
 export const load = async ({ locals: { supabase, safeGetSession } }) => {
 	const { profile } = await safeGetSession();
@@ -9,26 +10,47 @@ export const load = async ({ locals: { supabase, safeGetSession } }) => {
 	}
 
 	// Fetch profiles (staff)
-	const { data: staff, error: fetchError } = await supabase
-		.from('profiles')
-		.select('*, branches(name)')
-		.order('created_at', { ascending: false });
+	const staffPromise = cacheGet(
+		'staff_list',
+		async () => {
+			const { data, error: fetchError } = await supabase
+				.from('profiles')
+				.select('*, branches(name)')
+				.order('created_at', { ascending: false });
 
-	if (fetchError) {
-		console.error('Error fetching staff:', fetchError);
-		throw error(500, 'Gagal memuat data staff');
-	}
+			if (fetchError) {
+				console.error('Error fetching staff:', fetchError);
+				throw error(500, 'Gagal memuat data staff');
+			}
+			return data || [];
+		},
+		15000
+	);
 
 	// Fetch branches for the dropdown
-	const { data: branches } = await supabase
-		.from('branches')
-		.select('id, name')
-		.eq('is_active', true)
-		.order('name');
+	const branchesPromise = cacheGet(
+		'active_branches_dropdown',
+		async () => {
+			const { data, error: branchesError } = await supabase
+				.from('branches')
+				.select('id, name')
+				.eq('is_active', true)
+				.order('name');
+
+			if (branchesError) {
+				console.error('Error fetching branches for dropdown:', branchesError);
+				throw error(500, 'Gagal memuat data cabang');
+			}
+			return data || [];
+		},
+		30000
+	);
+
+	const [staff, branches] = await Promise.all([staffPromise, branchesPromise]);
 
 	return {
 		staff,
-		branches: branches || []
+		branches
 	};
 };
 
@@ -89,6 +111,10 @@ export const actions = {
 			return fail(500, { error: 'Akun dibuat, namun gagal mengatur role/cabang.' });
 		}
 
+		// Invalidate cached staff list and dashboard counts
+		cacheInvalidate('staff_list');
+		cacheInvalidatePrefix('staff_count_');
+
 		return { success: true };
 	},
 
@@ -109,6 +135,10 @@ export const actions = {
 		if (error) {
 			return fail(500, { error: 'Gagal mengubah status staff.' });
 		}
+
+		// Invalidate cached staff list and dashboard counts
+		cacheInvalidate('staff_list');
+		cacheInvalidatePrefix('staff_count_');
 
 		return { success: true };
 	}
