@@ -5,6 +5,7 @@ import { branchModel } from '../models/branchModel.js';
 import { customerModel } from '../models/customerModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
 import { settingsModel } from '../models/settingsModel.js';
+import { cacheGet } from '../cache.js';
 
 export const dashboardController = {
 	/**
@@ -47,11 +48,11 @@ export const dashboardController = {
 			] = await Promise.all([
 				transactionModel.getTransactionsForRevenue(supabase, branchId, queryDate.toISOString()),
 				transactionModel.getPaidPenaltiesForRevenue(supabase, branchId, queryDate.toISOString()),
-				staffModel.getStaffCount(supabase, branchId),
-				branchModel.getBranchesCount(supabase),
-				customerModel.getCustomersCount(supabase, branchId),
+				cacheGet(`staff_count_${branchId || 'all'}`, () => staffModel.getStaffCount(supabase, branchId), 15000),
+				cacheGet('branch_count', () => branchModel.getBranchesCount(supabase), 30000),
+				cacheGet(`customer_count_${branchId || 'all'}`, () => customerModel.getCustomersCount(supabase, branchId), 15000),
 				activityLogModel.getRecentLogs(supabase, branchId, 5),
-				settingsModel.getRentalSettings(supabase)
+				cacheGet('rental_settings', () => settingsModel.getRentalSettings(supabase), 30000)
 			]);
 
 			const monthlyRevenueTarget = Number(rentalSettings.monthly_revenue_target) || 20000000;

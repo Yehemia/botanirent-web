@@ -1,4 +1,5 @@
 import { branchModel } from '../models/branchModel.js';
+import { cacheGet, cacheInvalidate } from '../cache.js';
 
 export const branchController = {
 	/**
@@ -6,7 +7,7 @@ export const branchController = {
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 */
 	async getBranches(supabase) {
-		const branches = await branchModel.getBranches(supabase);
+		const branches = await cacheGet('get_branches', () => branchModel.getBranches(supabase), 15000);
 		return {
 			branches
 		};
@@ -41,6 +42,9 @@ export const branchController = {
 			} else {
 				await branchModel.insertBranch(supabase, branchData);
 			}
+			cacheInvalidate('get_branches');
+			cacheInvalidate('layout_branches');
+			cacheInvalidate('branch_count');
 			return { success: true };
 		} catch (error) {
 			console.error('Error saving branch in controller:', error);
@@ -60,6 +64,9 @@ export const branchController = {
 
 		try {
 			await branchModel.deleteBranch(supabase, id);
+			cacheInvalidate('get_branches');
+			cacheInvalidate('layout_branches');
+			cacheInvalidate('branch_count');
 			return { success: true };
 		} catch (error) {
 			console.error('Error deleting branch in controller:', error);
