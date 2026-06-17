@@ -37,11 +37,17 @@ export const handle = async ({ event, resolve }) => {
 
 		localsWithPromise._sessionPromise = (async () => {
 			try {
-				// Find the Supabase auth token cookie dynamically (supports chunked cookies)
-				const authCookie = event.cookies
+				// Find all auth token chunk cookies and combine their values to form a unique key
+				const authCookies = event.cookies
 					.getAll()
-					.find((c) => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
-				const tokenKey = authCookie ? authCookie.value : null;
+					.filter(
+						(c) =>
+							c.name.startsWith('sb-') &&
+							c.name.includes('-auth-token') &&
+							!c.name.includes('-code-verifier')
+					)
+					.sort((a, b) => a.name.localeCompare(b.name));
+				const tokenKey = authCookies.length > 0 ? authCookies.map((c) => c.value).join('|') : null;
 
 				// If there is no auth cookie, the user is definitely not logged in
 				if (!tokenKey) {
