@@ -1,5 +1,5 @@
 import { branchModel } from '../models/branchModel.js';
-import { cacheGet, cacheInvalidate } from '../cache.js';
+import { cacheGet, cacheInvalidate, cacheInvalidatePrefix } from '../cache.js';
 
 export const branchController = {
 	/**
@@ -45,6 +45,8 @@ export const branchController = {
 			cacheInvalidate('get_branches');
 			cacheInvalidate('layout_branches');
 			cacheInvalidate('branch_count');
+			cacheInvalidate('active_branches');
+			cacheInvalidatePrefix('branch_details_');
 			return { success: true };
 		} catch (error) {
 			console.error('Error saving branch in controller:', error);
@@ -67,6 +69,8 @@ export const branchController = {
 			cacheInvalidate('get_branches');
 			cacheInvalidate('layout_branches');
 			cacheInvalidate('branch_count');
+			cacheInvalidate('active_branches');
+			cacheInvalidatePrefix('branch_details_');
 			return { success: true };
 		} catch (error) {
 			console.error('Error deleting branch in controller:', error);

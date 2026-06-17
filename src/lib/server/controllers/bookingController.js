@@ -4,6 +4,7 @@ import { itemModel } from '../models/itemModel.js';
 import { assetModel } from '../models/assetModel.js';
 import { branchModel } from '../models/branchModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
+import { cacheGet } from '../cache.js';
 
 export const bookingController = {
 	/**
@@ -19,7 +20,11 @@ export const bookingController = {
 		let branches = [];
 		if (isOwner) {
 			try {
-				branches = await branchModel.getActiveBranches(supabase);
+				branches = await cacheGet(
+					'active_branches',
+					() => branchModel.getActiveBranches(supabase),
+					30000
+				);
 				if (!selectedBranchId && branches.length > 0) {
 					selectedBranchId = branches[0].id;
 				}

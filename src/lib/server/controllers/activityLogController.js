@@ -1,5 +1,6 @@
 import { activityLogModel } from '../models/activityLogModel.js';
 import { branchModel } from '../models/branchModel.js';
+import { cacheGet } from '../cache.js';
 
 export const activityLogController = {
 	/**
@@ -19,7 +20,7 @@ export const activityLogController = {
 
 		const [logsRes, branches] = await Promise.all([
 			activityLogModel.getActivityLogs(supabase, { search, branchId, from, to }),
-			branchModel.getBranches(supabase)
+			cacheGet('get_branches', () => branchModel.getBranches(supabase), 15000)
 		]);
 
 		return {

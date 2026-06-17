@@ -1,5 +1,6 @@
 import { transactionModel } from '../models/transactionModel.js';
 import { branchModel } from '../models/branchModel.js';
+import { cacheGet } from '../cache.js';
 
 export const transactionController = {
 	/**
@@ -45,8 +46,13 @@ export const transactionController = {
 		transaction.items = items;
 
 		let branch = null;
-		if (profile.branch_id) {
-			branch = await branchModel.getBranchDetails(supabase, profile.branch_id);
+		const branchId = profile.branch_id;
+		if (branchId) {
+			branch = await cacheGet(
+				`branch_details_${branchId}`,
+				() => branchModel.getBranchDetails(supabase, branchId),
+				60000
+			);
 		}
 
 		return {

@@ -1,6 +1,7 @@
 import { customerModel } from '../models/customerModel.js';
 import { branchModel } from '../models/branchModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
+import { cacheGet } from '../cache.js';
 
 export const customerController = {
 	/**
@@ -16,7 +17,11 @@ export const customerController = {
 		let branches = [];
 		if (isOwner) {
 			try {
-				branches = await branchModel.getActiveBranches(supabase);
+				branches = await cacheGet(
+					'active_branches',
+					() => branchModel.getActiveBranches(supabase),
+					30000
+				);
 				if (!selectedBranchId && branches.length > 0) {
 					selectedBranchId = branches[0].id;
 				}
