@@ -319,7 +319,7 @@ export const transactionModel = {
 	async getTransactionItemsList(supabase, transactionId) {
 		const { data, error } = await supabase
 			.from('transaction_items')
-			.select('*')
+			.select('*, penalties(*)')
 			.eq('transaction_id', transactionId)
 			.order('id', { ascending: true });
 

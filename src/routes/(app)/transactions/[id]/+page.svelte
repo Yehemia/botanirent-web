@@ -364,6 +364,32 @@
 			{/each}
 		</div>
 
+		<!-- ===== Denda Section (jika ada) ===== -->
+		{@const penalties = transaction.items.flatMap(item => (item.penalties || []).map(p => ({ ...p, item_name: item.item_name })))}
+		{#if penalties.length > 0}
+			<div class="receipt-dashes">{DASHES}</div>
+			<div class="receipt-info-block" style="gap: 6px;">
+				<div class="font-bold text-[10px] tracking-wider uppercase text-[var(--color-stone)]">Denda / Biaya Tambahan:</div>
+				{#each penalties as penalty}
+					<div class="receipt-item">
+						<div class="receipt-item-row" style="font-size: 12px;">
+							<span class="receipt-item-name font-medium">
+								Denda {penalty.type === 'late' ? 'Keterlambatan' : penalty.type === 'minor_damage' ? 'Rusak Ringan' : penalty.type === 'major_damage' ? 'Rusak Berat' : 'Kehilangan'}
+								<span class="text-[10px] text-[var(--color-stone)]">({penalty.item_name})</span>
+							</span>
+							<span class="receipt-item-subtotal font-mono font-semibold">{formatCurrency(penalty.calculated_amount)}</span>
+						</div>
+						<div class="flex justify-between text-[10px] text-[var(--color-stone)] italic" style="padding-left: 0.5rem; margin-top: 1px;">
+							<span>Status: {penalty.payment_status === 'paid' ? 'Lunas' : 'Belum Lunas'}</span>
+							{#if penalty.notes}
+								<span class="truncate max-w-[200px]" title={penalty.notes}>{penalty.notes}</span>
+							{/if}
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
 		<div class="receipt-dashes">{DASHES}</div>
 
 		<!-- ===== Totals ===== -->
