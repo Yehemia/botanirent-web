@@ -23,10 +23,11 @@
 	 * @typedef {Object} Props
 	 * @property {any} userProfile
 	 * @property {boolean} [expanded]
+	 * @property {number} [unpaidDendaCount]
 	 */
 
 	/** @type {Props} */
-	let { userProfile, expanded = $bindable(true) } = $props();
+	let { userProfile, expanded = $bindable(true), unpaidDendaCount = 0 } = $props();
 
 	let isReady = $state(false);
 
@@ -165,6 +166,17 @@
 								class="ml-3 text-[13.5px] font-medium whitespace-nowrap transition-colors duration-200"
 								>{item.label}</span
 							>
+							{#if item.href === '/customers' && unpaidDendaCount > 0}
+								<span class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white leading-none">
+									{unpaidDendaCount}
+								</span>
+							{/if}
+						{/if}
+
+						{#if !expanded && item.href === '/customers' && unpaidDendaCount > 0}
+							<span class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white leading-none shadow-sm">
+								{unpaidDendaCount}
+							</span>
 						{/if}
 					</a>
 				{/if}

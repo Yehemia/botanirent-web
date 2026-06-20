@@ -39,11 +39,42 @@ export const load = async ({ locals }) => {
 
 	const [branchRes, branchesRes] = await Promise.all([branchPromise, branchesPromise]);
 
+	let unpaidDendaCount = 0;
+	try {
+		let query = locals.supabase
+			.from('penalties')
+			.select('id, transaction_items(transactions(customer_id))')
+			.eq('payment_status', 'unpaid');
+
+		if (profile.branch_id) {
+			query = query.eq('branch_id', profile.branch_id);
+		}
+
+		const { data: penData, error: penErr } = await query;
+		if (!penErr && penData) {
+			const customerIds = new Set();
+			penData.forEach((p) => {
+				const itemsVal = /** @type {any} */ (p.transaction_items);
+				const firstItem = Array.isArray(itemsVal) ? itemsVal[0] : itemsVal;
+				const txVal = firstItem?.transactions;
+				const transaction = Array.isArray(txVal) ? txVal[0] : txVal;
+				const customerId = transaction?.customer_id;
+				if (customerId) {
+					customerIds.add(customerId);
+				}
+			});
+			unpaidDendaCount = customerIds.size;
+		}
+	} catch (err) {
+		console.error('Error fetching unpaid denda customer count in layout:', err);
+	}
+
 	return {
 		session,
 		user,
 		profile,
 		branch: branchRes.data,
-		branches: branchesRes.data || []
+		branches: branchesRes.data || [],
+		unpaidDendaCount
 	};
 };

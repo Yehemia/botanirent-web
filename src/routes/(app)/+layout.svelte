@@ -57,7 +57,7 @@
 </script>
 
 <div class="relative flex h-screen overflow-hidden bg-[var(--color-cream)]">
-	<Sidebar bind:expanded={sidebarExpanded} userProfile={data.profile} />
+	<Sidebar bind:expanded={sidebarExpanded} userProfile={data.profile} unpaidDendaCount={data.unpaidDendaCount} />
 
 	{#if sidebarExpanded}
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
