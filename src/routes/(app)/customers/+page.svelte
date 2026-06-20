@@ -1510,6 +1510,25 @@
 												<span class="text-xs font-normal text-[var(--color-stone)]"
 													>(x{hist.quantity})</span
 												>
+												{#if hist.penalties && hist.penalties.length > 0}
+													<div class="mt-1.5 space-y-1">
+														{#each hist.penalties as penalty}
+															<div class="flex items-center gap-1.5 text-xs font-normal">
+																<span class="inline-block rounded bg-red-50 px-1.5 py-0.5 font-semibold text-red-700 text-[10px]">
+																	Denda: {formatCurrency(penalty.calculated_amount)}
+																</span>
+																{#if penalty.payment_status === 'paid'}
+																	<span class="inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">Lunas</span>
+																{:else}
+																	<span class="inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Belum Lunas</span>
+																{/if}
+																{#if penalty.notes}
+																	<span class="text-[10px] text-[var(--color-stone)] italic max-w-[150px] truncate" title={penalty.notes}>({penalty.notes})</span>
+																{/if}
+															</div>
+														{/each}
+													</div>
+												{/if}
 											</td>
 											<td class="p-3 text-right font-mono text-[13px]"
 												>{formatCurrency(hist.subtotal)}</td
