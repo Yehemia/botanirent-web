@@ -10,6 +10,11 @@
 	let transaction = $derived(data.transaction);
 	let branch = $derived(data.branch);
 	let isSuccess = $derived(data.isSuccess);
+	let penalties = $derived(
+		transaction?.items?.flatMap((item) =>
+			(item.penalties || []).map((p) => ({ ...p, item_name: item.item_name }))
+		) || []
+	);
 
 	let showModal = $state(false);
 	let pollingInterval = /** @type {any} */ (null);
@@ -365,7 +370,6 @@
 		</div>
 
 		<!-- ===== Denda Section (jika ada) ===== -->
-		{@const penalties = transaction.items.flatMap(item => (item.penalties || []).map(p => ({ ...p, item_name: item.item_name })))}
 		{#if penalties.length > 0}
 			<div class="receipt-dashes">{DASHES}</div>
 			<div class="receipt-info-block" style="gap: 6px;">
