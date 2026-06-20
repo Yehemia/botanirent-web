@@ -4,20 +4,27 @@ import { cacheGet } from '../cache.js';
 
 export const transactionController = {
 	/**
-	 * Get list of transactions for a branch with optional search filter
+	 * Get list of transactions for a branch with optional search filter and pagination
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ branch_id: string|null }} profile
 	 * @param {string} search
+	 * @param {number} page
+	 * @param {number} limit
 	 */
-	async getTransactionsList(supabase, profile, search = '') {
-		const transactions = await transactionModel.getTransactions(
+	async getTransactionsList(supabase, profile, search = '', page = 1, limit = 10) {
+		const { data, count } = await transactionModel.getTransactions(
 			supabase,
 			profile.branch_id,
-			search
+			search,
+			page,
+			limit
 		);
 		return {
-			transactions,
-			search
+			transactions: data,
+			totalCount: count,
+			search,
+			page,
+			limit
 		};
 	},
 

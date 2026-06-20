@@ -10,6 +10,8 @@ export async function load({ locals, url }) {
 	}
 
 	const search = url.searchParams.get('q') || '';
-	const data = await transactionController.getTransactionsList(supabase, profile, search);
+	const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
+	const limit = 10;
+	const data = await transactionController.getTransactionsList(supabase, profile, search, page, limit);
 	return data;
 }

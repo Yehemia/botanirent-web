@@ -251,15 +251,18 @@ export const transactionModel = {
 	},
 
 	/**
-	 * Fetch transactions list, optionally filtered by branch and/or search term
+	 * Fetch transactions list, optionally filtered by branch and/or search term, with pagination
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string|null} branchId
 	 * @param {string} search
+	 * @param {number} page
+	 * @param {number} limit
+	 * @returns {Promise<{ data: any[], count: number }>}
 	 */
-	async getTransactions(supabase, branchId = null, search = '') {
+	async getTransactions(supabase, branchId = null, search = '', page = 1, limit = 10) {
 		let query = supabase
 			.from('transactions')
-			.select('*, customer:customers(full_name), cashier:profiles(full_name)')
+			.select('*, customer:customers(full_name), cashier:profiles(full_name)', { count: 'exact' })
 			.order('created_at', { ascending: false });
 
 		if (branchId) {
@@ -270,12 +273,18 @@ export const transactionModel = {
 			query = query.ilike('transaction_code', `%${search}%`);
 		}
 
-		const { data, error } = await query;
+		const offset = (page - 1) * limit;
+		query = query.range(offset, offset + limit - 1);
+
+		const { data, count, error } = await query;
 		if (error) {
 			console.error('Error fetching transactions list in model:', error);
 			throw new Error(error.message);
 		}
-		return data || [];
+		return {
+			data: data || [],
+			count: count || 0
+		};
 	},
 
 	/**

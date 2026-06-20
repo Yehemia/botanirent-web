@@ -1,5 +1,7 @@
 <script>
-	import { Search, Receipt, ArrowRight, CheckCircle, Clock } from '@lucide/svelte';
+	import { Search, Receipt, ArrowRight, CheckCircle, Clock, ChevronLeft, ChevronRight } from '@lucide/svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -10,6 +12,20 @@
 	let { data } = $props();
 	let transactions = $derived(data.transactions);
 	let search = $derived(data.search);
+	let currentPage = $derived(data.page);
+	let totalCount = $derived(data.totalCount);
+	let limit = $derived(data.limit);
+	let totalPages = $derived(Math.ceil(totalCount / limit));
+
+	/**
+	 * Navigate to a new page using SvelteKit goto
+	 * @param {number} newPage
+	 */
+	function goToPage(newPage) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		goto(url.toString(), { keepFocus: true, noScroll: false });
+	}
 </script>
 
 <div class="mx-auto max-w-7xl space-y-6 pb-12">
@@ -122,5 +138,43 @@
 				</tbody>
 			</table>
 		</div>
+
+		<!-- Pagination Footer -->
+		{#if totalCount > 0}
+			<div
+				class="flex items-center justify-between border-t border-[var(--color-border-light)] bg-white p-4 text-[var(--color-stone)]"
+			>
+				<span class="text-[13px]">
+					Menampilkan <strong class="text-[var(--color-earth)]"
+						>{(currentPage - 1) * limit + 1}</strong
+					>
+					sampai
+					<strong class="text-[var(--color-earth)]"
+						>{Math.min(currentPage * limit, totalCount)}</strong
+					>
+					dari
+					<strong class="text-[var(--color-earth)]">{totalCount}</strong> transaksi
+				</span>
+				<div class="flex items-center gap-1">
+					<button
+						type="button"
+						onclick={() => goToPage(Math.max(1, currentPage - 1))}
+						disabled={currentPage === 1}
+						class="rounded-lg border border-[var(--color-border-light)] p-1.5 transition-colors hover:bg-[var(--color-sand)] disabled:opacity-40 disabled:hover:bg-transparent"
+					>
+						<ChevronLeft size={16} />
+					</button>
+					<span class="px-2 font-mono text-[13px]">Hal {currentPage} / {totalPages}</span>
+					<button
+						type="button"
+						onclick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+						disabled={currentPage === totalPages}
+						class="rounded-lg border border-[var(--color-border-light)] p-1.5 transition-colors hover:bg-[var(--color-sand)] disabled:opacity-40 disabled:hover:bg-transparent"
+					>
+						<ChevronRight size={16} />
+					</button>
+				</div>
+			</div>
+		{/if}
 	</Card>
 </div>
