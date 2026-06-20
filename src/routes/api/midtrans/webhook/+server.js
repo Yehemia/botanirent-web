@@ -42,32 +42,67 @@ export async function POST({ request }) {
 			`[Midtrans Webhook] Menerima update untuk order ${order_id}. Status: ${transaction_status}`
 		);
 
-		// Pemetaan status Midtrans ke Supabase transactions
+		// Pemetaan status Midtrans ke Supabase transactions / penalties
 		if (['capture', 'settlement'].includes(transaction_status)) {
 			// Jika ada fraud_status, pastikan bernilai 'accept'
 			if (!fraud_status || fraud_status === 'accept') {
-				const { error } = await supabaseAdmin
-					.from('transactions')
-					.update({
-						payment_status: 'paid',
-						paid_at: new Date().toISOString(),
-						midtrans_transaction_id: transaction_id
-					})
-					.eq('transaction_code', order_id);
+				if (order_id.startsWith('DENDA-TX-')) {
+					const transactionId = order_id.substring(9);
+					
+					// 1. Ambil semua item ID transaksi ini
+					const { data: items, error: itemsError } = await supabaseAdmin
+						.from('transaction_items')
+						.select('id')
+						.eq('transaction_id', transactionId);
 
-				if (error) throw error;
-				console.log(`[Midtrans Webhook] Transaksi ${order_id} LUNAS.`);
+					if (!itemsError && items && items.length > 0) {
+						const itemIds = items.map((item) => item.id);
+						
+						// 2. Update denda
+						const { error: updateError } = await supabaseAdmin
+							.from('penalties')
+							.update({
+								payment_status: 'paid',
+								paid_at: new Date().toISOString(),
+								notes: `Lunas via QRIS (Midtrans ID: ${transaction_id})`
+							})
+							.eq('payment_status', 'unpaid')
+							.in('transaction_item_id', itemIds);
+
+						if (updateError) {
+							console.error(`[Midtrans Webhook] Gagal update denda untuk order ${order_id}:`, updateError);
+							throw updateError;
+						}
+						console.log(`[Midtrans Webhook] Denda untuk order ${order_id} LUNAS.`);
+					}
+				} else {
+					const { error } = await supabaseAdmin
+						.from('transactions')
+						.update({
+							payment_status: 'paid',
+							paid_at: new Date().toISOString(),
+							midtrans_transaction_id: transaction_id
+						})
+						.eq('transaction_code', order_id);
+
+					if (error) throw error;
+					console.log(`[Midtrans Webhook] Transaksi ${order_id} LUNAS.`);
+				}
 			}
 		}
 		// Jika gagal / expired / dibatalkan
 		else if (['expire', 'cancel', 'deny'].includes(transaction_status)) {
-			const { error } = await supabaseAdmin
-				.from('transactions')
-				.update({ payment_status: 'failed' })
-				.eq('transaction_code', order_id);
+			if (order_id.startsWith('DENDA-TX-')) {
+				console.log(`[Midtrans Webhook] Denda untuk order ${order_id} GAGAL/EXPIRED.`);
+			} else {
+				const { error } = await supabaseAdmin
+					.from('transactions')
+					.update({ payment_status: 'failed' })
+					.eq('transaction_code', order_id);
 
-			if (error) throw error;
-			console.log(`[Midtrans Webhook] Transaksi ${order_id} GAGAL/EXPIRED.`);
+				if (error) throw error;
+				console.log(`[Midtrans Webhook] Transaksi ${order_id} GAGAL/EXPIRED.`);
+			}
 		}
 
 		return json({ status: 'OK' });

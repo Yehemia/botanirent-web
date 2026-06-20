@@ -52,8 +52,12 @@ export const returnsController = {
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ id: string, branch_id: string|null }} profile
 	 * @param {FormData} formData
+	 * @param {object} [midtransConfig]
+	 * @param {string} [midtransConfig.serverKey]
+	 * @param {string} [midtransConfig.env]
+	 * @param {typeof fetch} [midtransConfig.fetch]
 	 */
-	async processReturn(supabase, profile, formData) {
+	async processReturn(supabase, profile, formData, midtransConfig) {
 		const payloadStr = formData.get('payload');
 		if (!payloadStr) {
 			return { success: false, status: 400, error: 'Payload kosong' };
@@ -123,9 +127,13 @@ export const returnsController = {
 			} else if (totalLatePenaltyOverridden !== null && totalLatePenaltyOverridden !== undefined) {
 				notesStr += ` (Denda disesuaikan manual dari ${maxLateDays * lateRate})`;
 			}
-			if (paymentStatus === 'paid') {
+			
+			if (paymentStatus === 'paid' && paymentMethod !== 'QRIS') {
 				notesStr += ` [Lunas via ${paymentMethod}]`;
+			} else if (paymentStatus === 'paid' && paymentMethod === 'QRIS') {
+				notesStr += ` [Menunggu Pembayaran QRIS]`;
 			}
+			
 			if (globalNotes) {
 				notesStr += ` Catatan: ${globalNotes}`;
 			}
@@ -138,9 +146,9 @@ export const returnsController = {
 					type: 'late',
 					late_days: maxLateDays,
 					calculated_amount: calculatedLateAmount,
-					payment_status: calculatedLateAmount === 0 ? 'paid' : paymentStatus,
+					payment_status: (calculatedLateAmount === 0) ? 'paid' : (paymentMethod === 'QRIS' ? 'unpaid' : paymentStatus),
 					paid_at:
-						paymentStatus === 'paid' || calculatedLateAmount === 0
+						(calculatedLateAmount === 0 || (paymentStatus === 'paid' && paymentMethod !== 'QRIS'))
 							? new Date().toISOString()
 							: null,
 					notes: notesStr
@@ -209,8 +217,10 @@ export const returnsController = {
 					if (calculatedAmount === 0) {
 						itemNotesStr += ` (Denda kerusakan dibebaskan)`;
 					}
-					if (paymentStatus === 'paid') {
+					if (paymentStatus === 'paid' && paymentMethod !== 'QRIS') {
 						itemNotesStr += ` [Lunas via ${paymentMethod}]`;
+					} else if (paymentStatus === 'paid' && paymentMethod === 'QRIS') {
+						itemNotesStr += ` [Menunggu Pembayaran QRIS]`;
 					}
 
 					try {
@@ -220,9 +230,9 @@ export const returnsController = {
 							branch_id: profile.branch_id,
 							type: item.condition,
 							calculated_amount: calculatedAmount,
-							payment_status: calculatedAmount === 0 ? 'paid' : paymentStatus,
+							payment_status: (calculatedAmount === 0) ? 'paid' : (paymentMethod === 'QRIS' ? 'unpaid' : paymentStatus),
 							paid_at:
-								paymentStatus === 'paid' || calculatedAmount === 0
+								(calculatedAmount === 0 || (paymentStatus === 'paid' && paymentMethod !== 'QRIS'))
 									? new Date().toISOString()
 									: null,
 							notes: itemNotesStr
@@ -268,6 +278,103 @@ export const returnsController = {
 				});
 			} catch (err) {
 				console.error('Failed to log activity for returned item:', err);
+			}
+		}
+
+		// JIKA QRIS -> Request ke Midtrans API
+		if (paymentStatus === 'paid' && paymentMethod === 'QRIS' && totalPenalty > 0 && midtransConfig && midtransConfig.fetch && midtransConfig.serverKey) {
+			try {
+				const firstItemId = items[0]?.id;
+				let customerName = 'Pelanggan';
+				let customerPhone = '-';
+				let transactionId = '';
+
+				if (firstItemId) {
+					const { data: itemData } = await supabase
+						.from('transaction_items')
+						.select('transaction:transactions(id, customer:customers(full_name, phone))')
+						.eq('id', firstItemId)
+						.maybeSingle();
+
+					if (itemData?.transaction) {
+						const tx = /** @type {any} */ (itemData.transaction);
+						transactionId = tx.id;
+						if (tx.customer) {
+							customerName = tx.customer.full_name || customerName;
+							customerPhone = tx.customer.phone || customerPhone;
+						}
+					}
+				}
+
+				if (!transactionId) {
+					return { success: false, status: 400, error: 'ID Transaksi tidak ditemukan' };
+				}
+
+				const orderId = `DENDA-TX-${transactionId}`;
+
+				const authString = btoa(`${midtransConfig.serverKey}:`);
+				const isProduction = midtransConfig.env === 'production';
+				const apiUrl = isProduction
+					? 'https://api.midtrans.com/v2/charge'
+					: 'https://api.sandbox.midtrans.com/v2/charge';
+
+				const midtransPayload = {
+					payment_type: 'qris',
+					transaction_details: {
+						order_id: orderId,
+						gross_amount: Math.round(totalPenalty)
+					},
+					customer_details: {
+						first_name: customerName,
+						phone: customerPhone
+					},
+					custom_expiry: {
+						expiry_duration: 5,
+						unit: 'minute'
+					}
+				};
+
+				const response = await midtransConfig.fetch(apiUrl, {
+					method: 'POST',
+					headers: {
+						Accept: 'application/json',
+						'Content-Type': 'application/json',
+						Authorization: `Basic ${authString}`
+					},
+					body: JSON.stringify(midtransPayload)
+				});
+
+				const midtransData = await response.json();
+				if (response.ok && midtransData.transaction_id) {
+					const qr_string = midtransData.qr_string;
+					const qr_url =
+						midtransData.actions?.find((/** @type {any} */ act) => act.name === 'generate-qr-code')
+							?.url || '';
+
+					return {
+						success: true,
+						payment_method: 'qris',
+						transaction_id: transactionId,
+						order_id: orderId,
+						totalPenalty,
+						qr_string,
+						qr_url
+					};
+				} else {
+					console.error('[Returns Midtrans] Midtrans API Error:', midtransData);
+					return {
+						success: false,
+						status: 400,
+						error: midtransData.status_message || 'Gagal inisiasi pembayaran QRIS Midtrans.'
+					};
+				}
+			} catch (e) {
+				console.error('[Returns Midtrans] Request Error:', e);
+				return {
+					success: false,
+					status: 500,
+					error: 'Kesalahan internal server saat menghubungi Midtrans.'
+				};
 			}
 		}
 

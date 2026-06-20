@@ -1,5 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { returnsController } from '$lib/server/controllers/returnsController.js';
+import { MIDTRANS_SERVER_KEY } from '$env/static/private';
+import { PUBLIC_MIDTRANS_ENV } from '$env/static/public';
 
 export async function load({ locals }) {
 	const { supabase } = locals;
@@ -14,7 +16,7 @@ export async function load({ locals }) {
 }
 
 export const actions = {
-	processReturn: async ({ request, locals }) => {
+	processReturn: async ({ request, locals, fetch: svelteFetch }) => {
 		const { supabase } = locals;
 		const { session, profile } = await locals.safeGetSession();
 
@@ -23,7 +25,14 @@ export const actions = {
 		}
 
 		const formData = await request.formData();
-		const result = await returnsController.processReturn(supabase, profile, formData);
+
+		const midtransConfig = {
+			serverKey: MIDTRANS_SERVER_KEY,
+			env: PUBLIC_MIDTRANS_ENV,
+			fetch: svelteFetch
+		};
+
+		const result = await returnsController.processReturn(supabase, profile, formData, midtransConfig);
 
 		if (!result.success) {
 			return fail(result.status || 500, { error: result.error });
