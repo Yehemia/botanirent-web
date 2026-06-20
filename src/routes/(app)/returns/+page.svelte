@@ -1,6 +1,7 @@
 <script>
 	import { onDestroy } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import {
 		ArrowDownToLine,
 		AlertTriangle,
@@ -71,8 +72,9 @@
 						paymentStatusMsg = 'Pembayaran denda berhasil dikonfirmasi!';
 						paymentSuccess = true;
 
-						setTimeout(() => {
+						setTimeout(async () => {
 							showQrisModal = false;
+							await invalidateAll();
 							selectedTrx = null; // reset selection
 						}, 2000);
 					} else if (data.payment_status === 'failed' || data.payment_status === 'expired') {
@@ -107,10 +109,11 @@
 		}, 1000);
 	}
 
-	function closeQrisModal() {
+	async function closeQrisModal() {
 		if (pollingInterval) clearInterval(pollingInterval);
 		if (timerInterval) clearInterval(timerInterval);
 		showQrisModal = false;
+		await invalidateAll();
 		if (paymentSuccess) {
 			selectedTrx = null;
 		}
