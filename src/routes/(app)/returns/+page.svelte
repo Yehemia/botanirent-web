@@ -378,8 +378,10 @@
 						action="?/processReturn"
 						use:enhance={() => {
 							loading = true;
+							console.log('[use:enhance] Processing return...');
 							return async ({ update, result }) => {
 								loading = false;
+								console.log('[use:enhance] Result received:', result);
 								if (
 									result.type === 'success' &&
 									result.data?.payment_method === 'qris' &&
@@ -393,6 +395,10 @@
 									startStatusPolling(resData.order_id);
 									startTimer();
 								} else {
+									if (result.type === 'failure' || result.type === 'error') {
+										console.error('[use:enhance] Error detail:', result);
+										alert('Gagal memproses pengembalian: ' + (result.data?.error || result.error?.message || 'Error tidak diketahui'));
+									}
 									await update();
 									if (result.type === 'success') {
 										selectedTrx = null; // reset selection

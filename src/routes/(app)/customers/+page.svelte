@@ -1,7 +1,8 @@
 <script>
+	import { onDestroy } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import {
 		Search,
 		Users,
@@ -23,7 +24,8 @@
 		Phone,
 		Mail,
 		Home,
-		FileText
+		FileText,
+		QrCode
 	} from '@lucide/svelte';
 
 	// Import shared UI components
@@ -337,6 +339,143 @@
 		selectedCustomer = customer;
 		isDeleteModalOpen = true;
 	}
+
+	// QRIS Modal States for Penalty Payment
+	let showQrisModal = $state(false);
+	let qrUrl = $state('');
+	let qrisTxnId = $state('');
+	let qrisTxnCode = $state('');
+	let qrisPollingInterval = $state(/** @type {any} */ (null));
+	let qrisTimerInterval = $state(/** @type {any} */ (null));
+	let timerMinutes = $state(5);
+	let timerSeconds = $state(0);
+	let paymentStatusMsg = $state('Menunggu pembayaran denda...');
+	let paymentSuccess = $state(false);
+	
+	let selectedPenaltyTrxMethod = $state(/** @type {Record<string, string>} */ ({})); // trxId -> method
+	let penaltySubmitting = $state(false);
+
+	let unpaidPenaltiesGroupedByTrx = $derived.by(() => {
+		if (!selectedCustomer) return [];
+		/** @type {Record<string, { transaction_id: string, transaction_code: string, total_amount: number, penalties: any[] }>} */
+		const groups = {};
+		selectedCustomer.transactions?.forEach(
+			/** @param {any} tx */ (tx) => {
+				tx.transaction_items?.forEach(
+					/** @param {any} item */ (item) => {
+						item.penalties?.forEach(
+							/** @param {any} penalty */ (penalty) => {
+								if (penalty.payment_status === 'unpaid') {
+									const txId = tx.id;
+									if (!groups[txId]) {
+										groups[txId] = {
+											transaction_id: txId,
+											transaction_code: tx.transaction_code,
+											total_amount: 0,
+											penalties: []
+										};
+									}
+									groups[txId].penalties.push({
+										...penalty,
+										item_name: item.item_name
+									});
+									groups[txId].total_amount += Number(penalty.calculated_amount) || 0;
+								}
+							}
+						);
+					}
+				);
+			}
+		);
+		return Object.values(groups);
+	});
+
+	/**
+	 * @param {string} orderId
+	 */
+	function startStatusPolling(orderId) {
+		if (qrisPollingInterval) clearInterval(qrisPollingInterval);
+		paymentStatusMsg = 'Menunggu pembayaran denda...';
+		paymentSuccess = false;
+
+		qrisPollingInterval = setInterval(async () => {
+			try {
+				const response = await fetch(`/api/midtrans/status/${orderId}`);
+				if (response.ok) {
+					const responseData = await response.json();
+					if (responseData.payment_status === 'paid') {
+						clearInterval(qrisPollingInterval);
+						clearInterval(qrisTimerInterval);
+						paymentStatusMsg = 'Pembayaran denda berhasil dikonfirmasi!';
+						paymentSuccess = true;
+
+						setTimeout(async () => {
+							showQrisModal = false;
+							await invalidateAll();
+							// Find the updated customer data in customers array and re-select to update details modal
+							if (selectedCustomer) {
+								const updated = data.customers?.find((/** @type {any} */ c) => c.id === selectedCustomer.id);
+								if (updated) {
+									selectedCustomer = updated;
+								} else {
+									isDetailModalOpen = false;
+									selectedCustomer = null;
+								}
+							}
+						}, 2000);
+					} else if (responseData.payment_status === 'failed' || responseData.payment_status === 'expired') {
+						clearInterval(qrisPollingInterval);
+						clearInterval(qrisTimerInterval);
+						paymentStatusMsg = 'Pembayaran denda gagal atau kedaluwarsa.';
+					}
+				}
+			} catch (e) {
+				console.error('Gagal memeriksa status pembayaran denda:', e);
+			}
+		}, 3000);
+	}
+
+	function startTimer() {
+		timerMinutes = 5;
+		timerSeconds = 0;
+		if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+		qrisTimerInterval = setInterval(() => {
+			if (timerSeconds === 0) {
+				if (timerMinutes === 0) {
+					clearInterval(qrisTimerInterval);
+					clearInterval(qrisPollingInterval);
+					paymentStatusMsg = 'Waktu pembayaran habis (kedaluwarsa).';
+					return;
+				}
+				timerMinutes -= 1;
+				timerSeconds = 59;
+			} else {
+				timerSeconds -= 1;
+			}
+		}, 1000);
+	}
+
+	async function closeQrisModal() {
+		if (qrisPollingInterval) clearInterval(qrisPollingInterval);
+		if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+		showQrisModal = false;
+		await invalidateAll();
+		if (paymentSuccess && selectedCustomer) {
+			// Update selectedCustomer with updated data
+			const updated = data.customers?.find((/** @type {any} */ c) => c.id === selectedCustomer.id);
+			if (updated) {
+				selectedCustomer = updated;
+			} else {
+				isDetailModalOpen = false;
+				selectedCustomer = null;
+			}
+		}
+	}
+
+	onDestroy(() => {
+		if (qrisPollingInterval) clearInterval(qrisPollingInterval);
+		if (qrisTimerInterval) clearInterval(qrisTimerInterval);
+	});
 </script>
 
 <div class="animate-fade-in space-y-6 pb-12">
@@ -1021,6 +1160,23 @@
 				>
 					<FileText size={16} /> Riwayat Transaksi
 				</button>
+				{#if selectedCustomer.unpaid_penalties_count > 0}
+					<button
+						type="button"
+						onclick={() => (detailActiveTab = 'penalties')}
+						class="relative flex items-center gap-2 border-b-2 px-5 py-2.5 text-[14px] font-semibold transition-colors
+							{detailActiveTab === 'penalties'
+							? 'border-[var(--color-forest)] text-[var(--color-forest)]'
+							: 'border-transparent text-[var(--color-stone)] hover:text-[var(--color-earth)]'}"
+					>
+						<CreditCard size={16} /> Pembayaran Denda
+						<span
+							class="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-error)] font-mono text-[10px] font-bold text-white shadow-sm"
+						>
+							{selectedCustomer.unpaid_penalties_count}
+						</span>
+					</button>
+				{/if}
 			</div>
 
 			<!-- Tab Contents Area -->
@@ -1192,6 +1348,115 @@
 						</div>
 					{/if}
 
+				<!-- TAB: PENALTIES -->
+				{:else if detailActiveTab === 'penalties'}
+					{#if unpaidPenaltiesGroupedByTrx.length === 0}
+						<div class="py-16 text-center text-[var(--color-stone)]">
+							<CheckCircle size={36} class="mx-auto mb-2 text-[var(--color-success)]" />
+							<p class="text-sm font-semibold">Semua denda telah lunas!</p>
+							<p class="mt-1 text-xs">Pelanggan tidak memiliki denda yang belum dibayar.</p>
+						</div>
+					{:else}
+						<div class="space-y-6">
+							{#each unpaidPenaltiesGroupedByTrx as group (group.transaction_id)}
+								<div class="rounded-xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+									<div class="mb-3 flex items-center justify-between border-b border-[var(--color-border-light)] pb-3">
+										<div>
+											<span class="text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase">No Nota Transaksi</span>
+											<p class="font-mono text-sm font-bold text-[var(--color-earth)]">{group.transaction_code}</p>
+										</div>
+										<div class="text-right">
+											<span class="text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase">Total Denda</span>
+											<p class="text-base font-bold text-[var(--color-error)]">{formatCurrency(group.total_amount)}</p>
+										</div>
+									</div>
+
+									<!-- Penalty list for this transaction -->
+									<div class="space-y-3">
+										{#each group.penalties as penalty (penalty.id)}
+											<div class="flex items-start justify-between rounded-lg bg-[var(--color-sand-lightest)] p-3 text-sm">
+												<div>
+													<span class="inline-block rounded bg-[var(--color-error-bg)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-error)]">
+														{penalty.type === 'late' ? 'Keterlambatan' : penalty.type === 'minor_damage' ? 'Rusak Ringan' : penalty.type === 'major_damage' ? 'Rusak Berat' : 'Hilang'}
+													</span>
+													<p class="mt-1 font-semibold text-[var(--color-earth)]">{penalty.item_name}</p>
+													{#if penalty.notes}
+														<p class="mt-0.5 text-xs text-[var(--color-stone)] italic">{penalty.notes}</p>
+													{/if}
+												</div>
+												<div class="font-mono font-semibold text-[var(--color-earth)]">
+													{formatCurrency(penalty.calculated_amount)}
+												</div>
+											</div>
+										{/each}
+									</div>
+
+									<!-- Settle/Pay Action Form -->
+									<form
+										method="POST"
+										action="?/payPenalty"
+										use:enhance={() => {
+											penaltySubmitting = true;
+											return async ({ result, update }) => {
+												penaltySubmitting = false;
+												if (result.type === 'success' && result.data?.payment_method === 'qris' && result.data?.qr_url) {
+													qrUrl = result.data.qr_url;
+													qrisTxnId = result.data.order_id;
+													qrisTxnCode = result.data.order_id;
+													showQrisModal = true;
+													startStatusPolling(result.data.order_id);
+													startTimer();
+												} else {
+													await update();
+													if (result.type === 'success') {
+														// Re-fetch updated customer details
+														const updated = data.customers?.find((c) => c.id === selectedCustomer.id);
+														if (updated) {
+															selectedCustomer = updated;
+														} else {
+															isDetailModalOpen = false;
+															selectedCustomer = null;
+														}
+													} else if (result.type === 'failure') {
+														alert('Gagal memproses pembayaran: ' + (result.data?.error || 'Error tidak diketahui'));
+													}
+												}
+											};
+										}}
+										class="mt-4 flex flex-col gap-3 border-t border-[var(--color-border-light)] pt-3 sm:flex-row sm:items-end sm:justify-between"
+									>
+										<input type="hidden" name="transaction_id" value={group.transaction_id} />
+										
+										<div class="w-full sm:max-w-xs">
+											<label class="block text-xs font-bold text-[var(--color-earth)]">
+												Metode Pembayaran
+												<select
+													name="payment_method"
+													class="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-normal focus:border-[var(--color-forest)] focus:outline-none"
+													value={selectedPenaltyTrxMethod[group.transaction_id] || 'Tunai'}
+													onchange={(e) => {
+														selectedPenaltyTrxMethod[group.transaction_id] = e.currentTarget.value;
+													}}
+												>
+													<option value="Tunai">Tunai / Cash</option>
+													<option value="QRIS">QRIS</option>
+												</select>
+											</label>
+										</div>
+
+										<Button
+											type="submit"
+											disabled={penaltySubmitting}
+											class="w-full font-semibold sm:w-auto"
+										>
+											{penaltySubmitting ? 'Memproses...' : 'Bayar Denda'}
+										</Button>
+									</form>
+								</div>
+							{/each}
+						</div>
+					{/if}
+
 					<!-- TAB 3: TRANSACTION HISTORY -->
 				{:else if detailActiveTab === 'history'}
 					{#if selectedCustomerHistoryRentals.length === 0}
@@ -1285,3 +1550,295 @@
 		</div>
 	{/if}
 </Modal>
+
+<!-- MODAL QRIS INTERAKTIF UNTUK PEMBAYARAN DENDA -->
+{#if showQrisModal}
+	<div class="qris-overlay" role="dialog" aria-modal="true">
+		<div class="qris-modal">
+			<div class="qris-modal-header">
+				<div class="qris-modal-icon-bg">
+					<QrCode size={20} class="text-purple-600" />
+				</div>
+				<div>
+					<h3 class="qris-modal-title">Pembayaran Denda QRIS</h3>
+					<p class="qris-modal-subtitle">Scan kode QR menggunakan e-wallet atau mobile banking</p>
+				</div>
+			</div>
+
+			<div class="qris-modal-content">
+				<div class="qris-qr-wrapper">
+					{#if qrUrl}
+						<img src={qrUrl} alt="QRIS Code" class="qris-qr-image" />
+					{:else}
+						<div class="qris-qr-placeholder">
+							<div class="checkout-spinner border-t-purple-600"></div>
+							<p class="mt-2 text-xs text-[var(--color-stone)]">Membangkitkan QRIS...</p>
+						</div>
+					{/if}
+				</div>
+
+				<div class="qris-details">
+					<div class="qris-detail-row">
+						<span>Total Denda:</span>
+						<span class="qris-amount">
+							{formatCurrency(qrisTxnId ? unpaidPenaltiesGroupedByTrx.find(g => `DENDA-TX-${g.transaction_id}` === qrisTxnId)?.total_amount || 0 : 0)}
+						</span>
+					</div>
+					<div class="qris-detail-row">
+						<span>Order ID:</span>
+						<span class="font-mono font-bold text-[var(--color-earth)]">{qrisTxnCode}</span>
+					</div>
+				</div>
+
+				<div class="qris-status-box" class:success-bg={paymentSuccess}>
+					<div class="flex items-center gap-3">
+						{#if paymentSuccess}
+							<div class="qris-success-icon-wrapper text-emerald-600">
+								<CheckCircle size={18} />
+							</div>
+						{:else}
+							<div class="checkout-spinner border-t-[var(--color-forest)]"></div>
+						{/if}
+						<span class="qris-status-text" class:success-text={paymentSuccess}>
+							{paymentStatusMsg}
+						</span>
+					</div>
+				</div>
+
+				{#if !paymentSuccess}
+					<div class="qris-timer">
+						<span>Batas Waktu Pembayaran:</span>
+						<span class="qris-timer-countdown">
+							{String(timerMinutes).padStart(2, '0')}:{String(timerSeconds).padStart(2, '0')}
+						</span>
+					</div>
+				{/if}
+			</div>
+
+			<div class="qris-modal-footer">
+				<button type="button" class="qris-close-btn" onclick={closeQrisModal}>
+					Tutup
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<style>
+	/* ─── QRIS Dynamic Modal Styles ─── */
+	.qris-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 150;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1.5rem;
+		background: rgba(26, 26, 26, 0.55);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+	}
+
+	.qris-modal {
+		background: white;
+		border-radius: 24px;
+		width: 100%;
+		max-width: 440px;
+		box-shadow:
+			0 20px 25px -5px rgba(0, 0, 0, 0.1),
+			0 10px 10px -5px rgba(0, 0, 0, 0.04);
+		border: 1px solid var(--color-border-light);
+		overflow: hidden;
+		animation: modalFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	@keyframes modalFadeIn {
+		from {
+			transform: scale(0.95);
+			opacity: 0;
+		}
+		to {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+
+	.qris-modal-header {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		padding: 24px;
+		border-bottom: 1px solid var(--color-border-light);
+		background: linear-gradient(180deg, var(--color-sand) 0%, transparent 100%);
+	}
+
+	.qris-modal-icon-bg {
+		width: 44px;
+		height: 44px;
+		border-radius: 14px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(124, 58, 237, 0.1);
+	}
+
+	.qris-modal-title {
+		font-size: 16px;
+		font-weight: 700;
+		color: var(--color-earth);
+		font-family: var(--font-heading);
+	}
+
+	.qris-modal-subtitle {
+		font-size: 12px;
+		color: var(--color-stone);
+		margin-top: 2px;
+	}
+
+	.qris-modal-content {
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 20px;
+	}
+
+	.qris-qr-wrapper {
+		width: 200px;
+		height: 200px;
+		border-radius: 16px;
+		border: 2px dashed var(--color-border);
+		padding: 10px;
+		background: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+	}
+
+	.qris-qr-image {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
+	.qris-qr-placeholder {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.qris-details {
+		width: 100%;
+		background: var(--color-sand);
+		border-radius: 16px;
+		padding: 14px 16px;
+		border: 1px solid var(--color-border-light);
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.qris-detail-row {
+		display: flex;
+		justify-content: space-between;
+		font-size: 13px;
+		color: var(--color-stone);
+	}
+
+	.qris-amount {
+		font-size: 15px;
+		font-weight: 800;
+		color: var(--color-forest);
+	}
+
+	.qris-status-box {
+		width: 100%;
+		padding: 12px;
+		border-radius: 14px;
+		background: rgba(44, 110, 73, 0.05);
+		border: 1.5px solid rgba(44, 110, 73, 0.15);
+		transition: all 0.3s ease;
+		box-sizing: border-box;
+	}
+
+	.qris-status-box.success-bg {
+		background: var(--color-success-bg);
+		border-color: rgba(16, 185, 129, 0.2);
+	}
+
+	.qris-status-text {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--color-forest);
+	}
+
+	.qris-status-text.success-text {
+		color: var(--color-success);
+	}
+
+	.qris-success-icon-wrapper {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.qris-timer {
+		font-size: 12px;
+		color: var(--color-stone);
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.qris-timer-countdown {
+		font-weight: 700;
+		color: var(--color-error);
+		font-family: var(--font-mono);
+	}
+
+	.qris-modal-footer {
+		padding: 16px 24px;
+		background: var(--color-sand);
+		border-top: 1px solid var(--color-border-light);
+		display: flex;
+		justify-content: center;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.qris-close-btn {
+		width: 100%;
+		padding: 12px;
+		border-radius: 12px;
+		border: 1.5px solid var(--color-border);
+		background: white;
+		color: var(--color-earth);
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		text-align: center;
+	}
+
+	.qris-close-btn:hover {
+		background: var(--color-sand-light);
+		color: var(--color-earth);
+		border-color: var(--color-stone);
+	}
+
+	.checkout-spinner {
+		width: 18px;
+		height: 18px;
+		border: 2.5px solid rgba(0, 0, 0, 0.1);
+		border-top-color: inherit;
+		border-radius: 50%;
+		animation: spin 0.7s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+</style>
