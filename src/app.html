@@ -1,15 +1,87 @@
+<!--
+  ============================================================
+  FILE: app.html
+  TUJUAN: Template HTML utama — "cangkang" yang membungkus
+          SELURUH halaman aplikasi BotaniRent.
+
+  ANALOGI: Seperti "bingkai foto" — foto (konten halaman) berubah-ubah,
+           tapi bingkainya (template ini) tetap sama.
+
+  KAPAN DIJALANKAN: Digunakan oleh SvelteKit setiap kali me-render halaman.
+  ============================================================
+-->
+
 <!doctype html>
+<!-- Memberitahu browser bahwa ini dokumen HTML5 -->
+
 <html lang="en">
+<!-- lang="en" memberi tahu browser & screen reader bahwa bahasa utama = English.
+     Penting untuk:
+     - Aksesibilitas (pembaca layar tahu harus pakai suara bahasa apa)
+     - SEO (mesin pencari tahu bahasa halaman) -->
+
 	<head>
+		<!-- Encoding karakter UTF-8 = mendukung semua huruf di dunia.
+		     Tanpa ini: karakter khusus atau emoji bisa tampil rusak -->
 		<meta charset="utf-8" />
+
+		<!-- META VIEWPORT — membuat halaman RESPONSIF!
+		     - width=device-width: lebar halaman = lebar perangkat
+		     - initial-scale=1: zoom awal = 100%
+		     Tanpa ini: halaman akan tampil kecil di HP karena browser
+		     menganggap halaman dibuat untuk desktop -->
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+		<!-- Meta tag khusus untuk mengontrol scaling teks
+		     Membantu teks menyesuaikan diri di berbagai ukuran layar -->
 		<meta name="text-scale" content="scale" />
+
+		<!-- PRECONNECT = "siapkan koneksi duluan" ke Google Fonts
+		     Browser memulai koneksi SEBELUM benar-benar membutuhkan font.
+		     ANALOGI: Seperti memanaskan mesin mobil sebelum berangkat,
+		     sehingga saat font dibutuhkan, koneksi sudah siap → halaman lebih cepat.
+		     crossorigin: diperlukan karena font berasal dari domain berbeda -->
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+		<!-- Memuat 3 FONT dari Google Fonts:
+		     1. Inter          → Font untuk body text (paragraf, label)
+		     2. Outfit         → Font untuk heading (judul)
+		     3. JetBrains Mono → Font monospace (angka, harga, kode)
+
+		     wght@400;500;600;700 = berat font yang dimuat:
+		       400 = Regular, 500 = Medium, 600 = SemiBold, 700 = Bold
+
+		     display=swap: tampilkan teks dengan font default dulu,
+		       lalu SWAP (ganti) ke Google Font setelah dimuat.
+		       Ini mencegah teks menghilang saat font belum dimuat (FOIT) -->
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+		<!-- ⭐ PLACEHOLDER SvelteKit
+		     SvelteKit akan MENGGANTI teks ini dengan:
+		     - <title> dari setiap halaman
+		     - <meta> tags (SEO)
+		     - <link> dan <script> yang dibutuhkan halaman
+
+		     Contoh: Halaman dashboard akan mengganti ini dengan:
+		     <title>Dashboard - BotaniRent</title> -->
 		%sveltekit.head%
 	</head>
+
+	<!-- data-sveltekit-preload-data="hover"
+	     Fitur PERFORMA dari SvelteKit:
+	     Saat user mengarahkan mouse ke sebuah link (hover),
+	     SvelteKit otomatis MEMUAT DATA halaman tersebut di background.
+
+	     ANALOGI: Seperti pelayan restoran yang sudah menyiapkan makanan
+	     saat melihat pelanggan membaca menu, sehingga saat dipesan → langsung tersaji.
+
+	     Efek: Navigasi terasa INSTAN karena data sudah di-load sebelum diklik -->
 	<body data-sveltekit-preload-data="hover">
+		<!-- ⭐ PLACEHOLDER UTAMA
+		     SvelteKit akan mengganti %sveltekit.body% dengan
+		     seluruh konten aplikasi (layout + halaman aktif).
+		     Ini adalah "lubang" di mana seluruh app Svelte ditampilkan -->
 		<div>%sveltekit.body%</div>
 	</body>
 </html>

@@ -1,3 +1,31 @@
+<!--
+  ============================================================
+  FILE: Select.svelte
+  TUJUAN: Komponen SELECT (dropdown) REUSABLE — mirip Input.svelte tapi untuk pilihan.
+
+  CARA PAKAI:
+    <Select label="Kategori" bind:value={kategori} required>
+      <option value="">-- Pilih --</option>
+      <option value="tenda">Tenda</option>
+      <option value="sleeping_bag">Sleeping Bag</option>
+    </Select>
+
+    <Select label="Status" bind:value={status} error="Wajib dipilih">
+      {#snippet iconLeft()}<Filter size={16} />{/snippet}
+      <option value="">Semua</option>
+      <option value="active">Aktif</option>
+    </Select>
+
+  PROPS:
+    label      = label di atas dropdown
+    value      = nilai terpilih ($bindable = two-way binding)
+    error      = pesan error
+    helperText = teks bantuan
+    iconLeft   = snippet ikon di kiri
+    children   = <option> elements
+    ...dan semua atribut HTML <select> lainnya
+  ============================================================
+-->
 <script>
 	/**
 	 * @typedef {Object} ExtraProps
@@ -5,29 +33,31 @@
 	 * @property {string} [helperText]
 	 * @property {string} [error]
 	 * @property {import('svelte').Snippet} [iconLeft]
-	 * @property {import('svelte').Snippet} children
+	 * @property {import('svelte').Snippet} children — berisi <option> elements
 	 *
 	 * @typedef {import('svelte/elements').HTMLSelectAttributes & ExtraProps} Props
 	 */
 
 	/** @type {Props} */
 	let {
-		id = `select-${Math.random().toString(36).slice(2, 9)}`,
-		name,
-		value = $bindable(''),
-		label = '',
-		helperText = '',
-		error = '',
+		id = `select-${Math.random().toString(36).slice(2, 9)}`, // ID unik otomatis
+		name, // Nama field untuk form
+		value = $bindable(''), // Nilai terpilih (two-way binding)
+		label = '', // Label di atas dropdown
+		helperText = '', // Teks bantuan
+		error = '', // Pesan error
 		disabled = false,
 		required = false,
 		class: className = '',
-		iconLeft,
-		children,
+		iconLeft, // Ikon di kiri dropdown
+		children, // <option> elements yang akan dirender di dalam <select>
 		...rest
 	} = $props();
 </script>
 
+<!-- Container: sama persis dengan Input.svelte (konsistensi visual) -->
 <div class="flex flex-col gap-1.5 {className}">
+	<!-- LABEL (opsional) -->
 	{#if label}
 		<label for={id} class="text-[13px] font-medium text-[var(--color-earth)]">
 			{label}
@@ -35,7 +65,9 @@
 		</label>
 	{/if}
 
+	<!-- WRAPPER SELECT -->
 	<div class="relative flex items-center">
+		<!-- IKON KIRI (opsional) -->
 		{#if iconLeft}
 			<div
 				class="pointer-events-none absolute left-3 flex items-center justify-center text-[var(--color-muted)]"
@@ -44,6 +76,9 @@
 			</div>
 		{/if}
 
+		<!-- SELECT ELEMENT
+		     appearance-none = hapus tampilan default browser (panah bawaan)
+		     Kita buat panah sendiri (lihat di bawah) agar konsisten di semua browser -->
 		<select
 			{id}
 			{name}
@@ -59,10 +94,13 @@
 				: 'border-[var(--color-border)] focus:border-[var(--color-border-focus)] focus:ring-[3px] focus:ring-[var(--color-sage-20)]'}"
 			{...rest}
 		>
+			<!-- children = <option> elements dari parent -->
 			{@render children()}
 		</select>
 
-		<!-- Dropdown indicator arrow -->
+		<!-- Dropdown indicator arrow (panah bawah custom)
+		     pointer-events-none = panah tidak menghalangi klik pada select
+		     Ini menggantikan panah default browser yang dihapus dengan appearance-none -->
 		<div
 			class="pointer-events-none absolute right-3 flex items-center justify-center text-[var(--color-stone)]"
 		>
@@ -81,6 +119,7 @@
 		</div>
 	</div>
 
+	<!-- PESAN ERROR atau HELPER TEXT -->
 	{#if error}
 		<p class="mt-0.5 text-[12px] text-[var(--color-error)]">{error}</p>
 	{:else if helperText}
