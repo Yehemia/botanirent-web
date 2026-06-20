@@ -3,6 +3,18 @@ import { branchModel } from '../models/branchModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
 import { cacheGet } from '../cache.js';
 
+// Input sanitization helper
+/**
+ * @param {any} value
+ */
+function sanitizeText(value) {
+	if (!value) return '';
+	return value
+		.toString()
+		.trim()
+		.replace(/<\/?[^>]+(>|$)/g, ''); // Strip HTML tags
+}
+
 export const customerController = {
 	/**
 	 * Get customer list page data, with branch options for owner role
@@ -62,31 +74,60 @@ export const customerController = {
 		const phone = formData.get('phone')?.toString();
 		const email = formData.get('email')?.toString();
 		const address = formData.get('address')?.toString();
-		const ktp_number = formData.get('ktp_number')?.toString() || '';
-		const guarantee_type = formData.get('guarantee_type')?.toString() || '';
-		const deposit_amount = parseFloat(formData.get('deposit_amount')?.toString() || '0');
-		const notes = formData.get('notes')?.toString() || '';
+		const guarantee_type = formData.get('guarantee_type')?.toString();
+		const notes = formData.get('notes')?.toString();
 		const branch_id = formData.get('branch_id')?.toString() || profile.branch_id;
 
-		if (!full_name) {
+		// 1. Validasi input wajib
+		if (!full_name || !full_name.trim()) {
 			return { success: false, status: 400, error: 'Nama Lengkap wajib diisi.' };
 		}
 
+		// 2. Sanitasi data teks
+		const clean_full_name = sanitizeText(full_name);
+		const clean_address = sanitizeText(address);
+		const clean_notes = sanitizeText(notes);
+		const clean_guarantee_type = sanitizeText(guarantee_type) || 'Tanpa Jaminan';
+
+		// 3. Validasi & Sanitasi nomor telepon (opsional, jika diisi)
+		let clean_phone = '';
+		if (phone && phone.trim()) {
+			const phoneTrim = phone.trim();
+			if (!/^[0-9+\-\s]{5,20}$/.test(phoneTrim)) {
+				return {
+					success: false,
+					status: 400,
+					error: 'Nomor Handphone tidak valid (hanya angka, spasi, +, - dan panjang 5-20 karakter).'
+				};
+			}
+			clean_phone = phoneTrim.replace(/[^0-9+\-\s]/g, '');
+		}
+
+		// 4. Validasi & Sanitasi email (opsional, jika diisi)
+		let clean_email = '';
+		if (email && email.trim()) {
+			const emailTrim = email.trim().toLowerCase();
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(emailTrim)) {
+				return { success: false, status: 400, error: 'Format Email tidak valid.' };
+			}
+			clean_email = emailTrim;
+		}
+
 		const notesObj = {
-			ktp_number,
-			guarantee_type,
-			deposit_amount,
-			notes
+			guarantee_type: clean_guarantee_type,
+			deposit_amount: 0,
+			notes: clean_notes
 		};
 		const notesJson = JSON.stringify(notesObj);
 
 		try {
 			const customer = await customerModel.createCustomer(supabase, {
 				branch_id,
-				full_name,
-				phone,
-				email,
-				address,
+				full_name: clean_full_name,
+				phone: clean_phone || null,
+				email: clean_email || null,
+				address: clean_address || null,
 				notes: notesJson
 			});
 
@@ -118,30 +159,81 @@ export const customerController = {
 		const phone = formData.get('phone')?.toString();
 		const email = formData.get('email')?.toString();
 		const address = formData.get('address')?.toString();
-		const ktp_number = formData.get('ktp_number')?.toString() || '';
-		const guarantee_type = formData.get('guarantee_type')?.toString() || '';
-		const deposit_amount = parseFloat(formData.get('deposit_amount')?.toString() || '0');
-		const notes = formData.get('notes')?.toString() || '';
+		const guarantee_type = formData.get('guarantee_type')?.toString();
+		const notes = formData.get('notes')?.toString();
 		const branch_id = formData.get('branch_id')?.toString() || profile.branch_id;
 
-		if (!id || !full_name) {
-			return { success: false, status: 400, error: 'Data tidak lengkap.' };
+		// 1. Validasi input wajib
+		if (!id || !full_name || !full_name.trim()) {
+			return { success: false, status: 400, error: 'Data tidak lengkap atau Nama Lengkap kosong.' };
+		}
+
+		// 2. Sanitasi data teks
+		const clean_full_name = sanitizeText(full_name);
+		const clean_address = sanitizeText(address);
+		const clean_notes = sanitizeText(notes);
+		const clean_guarantee_type = sanitizeText(guarantee_type) || 'Tanpa Jaminan';
+
+		// 3. Validasi & Sanitasi nomor telepon (opsional, jika diisi)
+		let clean_phone = '';
+		if (phone && phone.trim()) {
+			const phoneTrim = phone.trim();
+			if (!/^[0-9+\-\s]{5,20}$/.test(phoneTrim)) {
+				return {
+					success: false,
+					status: 400,
+					error: 'Nomor Handphone tidak valid (hanya angka, spasi, +, - dan panjang 5-20 karakter).'
+				};
+			}
+			clean_phone = phoneTrim.replace(/[^0-9+\-\s]/g, '');
+		}
+
+		// 4. Validasi & Sanitasi email (opsional, jika diisi)
+		let clean_email = '';
+		if (email && email.trim()) {
+			const emailTrim = email.trim().toLowerCase();
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(emailTrim)) {
+				return { success: false, status: 400, error: 'Format Email tidak valid.' };
+			}
+			clean_email = emailTrim;
+		}
+
+		// 5. Ambil data notes lama untuk melestarikan ktp_number & deposit_amount jika ada
+		let ktp_number = '';
+		let deposit_amount = 0;
+		try {
+			const { data: existingCustomer } = await supabase
+				.from('customers')
+				.select('notes')
+				.eq('id', id)
+				.single();
+
+			if (existingCustomer?.notes) {
+				const json = JSON.parse(existingCustomer.notes);
+				if (json && typeof json === 'object') {
+					ktp_number = json.ktp_number || '';
+					deposit_amount = Number(json.deposit_amount) || 0;
+				}
+			}
+		} catch (err) {
+			console.error('Gagal mengambil data lama KTP/Deposit:', err);
 		}
 
 		const notesObj = {
 			ktp_number,
-			guarantee_type,
+			guarantee_type: clean_guarantee_type,
 			deposit_amount,
-			notes
+			notes: clean_notes
 		};
 		const notesJson = JSON.stringify(notesObj);
 
 		try {
 			await customerModel.updateCustomer(supabase, id, {
-				full_name,
-				phone,
-				email,
-				address,
+				full_name: clean_full_name,
+				phone: clean_phone || null,
+				email: clean_email || null,
+				address: clean_address || null,
 				notes: notesJson
 			});
 

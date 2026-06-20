@@ -39,6 +39,7 @@
 	let customerId = $state('');
 	let customerName = $state('');
 	let customerPhone = $state('');
+	let customerGuarantee = $state('KTP Asli');
 
 	let startDate = $state('');
 
@@ -219,6 +220,7 @@
 			customer_id: customerMode === 'existing' ? customerId : null,
 			customer_name: customerMode === 'new' ? customerName : null,
 			customer_phone: customerMode === 'new' ? customerPhone : null,
+			customer_guarantee: customerGuarantee,
 			subtotal: subtotal(),
 			discount_amount: 0,
 			total_amount: subtotal(),
@@ -251,6 +253,28 @@
 		if (hasRental && !startDate) return 1;
 		if (hasRental) return 2;
 		return 2;
+	});
+
+	/** @param {Event} e */
+	function handleNewPhoneInput(e) {
+		const target = /** @type {HTMLInputElement} */ (e.target);
+		customerPhone = target.value.replace(/[^0-9+\-\s]/g, '');
+	}
+
+	$effect(() => {
+		if (customerId && customerMode === 'existing') {
+			const selected = customers.find((c) => c.id === customerId);
+			if (selected && selected.notes) {
+				try {
+					const json = JSON.parse(selected.notes);
+					if (json && json.guarantee_type) {
+						customerGuarantee = json.guarantee_type;
+					}
+				} catch (e) {
+					// Ignore
+				}
+			}
+		}
 	});
 
 	const paymentMethods = [
@@ -452,8 +476,10 @@
 								<Input
 									id="customerPhone"
 									label="Nomor HP/WA"
+									type="tel"
 									bind:value={customerPhone}
 									placeholder="misal: 081234567890"
+									oninput={handleNewPhoneInput}
 								/>
 							</div>
 						{:else}
@@ -464,6 +490,15 @@
 								{/each}
 							</Select>
 						{/if}
+
+						<div class="mt-4">
+							<Select id="customerGuarantee" label="Jenis Jaminan" bind:value={customerGuarantee}>
+								<option value="KTP Asli">KTP Asli</option>
+								<option value="SIM Asli">SIM Asli</option>
+								<option value="KTM (Kartu Mahasiswa)">KTM (Kartu Mahasiswa)</option>
+								<option value="Tanpa Jaminan">Tanpa Jaminan</option>
+							</Select>
+						</div>
 					</div>
 
 					<!-- 3. Metode Pembayaran -->

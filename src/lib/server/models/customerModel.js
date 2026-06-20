@@ -58,7 +58,7 @@ export const customerModel = {
 	async getCustomersMinimal(supabase, branchId) {
 		const { data, error } = await supabase
 			.from('customers')
-			.select('id, full_name, phone')
+			.select('id, full_name, phone, notes')
 			.eq('branch_id', branchId)
 			.order('full_name');
 

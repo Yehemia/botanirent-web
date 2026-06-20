@@ -66,7 +66,6 @@
 		phone: '',
 		email: '',
 		address: '',
-		ktp_number: '',
 		guarantee_type: 'KTP Asli',
 		deposit_amount: 0,
 		notes: ''
@@ -78,7 +77,6 @@
 		phone: '',
 		email: '',
 		address: '',
-		ktp_number: '',
 		guarantee_type: 'KTP Asli',
 		deposit_amount: 0,
 		notes: ''
@@ -91,6 +89,18 @@
 	function handleBranchChange(e) {
 		const target = /** @type {HTMLSelectElement} */ (e.target);
 		goto(`?branch_id=${target.value}`);
+	}
+
+	/** @param {Event} e */
+	function handleNewPhoneInput(e) {
+		const target = /** @type {HTMLInputElement} */ (e.target);
+		newCustomer.phone = target.value.replace(/[^0-9+\-\s]/g, '');
+	}
+
+	/** @param {Event} e */
+	function handleEditPhoneInput(e) {
+		const target = /** @type {HTMLInputElement} */ (e.target);
+		editCustomer.phone = target.value.replace(/[^0-9+\-\s]/g, '');
 	}
 
 	// Safely compute initials for avatar display
@@ -315,7 +325,6 @@
 			phone: customer.phone || '',
 			email: customer.email || '',
 			address: customer.address || '',
-			ktp_number: customer.ktp_number || '',
 			guarantee_type: customer.guarantee_type || 'KTP Asli',
 			deposit_amount: customer.deposit_amount || 0,
 			notes: customer.customerNotes || ''
@@ -736,7 +745,6 @@
 						phone: '',
 						email: '',
 						address: '',
-						ktp_number: '',
 						guarantee_type: 'KTP Asli',
 						deposit_amount: 0,
 						notes: ''
@@ -760,47 +768,27 @@
 			<Input
 				label="Nomor Handphone"
 				name="phone"
+				type="tel"
 				placeholder="0812-xxxx-xxxx"
 				bind:value={newCustomer.phone}
+				oninput={handleNewPhoneInput}
 			/>
 		</div>
 
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<Input
-				label="Nomor KTP (NIK)"
-				name="ktp_number"
-				placeholder="3374xxxxxxxxxxxx"
-				bind:value={newCustomer.ktp_number}
-			/>
-			<Input
-				label="Email Address"
-				name="email"
-				type="email"
-				placeholder="budi@example.com"
-				bind:value={newCustomer.email}
-			/>
-		</div>
+		<Input
+			label="Email Address"
+			name="email"
+			type="email"
+			placeholder="budi@example.com"
+			bind:value={newCustomer.email}
+		/>
 
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<Select label="Jenis Jaminan" name="guarantee_type" bind:value={newCustomer.guarantee_type}>
-				<option value="KTP Asli">KTP Asli</option>
-				<option value="SIM Asli">SIM Asli</option>
-				<option value="KTM (Kartu Mahasiswa)">KTM (Kartu Mahasiswa)</option>
-				<option value="KK (Kartu Keluarga)">KK (Kartu Keluarga)</option>
-				<option value="Passport">Passport</option>
-				<option value="Lainnya">Lainnya</option>
-				<option value="Tanpa Jaminan">Tanpa Jaminan</option>
-			</Select>
-
-			<Input
-				label="Jumlah Uang Jaminan (Rp)"
-				name="deposit_amount"
-				type="number"
-				min="0"
-				placeholder="50000"
-				bind:value={newCustomer.deposit_amount}
-			/>
-		</div>
+		<Select label="Jenis Jaminan" name="guarantee_type" bind:value={newCustomer.guarantee_type}>
+			<option value="KTP Asli">KTP Asli</option>
+			<option value="SIM Asli">SIM Asli</option>
+			<option value="KTM (Kartu Mahasiswa)">KTM (Kartu Mahasiswa)</option>
+			<option value="Tanpa Jaminan">Tanpa Jaminan</option>
+		</Select>
 
 		<Input
 			label="Alamat Rumah"
@@ -858,33 +846,23 @@
 
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 			<Input label="Nama Lengkap" name="full_name" required bind:value={editCustomer.full_name} />
-			<Input label="Nomor Handphone" name="phone" bind:value={editCustomer.phone} />
-		</div>
-
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<Input label="Nomor KTP (NIK)" name="ktp_number" bind:value={editCustomer.ktp_number} />
-			<Input label="Email Address" name="email" type="email" bind:value={editCustomer.email} />
-		</div>
-
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<Select label="Jenis Jaminan" name="guarantee_type" bind:value={editCustomer.guarantee_type}>
-				<option value="KTP Asli">KTP Asli</option>
-				<option value="SIM Asli">SIM Asli</option>
-				<option value="KTM (Kartu Mahasiswa)">KTM (Kartu Mahasiswa)</option>
-				<option value="KK (Kartu Keluarga)">KK (Kartu Keluarga)</option>
-				<option value="Passport">Passport</option>
-				<option value="Lainnya">Lainnya</option>
-				<option value="Tanpa Jaminan">Tanpa Jaminan</option>
-			</Select>
-
 			<Input
-				label="Jumlah Uang Jaminan (Rp)"
-				name="deposit_amount"
-				type="number"
-				min="0"
-				bind:value={editCustomer.deposit_amount}
+				label="Nomor Handphone"
+				name="phone"
+				type="tel"
+				bind:value={editCustomer.phone}
+				oninput={handleEditPhoneInput}
 			/>
 		</div>
+
+		<Input label="Email Address" name="email" type="email" bind:value={editCustomer.email} />
+
+		<Select label="Jenis Jaminan" name="guarantee_type" bind:value={editCustomer.guarantee_type}>
+			<option value="KTP Asli">KTP Asli</option>
+			<option value="SIM Asli">SIM Asli</option>
+			<option value="KTM (Kartu Mahasiswa)">KTM (Kartu Mahasiswa)</option>
+			<option value="Tanpa Jaminan">Tanpa Jaminan</option>
+		</Select>
 
 		<Input label="Alamat Rumah" name="address" bind:value={editCustomer.address} />
 
@@ -1107,21 +1085,6 @@
 											>Diverifikasi saat checkout rental</span
 										>
 									</div>
-								</div>
-							</div>
-
-							<div>
-								<span
-									class="text-xs font-semibold tracking-wider text-[var(--color-stone)] uppercase"
-									>Uang Deposit</span
-								>
-								<div
-									class="mt-1 flex items-center justify-between rounded-lg border border-[var(--color-border-light)] bg-[var(--color-cream)] p-3 font-mono text-lg font-bold text-[var(--color-earth)]"
-								>
-									<span>{formatCurrency(selectedCustomer.deposit_amount)}</span>
-									<span class="font-sans text-xs font-normal text-[var(--color-stone)]"
-										>Deposit Jaminan</span
-									>
 								</div>
 							</div>
 

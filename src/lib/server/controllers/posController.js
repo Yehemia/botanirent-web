@@ -95,20 +95,67 @@ export const posController = {
 		const timeStr = Date.now().toString().slice(-6);
 		payload.transaction_code = `TRX-${randomStr}-${timeStr}`;
 
-		// Handle Customer (Jika pelanggan baru, insert dulu)
+		// Handle Customer (Jika pelanggan baru, insert dulu; jika pelanggan lama, update jaminannya jika dikirimkan)
 		if (payload.customer_name && !payload.customer_id) {
 			try {
+				// Sanitasi nama lengkap dan phone untuk customer baru
+				const clean_name = payload.customer_name.trim().replace(/<\/?[^>]+(>|$)/g, '');
+				const clean_phone = payload.customer_phone ? payload.customer_phone.trim().replace(/[^0-9+\-\s]/g, '') : '';
+				const clean_guarantee = payload.customer_guarantee ? payload.customer_guarantee.trim().replace(/<\/?[^>]+(>|$)/g, '') : 'Tanpa Jaminan';
+
+				const notesObj = {
+					guarantee_type: clean_guarantee,
+					deposit_amount: 0,
+					notes: ''
+				};
+				const notesJson = JSON.stringify(notesObj);
+
 				const newCust = await customerModel.createCustomer(supabase, {
 					branch_id: profile.branch_id,
-					full_name: payload.customer_name,
-					phone: payload.customer_phone
+					full_name: clean_name,
+					phone: clean_phone || null,
+					notes: notesJson
 				});
 				if (newCust) {
 					payload.customer_id = newCust.id;
 				}
 			} catch (custErr) {
 				console.error('Error creating customer in checkout:', custErr);
-				// We can continue or fail. In original, if it fails to create customer, it continues but payload.customer_id will remain empty/null.
+			}
+		} else if (payload.customer_id && payload.customer_guarantee) {
+			// Update jaminan untuk pelanggan lama jika berubah/dikirim
+			try {
+				const { data: existingCustomer } = await supabase
+					.from('customers')
+					.select('notes')
+					.eq('id', payload.customer_id)
+					.single();
+
+				let notesObj = {
+					guarantee_type: payload.customer_guarantee,
+					deposit_amount: 0,
+					notes: ''
+				};
+
+				if (existingCustomer?.notes) {
+					try {
+						const json = JSON.parse(existingCustomer.notes);
+						if (json && typeof json === 'object') {
+							notesObj = {
+								...json,
+								guarantee_type: payload.customer_guarantee
+							};
+						}
+					} catch (e) {
+						notesObj.notes = existingCustomer.notes;
+					}
+				}
+
+				await customerModel.updateCustomer(supabase, payload.customer_id, {
+					notes: JSON.stringify(notesObj)
+				});
+			} catch (updateErr) {
+				console.error('Error updating customer guarantee in checkout:', updateErr);
 			}
 		}
 
