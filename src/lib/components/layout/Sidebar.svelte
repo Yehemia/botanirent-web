@@ -58,8 +58,8 @@
 		// --- KASIR ---
 		{ section: 'KASIR', roles: ['kasir', 'owner'] },
 		{ icon: MonitorSmartphone, label: 'POS', href: '/pos', roles: ['kasir'] },
-		{ icon: Users, label: 'Data Penyewa', href: '/customers', roles: ['kasir', 'owner'] },
-		{ icon: CalendarDays, label: 'Kalender Booking', href: '/booking', roles: ['kasir', 'gudang', 'owner'] },
+		{ icon: Users, label: 'Data Penyewa', href: '/customers', roles: ['kasir'] },
+		{ icon: CalendarDays, label: 'Kalender Booking', href: '/booking', roles: ['kasir', 'gudang'] },
 		{ icon: RotateCcw, label: 'Pengembalian', href: '/returns', roles: ['kasir'] },
 		{ icon: History, label: 'Riwayat', href: '/transactions', roles: ['kasir', 'owner'] },
 
