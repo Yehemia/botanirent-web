@@ -1,15 +1,42 @@
+/**
+ * ============================================================
+ * FILE: assetStatusController.js
+ * TUJUAN: Logic bisnis untuk halaman Asset Status (kondisi unit fisik barang).
+ *
+ * Halaman ini memungkinkan staf gudang mengubah status unit fisik:
+ *   - 'ready'       → siap disewa
+ *   - 'maintenance' → sedang diperbaiki
+ *   - 'washing'     → sedang dicuci
+ *   - 'rented'      → (otomatis, saat diproses di POS)
+ *
+ * CATATAN PENTING:
+ *   Ketika status diubah ke 'ready', sistem otomatis MENGHAPUS
+ *   booking maintenance yang masih aktif di kalender.
+ *   Ini karena maintenance sudah selesai, slot waktu harus dibebaskan.
+ * ============================================================
+ */
+
 import { assetModel } from '../models/assetModel.js';
 
 export const assetStatusController = {
 	/**
-	 * Get assets list for status tracking
+	 * Ambil semua data asset untuk ditampilkan di halaman Asset Status.
+	 *
+	 * LOGIKA RBAC:
+	 *   Owner → bisa lihat semua cabang (branchId = null)
+	 *   Gudang/Kasir → hanya cabang mereka sendiri
+	 *
+	 * Diurutkan berdasarkan last_status_change descending (perubahan terbaru di atas)
+	 * agar mudah memantau perubahan yang baru terjadi.
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ role: string, branch_id: string|null }} profile
 	 */
 	async getAssets(supabase, profile) {
-		let branchId = null;
+		let branchId = null; // Default: owner lihat semua cabang
 
 		if (profile.role !== 'owner') {
+			// Non-owner harus punya cabang yang terdaftar
 			if (!profile.branch_id) {
 				console.error('User has no branch_id assigned');
 				return { assets: [] };
@@ -20,7 +47,7 @@ export const assetStatusController = {
 		try {
 			const assets = await assetModel.getAssets(supabase, {
 				branchId,
-				orderBy: 'last_status_change',
+				orderBy: 'last_status_change', // Urutkan: yang terbaru diubah statusnya tampil di atas
 				ascending: false
 			});
 			return {
@@ -29,13 +56,20 @@ export const assetStatusController = {
 		} catch (error) {
 			console.error('Error loading assets in assetStatusController:', error);
 			return {
-				assets: []
+				assets: [] // Return data kosong jika error (tidak crash halaman)
 			};
 		}
 	},
 
 	/**
-	 * Update operational status of a physical asset
+	 * Proses perubahan status satu unit asset.
+	 *
+	 * EFEK SAMPING PENTING:
+	 *   Jika status baru = 'ready' → hapus booking maintenance yang aktif.
+	 *   Alasan: Maintenance selesai, blokir kalender tidak diperlukan lagi.
+	 *   Jika tidak dihapus, kalender booking masih menampilkan barang "terblokir"
+	 *   padahal sudah bisa digunakan kembali.
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ role: string }} profile
 	 * @param {FormData} formData
@@ -49,9 +83,10 @@ export const assetStatusController = {
 		}
 
 		try {
+			// Update status di database
 			await assetModel.updateAssetStatus(supabase, id, status);
 
-			// If status is changed back to 'ready', remove active maintenance bookings in calendar
+			// Efek samping: Jika status berubah ke 'ready', bebaskan blokir maintenance di kalender
 			if (status === 'ready') {
 				await assetModel.deleteMaintenanceBookingForAsset(supabase, id);
 			}

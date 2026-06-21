@@ -1,6 +1,59 @@
+/**
+ * ============================================================
+ * FILE: customerModel.js
+ * TUJUAN: Lapisan AKSES DATA untuk tabel "customers".
+ *         File ini HANYA BERTUGAS berbicara dengan database —
+ *         tidak ada logic bisnis, tidak ada validasi input.
+ *
+ * POLA ARSITEKTUR: MVC (Model-View-Controller)
+ *   ┌──────────┐    ┌────────────┐    ┌────────────┐    ┌──────────┐
+ *   │  Halaman  │ → │ Controller │ → │   Model    │ → │ Database │
+ *   │ (Svelte) │    │  (logic)   │    │ (query DB) │    │(Supabase)│
+ *   └──────────┘    └────────────┘    └────────────┘    └──────────┘
+ *
+ * ANALOGI: Model = "pegawai gudang" yang tugasnya hanya mengambil/
+ *          menyimpan barang dari rak sesuai perintah.
+ *          Dia tidak memutuskan APAKAH boleh mengambil — itu urusan Controller.
+ *
+ * CARA PAKAI:
+ *   import { customerModel } from './models/customerModel.js';
+ *   const customers = await customerModel.getCustomers(supabase, branchId);
+ *
+ * KONSEP SUPABASE QUERY BUILDER:
+ *   supabase.from('table')    → pilih tabel
+ *     .select('kolom')        → pilih kolom (seperti SELECT di SQL)
+ *     .eq('kolom', 'nilai')   → filter (seperti WHERE kolom = nilai)
+ *     .order('kolom')         → urutan hasil
+ *     .single()               → ambil 1 baris saja
+ * ============================================================
+ */
+
 export const customerModel = {
 	/**
-	 * Fetch customers for a branch, with nested transactions, items, and penalties
+	 * Ambil semua data pelanggan untuk satu cabang,
+	 * BESERTA nested data: transaksi, item transaksi, dan denda.
+	 *
+	 * KONSEP NESTED SELECT (JOIN):
+	 *   Supabase bisa mengambil data tabel-tabel terkait sekaligus
+	 *   dalam satu query menggunakan relasi foreign key.
+	 *   Hasilnya otomatis berbentuk objek bersarang (nested object).
+	 *
+	 * CONTOH HASIL:
+	 *   {
+	 *     id: "uuid",
+	 *     full_name: "Budi",
+	 *     transactions: [           ← data dari tabel transactions
+	 *       {
+	 *         id: "uuid",
+	 *         transaction_items: [  ← data dari tabel transaction_items
+	 *           {
+	 *             penalties: [...]  ← data dari tabel penalties
+	 *           }
+	 *         ]
+	 *       }
+	 *     ]
+	 *   }
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string} branchId
 	 */
@@ -40,18 +93,27 @@ export const customerModel = {
 				)
 			`
 			)
+			// Filter hanya pelanggan dari cabang ini
 			.eq('branch_id', branchId)
+			// Urutkan: pelanggan terbaru di atas
 			.order('created_at', { ascending: false });
 
 		if (error) {
 			console.error('Error fetching customers:', error);
 			throw new Error(error.message);
 		}
+		// Jika data null (tidak ada pelanggan), kembalikan array kosong []
 		return data || [];
 	},
 
 	/**
-	 * Fetch basic customer list (id, full_name, phone) for dropdowns
+	 * Ambil daftar pelanggan MINIMAL (hanya id, nama, telepon, notes)
+	 * untuk keperluan DROPDOWN di form — tidak perlu data transaksi.
+	 *
+	 * MENGAPA ADA 2 VERSI?
+	 *   getCustomers()        → data lengkap (berat, untuk halaman customers)
+	 *   getCustomersMinimal() → data ringan (untuk dropdown di POS/checkout)
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string} branchId
 	 */
@@ -60,7 +122,7 @@ export const customerModel = {
 			.from('customers')
 			.select('id, full_name, phone, notes')
 			.eq('branch_id', branchId)
-			.order('full_name');
+			.order('full_name'); // Urutkan A-Z agar mudah dicari
 
 		if (error) {
 			console.error('Error fetching customers minimal:', error);
@@ -70,7 +132,15 @@ export const customerModel = {
 	},
 
 	/**
-	 * Create a new customer
+	 * Tambah pelanggan baru ke database.
+	 *
+	 * .insert(data)  → menyimpan baris baru (seperti INSERT INTO di SQL)
+	 * .select()      → setelah insert, ambil data yang baru disimpan
+	 * .single()      → pastikan hasilnya hanya 1 baris
+	 *
+	 * MENGAPA perlu .select().single() setelah insert?
+	 *   Agar kita mendapat kembali data yang tersimpan (termasuk ID yang di-generate database)
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {object} customerData
 	 */
@@ -85,7 +155,14 @@ export const customerModel = {
 	},
 
 	/**
-	 * Update an existing customer
+	 * Update data pelanggan yang sudah ada.
+	 *
+	 * .update(data) → ubah data (seperti UPDATE ... SET di SQL)
+	 * .eq('id', id) → filter: hanya baris dengan id ini yang diubah
+	 *
+	 * MENGAPA return true, bukan data?
+	 *   Kita tidak butuh data baliknya — cukup tahu apakah berhasil atau tidak.
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string} id
 	 * @param {object} customerData
@@ -101,7 +178,13 @@ export const customerModel = {
 	},
 
 	/**
-	 * Delete a customer by ID
+	 * Hapus pelanggan dari database berdasarkan ID.
+	 *
+	 * PENTING: Di database ada FOREIGN KEY CONSTRAINT.
+	 *   Jika pelanggan masih punya transaksi aktif,
+	 *   penghapusan akan GAGAL (error dari database).
+	 *   Ini adalah fitur keamanan, bukan bug.
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string} id
 	 */
@@ -116,7 +199,9 @@ export const customerModel = {
 	},
 
 	/**
-	 * Get basic customer details (e.g. for logging)
+	 * Ambil data dasar pelanggan (nama & cabang) berdasarkan ID.
+	 * Dipakai saat ingin mencatat activity log setelah menghapus pelanggan.
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string} id
 	 */
@@ -129,19 +214,27 @@ export const customerModel = {
 
 		if (error) {
 			console.error('Error getting customer details:', error);
+			// Catatan: return null (bukan throw) — data ini hanya untuk log, bukan kritis
 			return null;
 		}
 		return data;
 	},
 
 	/**
-	 * Get count of customers, optionally filtered by branch
+	 * Hitung total jumlah pelanggan, bisa difilter per cabang atau semua cabang.
+	 *
+	 * KONSEP COUNT:
+	 *   { count: 'exact', head: true } → hitung semua baris TANPA mengambil datanya.
+	 *   Ini jauh lebih efisien daripada .select('*') lalu .length
+	 *   Seperti SELECT COUNT(*) di SQL.
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string|null} branchId
 	 */
 	async getCustomersCount(supabase, branchId = null) {
 		let query = supabase.from('customers').select('*', { count: 'exact', head: true });
 
+		// Jika branchId ada → filter per cabang; jika null → hitung semua cabang (untuk owner)
 		if (branchId) {
 			query = query.eq('branch_id', branchId);
 		}

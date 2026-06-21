@@ -1,11 +1,49 @@
+/**
+ * ============================================================
+ * FILE: itemController.js
+ * TUJUAN: Logic bisnis untuk manajemen JENIS BARANG di inventory.
+ *
+ * FITUR:
+ *   1. Lihat detail satu item (getItemDetails)
+ *   2. Tambah item baru + generate unit fisik (createItem)
+ *   3. Edit item + sinkronisasi stok (updateItem)
+ *   4. Import massal dari file Excel (bulkUpload)
+ *
+ * KONSEP GENERATE KODE ASSET OTOMATIS:
+ *   Setiap item sewa punya kode barcode (contoh: BTN-AB1234)
+ *   Setiap unit fisik dapat kode: BTN-AB1234-A, BTN-AB1234-B, BTN-AB1234-C, ...
+ *   Fungsi getLetterSuffix() menghasilkan suffix A, B, ..., Z, AA, AB, ...
+ *
+ * KONSEP SINKRONISASI STOK:
+ *   stok bertambah → buat unit fisik baru (asset)
+ *   stok berkurang → hapus unit fisik yang 'ready' (tidak sedang disewa)
+ *   Tidak bisa mengurangi stok yang sedang disewa/maintenance!
+ *
+ * KONSEP IMPORT EXCEL:
+ *   Library 'xlsx' membaca file Excel menjadi array baris.
+ *   Setiap baris adalah satu item baru yang akan dimasukkan ke database.
+ * ============================================================
+ */
+
 import { itemModel } from '../models/itemModel.js';
 import { categoryModel } from '../models/categoryModel.js';
 import { assetModel } from '../models/assetModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
-import * as xlsx from 'xlsx';
+import * as xlsx from 'xlsx'; // Library untuk baca/tulis file Excel
 
 /**
- * Generate alphabetical suffix (A, B, ..., Z, AA, AB, ...)
+ * FUNGSI HELPER: Generate suffix huruf secara berurutan.
+ * index 0 → "A", index 1 → "B", ..., index 25 → "Z"
+ * index 26 → "AA", index 27 → "AB", dst.
+ *
+ * Dipakai untuk membuat kode unit fisik yang unik.
+ * Contoh: Tenda BTN-AB1234 punya unit A, B, C, ...
+ *
+ * CARA KERJA (contoh index=27 → "AB"):
+ *   temp=27: 27 % 26 = 1 → 'B', suffix="B", temp = floor(27/26) - 1 = 0
+ *   temp=0:  0  % 26 = 0 → 'A', suffix="AB", temp = floor(0/26) - 1 = -1
+ *   temp < 0 → stop
+ *
  * @param {number} index
  * @returns {string}
  */
@@ -13,6 +51,7 @@ const getLetterSuffix = (index) => {
 	let suffix = '';
 	let temp = index;
 	while (temp >= 0) {
+		// Karakter ke-n dalam alfabet (65 = kode ASCII 'A')
 		suffix = String.fromCharCode((temp % 26) + 65) + suffix;
 		temp = Math.floor(temp / 26) - 1;
 	}
@@ -21,10 +60,16 @@ const getLetterSuffix = (index) => {
 
 export const itemController = {
 	/**
-	 * Get item details and active categories for modification
+	 * Ambil detail item untuk halaman edit.
+	 *
+	 * KEAMANAN AKSES:
+	 *   Owner → bisa lihat/edit item dari semua cabang
+	 *   Kasir/Gudang → hanya bisa akses item dari cabangnya sendiri
+	 *   Jika item milik cabang lain → redirect ke /inventory
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ role: string, branch_id: string|null }} profile
-	 * @param {string} id
+	 * @param {string} id - ID item
 	 */
 	async getItemDetails(supabase, profile, id) {
 		const item = await itemModel.getItemDetails(supabase, id);
@@ -33,7 +78,7 @@ export const itemController = {
 			return { success: false, redirect: '/inventory' };
 		}
 
-		// Verify branch access
+		// Cek akses: non-owner hanya boleh akses item dari cabangnya sendiri
 		if (profile.role !== 'owner' && item.branch_id !== profile.branch_id) {
 			return { success: false, redirect: '/inventory' };
 		}
@@ -48,7 +93,23 @@ export const itemController = {
 	},
 
 	/**
-	 * Create a new item and generate assets if sewa
+	 * Tambah item baru ke inventaris.
+	 *
+	 * ALUR:
+	 * 1. Validasi input wajib (nama, kategori)
+	 * 2. Ambil detail kategori (untuk tahu tipe: sewa/retail)
+	 * 3. Validasi harga sesuai tipe (sewa → butuh harga sewa; retail → butuh harga jual)
+	 * 4. Generate barcode otomatis (BTN-XXXXXX)
+	 * 5. Upload gambar ke Supabase Storage jika ada
+	 * 6. Insert item ke database
+	 * 7. Jika tipe sewa → generate unit fisik (asset) sesuai jumlah stok
+	 * 8. Catat activity log
+	 *
+	 * GENERATE BARCODE:
+	 *   Math.random().toString(36).substring(2, 8).toUpperCase()
+	 *   → string acak base36 (0-9 + a-z), ambil 6 karakter, konversi ke uppercase
+	 *   Contoh: "BTN-AB1CD2"
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ branch_id: string|null, id: string }} profile
 	 * @param {FormData} formData
@@ -60,8 +121,9 @@ export const itemController = {
 		const rental_price_per_day = formData.get('rental_price_per_day');
 		const sell_price = formData.get('sell_price');
 		const stock_total = parseInt(formData.get('stock_total')?.toString() || '0', 10);
-		const image = formData.get('image'); // File
+		const image = formData.get('image'); // File upload opsional
 
+		// 1. Validasi field wajib
 		if (!name || !category_id) {
 			return {
 				success: false,
@@ -71,7 +133,7 @@ export const itemController = {
 			};
 		}
 
-		// Fetch category details
+		// 2. Ambil tipe kategori (sewa atau retail)
 		let category;
 		try {
 			const { data } = await supabase
@@ -93,7 +155,7 @@ export const itemController = {
 			};
 		}
 
-		// Validate prices based on category type
+		// 3. Validasi harga sesuai tipe kategori
 		if (category.type === 'sewa' && !rental_price_per_day) {
 			return {
 				success: false,
@@ -111,23 +173,24 @@ export const itemController = {
 			};
 		}
 
-		// Auto-generate Barcode (BTN + 6 random alphanumeric)
+		// 4. Generate barcode otomatis: "BTN-AB1CD2"
 		const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
 		const barcode = `BTN-${randomStr}`;
 
+		// 5. Upload gambar ke Supabase Storage jika ada
 		let image_url = null;
 
-		// Handle image upload if exists
 		if (image && typeof image !== 'string' && image.size > 0) {
 			const fileExt = image.name.split('.').pop();
+			// Nama file unik: "{branch_id}/{timestamp}-{random}.{ext}"
 			const fileName = `${profile.branch_id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
 			try {
 				const { error: uploadError } = await supabase.storage
 					.from('item-images')
 					.upload(fileName, image, {
-						cacheControl: '3600',
-						upsert: false
+						cacheControl: '3600', // Cache browser 1 jam
+						upsert: false // Jangan override jika nama sama (gunakan nama unik)
 					});
 
 				if (uploadError) {
@@ -140,6 +203,7 @@ export const itemController = {
 					};
 				}
 
+				// Dapatkan URL publik dari file yang sudah di-upload
 				const {
 					data: { publicUrl }
 				} = supabase.storage.from('item-images').getPublicUrl(fileName);
@@ -157,6 +221,7 @@ export const itemController = {
 		}
 
 		try {
+			// 6. Insert item baru ke database
 			const newItem = await itemModel.insertItem(supabase, {
 				branch_id: profile.branch_id,
 				category_id: category_id.toString(),
@@ -169,29 +234,32 @@ export const itemController = {
 					: null,
 				sell_price: sell_price ? parseFloat(sell_price.toString()) : null,
 				stock_total,
-				stock_available: stock_total,
+				stock_available: stock_total, // Stok awal = stok total (belum ada yang disewa)
 				is_active: true
 			});
 
-			// If rental, generate physical asset codes
+			// 7. Jika item tipe sewa, generate unit fisik (assets) otomatis
 			if (category.type === 'sewa' && stock_total > 0) {
 				const newAssets = [];
 				for (let i = 0; i < stock_total; i++) {
 					newAssets.push({
 						item_id: newItem.id,
+						// Kode unit: "BTN-AB1CD2-A", "BTN-AB1CD2-B", dst
 						asset_code: `${barcode}-${getLetterSuffix(i)}`,
-						status: 'ready'
+						status: 'ready' // Semua unit baru langsung 'ready' (siap disewa)
 					});
 				}
 
 				try {
 					await assetModel.insertAssets(supabase, newAssets);
 				} catch (assetsError) {
+					// Jika generate assets gagal, item sudah tersimpan tapi tanpa unit fisik
+					// Catat error tapi tidak batalkan — admin bisa tambah unit manual nanti
 					console.error('Insert assets error:', assetsError);
 				}
 			}
 
-			// Log activity
+			// 8. Catat activity log
 			await activityLogModel.logActivity(supabase, {
 				userId: profile.id,
 				branchId: profile.branch_id,
@@ -214,20 +282,40 @@ export const itemController = {
 	},
 
 	/**
-	 * Update an existing item and handle stock synchronization
+	 * Update item yang sudah ada + sinkronisasi stok fisik.
+	 *
+	 * BAGIAN PALING KOMPLEKS: SINKRONISASI STOK
+	 *
+	 * Kasus 1: stockDiff < 0 (stok BERKURANG)
+	 *   Item sewa → Harus ada cukup unit 'ready' untuk dihapus.
+	 *               Unit yang sedang disewa/maintenance TIDAK BISA dihapus.
+	 *   Item retail → Validasi stock_available tidak boleh jadi negatif.
+	 *
+	 * Kasus 2: stockDiff > 0 (stok BERTAMBAH)
+	 *   Item sewa → Generate unit fisik baru dengan kode yang belum ada.
+	 *               Loop terus sampai dapat kode unik (skip kode yang sudah terpakai).
+	 *   Item retail → Tidak perlu buat asset fisik.
+	 *
+	 * KONSEP stock_available vs stock_total:
+	 *   stock_total     = jumlah unit yang dimiliki (termasuk yang disewa/maintenance)
+	 *   stock_available = jumlah unit yang TERSEDIA SEKARANG (belum disewa)
+	 *   stockDiff = stock_total_baru - stock_total_lama
+	 *   stock_available_baru = stock_available_lama + stockDiff
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ id: string, role: string, branch_id: string|null }} profile
-	 * @param {string} id
+	 * @param {string} id - ID item yang diedit
 	 * @param {FormData} formData
 	 */
 	async updateItem(supabase, profile, id, formData) {
+		// Ambil data item lama (untuk perbandingan stok dan keamanan cabang)
 		const oldItem = await itemModel.getItemDetails(supabase, id);
 
 		if (!oldItem) {
 			return { success: false, status: 404, error: 'Barang tidak ditemukan.' };
 		}
 
-		// Verify branch access
+		// Cek akses cabang
 		if (profile.role !== 'owner' && oldItem.branch_id !== profile.branch_id) {
 			return { success: false, status: 403, error: 'Akses ditolak. Barang ini milik cabang lain.' };
 		}
@@ -239,8 +327,8 @@ export const itemController = {
 		const sell_price = formData.get('sell_price');
 		const stock_total = parseInt(formData.get('stock_total')?.toString() || '0', 10);
 		const is_active_str = formData.get('is_active');
-		const is_active = is_active_str === 'true';
-		const image = formData.get('image'); // File
+		const is_active = is_active_str === 'true'; // Konversi string ke boolean
+		const image = formData.get('image');
 
 		if (!name || !category_id) {
 			return {
@@ -251,7 +339,7 @@ export const itemController = {
 			};
 		}
 
-		// Fetch category details
+		// Ambil tipe kategori
 		let category;
 		try {
 			const { data } = await supabase
@@ -273,7 +361,7 @@ export const itemController = {
 			};
 		}
 
-		// Validate prices based on category type
+		// Validasi harga sesuai tipe
 		if (category.type === 'sewa' && !rental_price_per_day) {
 			return {
 				success: false,
@@ -291,9 +379,10 @@ export const itemController = {
 			};
 		}
 
+		// Pertahankan URL gambar lama jika tidak ada gambar baru
 		let image_url = oldItem.image_url;
 
-		// Handle new image upload if exists
+		// Upload gambar baru jika ada
 		if (image && typeof image !== 'string' && image.size > 0) {
 			const fileExt = image.name.split('.').pop();
 			const fileName = `${oldItem.branch_id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -320,7 +409,7 @@ export const itemController = {
 					data: { publicUrl }
 				} = supabase.storage.from('item-images').getPublicUrl(fileName);
 
-				image_url = publicUrl;
+				image_url = publicUrl; // Ganti dengan URL gambar baru
 			} catch (err) {
 				console.error('Storage upload error:', err);
 				return {
@@ -332,18 +421,19 @@ export const itemController = {
 			}
 		}
 
-		// Calculate stock difference
-		const stockDiff = stock_total - oldItem.stock_total;
+		// Hitung perubahan stok
+		const stockDiff = stock_total - oldItem.stock_total; // Positif = nambah, negatif = berkurang
 		const new_stock_available = oldItem.stock_available + stockDiff;
 
 		try {
-			// If stock is decreased, perform validation
+			// --- KASUS 1: STOK BERKURANG ---
 			if (stockDiff < 0) {
 				if (category.type === 'sewa') {
-					// Query ready assets
+					// Item sewa: hapus unit fisik yang 'ready' (tidak sedang digunakan)
 					const readyAssets = await assetModel.getReadyAssetsForItem(supabase, id);
-					const toDeleteCount = Math.abs(stockDiff);
+					const toDeleteCount = Math.abs(stockDiff); // Berapa unit yang harus dihapus
 
+					// Validasi: cukupkah unit 'ready' untuk dihapus?
 					if (readyAssets.length < toDeleteCount) {
 						return {
 							success: false,
@@ -353,11 +443,11 @@ export const itemController = {
 						};
 					}
 
-					// Delete the excess ready assets
+					// Hapus unit yang berlebih (ambil dari yang pertama)
 					const assetIdsToDelete = readyAssets.slice(0, toDeleteCount).map((a) => a.id);
 					await assetModel.deleteAssetsByIds(supabase, assetIdsToDelete);
 				} else {
-					// Retail item
+					// Item retail: cek stock_available tidak negatif
 					if (new_stock_available < 0) {
 						return {
 							success: false,
@@ -369,15 +459,19 @@ export const itemController = {
 				}
 			}
 
-			// If stock is increased and it is a rental item, generate new assets
+			// --- KASUS 2: STOK BERTAMBAH (item sewa) ---
 			if (stockDiff > 0 && category.type === 'sewa') {
+				// Ambil semua kode asset yang sudah ada (untuk menghindari duplikat)
 				const existingAssets = await assetModel.getExistingAssetsForItem(supabase, id);
 				const existingCodes = new Set(existingAssets.map((a) => a.asset_code));
+
 				const newAssets = [];
 				let idx = 0;
 
+				// Generate kode baru sampai dapat jumlah yang dibutuhkan
 				while (newAssets.length < stockDiff) {
 					const code = `${oldItem.barcode}-${getLetterSuffix(idx)}`;
+					// Skip kode yang sudah ada (mungkin ada gap karena unit yang pernah dihapus)
 					if (!existingCodes.has(code)) {
 						newAssets.push({
 							item_id: id,
@@ -391,7 +485,7 @@ export const itemController = {
 				await assetModel.insertAssets(supabase, newAssets);
 			}
 
-			// Update item record
+			// Update data item di database
 			await itemModel.updateItem(supabase, id, {
 				category_id: category_id.toString(),
 				name: name.toString(),
@@ -405,7 +499,7 @@ export const itemController = {
 				is_active
 			});
 
-			// Log activity
+			// Catat activity log
 			await activityLogModel.logActivity(supabase, {
 				userId: profile.id,
 				branchId: oldItem.branch_id,
@@ -433,10 +527,28 @@ export const itemController = {
 	},
 
 	/**
-	 * Parse Excel and bulk insert items
+	 * Import massal item dari file Excel (.xlsx atau .csv).
+	 *
+	 * FORMAT EXCEL YANG DIHARAPKAN:
+	 *   Baris 1 = Header (diabaikan)
+	 *   Baris 2+ = Data item:
+	 *   [nama, deskripsi, category_id, harga_sewa, harga_jual, stok]
+	 *
+	 * ALUR:
+	 * 1. Validasi file ada dan tidak kosong
+	 * 2. Parse Excel dengan library 'xlsx'
+	 * 3. Validasi setiap baris (nama, category_id wajib; category_id harus ada di DB)
+	 * 4. Kumpulkan error jika ada (tidak langsung gagal — tampilkan semua error sekaligus)
+	 * 5. Jika ada error → return error list tanpa insert apapun
+	 * 6. Jika semua valid → bulk insert ke database
+	 *
+	 * KONSEP BULK INSERT:
+	 *   Lebih efisien daripada insert satu-satu dalam loop.
+	 *   Satu query untuk semua baris sekaligus.
+	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ id: string, branch_id: string|null }} profile
-	 * @param {any} file File object
+	 * @param {any} file - File object dari FormData
 	 */
 	async bulkUpload(supabase, profile, file) {
 		if (!file || typeof file === 'string' || file.size === 0) {
@@ -444,11 +556,13 @@ export const itemController = {
 		}
 
 		try {
-			const arrayBuffer = await file.arrayBuffer();
-			const workbook = xlsx.read(arrayBuffer, { type: 'buffer' });
-			const sheetName = workbook.SheetNames[0];
+			// 2. Parse file Excel
+			const arrayBuffer = await file.arrayBuffer(); // Baca file sebagai binary
+			const workbook = xlsx.read(arrayBuffer, { type: 'buffer' }); // Parse Excel
+			const sheetName = workbook.SheetNames[0]; // Ambil sheet pertama
 			const worksheet = workbook.Sheets[sheetName];
 
+			// Konversi sheet ke array 2D: [[baris1col1, baris1col2, ...], [baris2col1, ...], ...]
 			const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
 
 			if (rows.length <= 1) {
@@ -459,15 +573,19 @@ export const itemController = {
 				};
 			}
 
+			// Ambil semua kategori untuk validasi
 			const categories = await categoryModel.getCategories(supabase);
+			// Map untuk lookup cepat: category_id → tipe ('sewa' atau 'retail')
 			const catMap = new Map(categories.map((c) => [c.id, c.type]));
 
-			const insertData = [];
-			const errors = [];
+			const insertData = []; // Data yang valid untuk diinsert
+			const errors = []; // Kumpulan error dari baris yang tidak valid
 
+			// 3. Validasi setiap baris (mulai dari baris 2, index 1 → skip header)
 			for (let i = 1; i < rows.length; i++) {
 				const row = rows[i];
 
+				// Skip baris kosong
 				if (
 					!row ||
 					row.length === 0 ||
@@ -478,6 +596,7 @@ export const itemController = {
 					continue;
 				}
 
+				// Destructuring: ambil kolom sesuai urutan
 				const [name, description, category_id, rental_price, sell_price, stock] = row;
 
 				if (!name || !category_id) {
@@ -485,12 +604,14 @@ export const itemController = {
 					continue;
 				}
 
+				// Validasi: category_id harus ada di database
 				if (!catMap.has(category_id)) {
 					errors.push(`Baris ${i + 1}: ID Kategori "${category_id}" tidak ditemukan di database.`);
 					continue;
 				}
 
 				const catType = catMap.get(category_id);
+				// Generate barcode unik untuk setiap item
 				const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
 				const barcode = `BTN-${randomStr}`;
 
@@ -508,6 +629,7 @@ export const itemController = {
 				});
 			}
 
+			// 4. Jika ada baris yang error, kembalikan semua error
 			if (errors.length > 0) {
 				return {
 					success: false,
@@ -520,16 +642,17 @@ export const itemController = {
 				return { success: false, status: 400, error: 'Tidak ada data valid yang bisa dimasukkan.' };
 			}
 
+			// 5. Bulk insert semua data valid sekaligus
 			await itemModel.bulkInsertItems(supabase, insertData);
 
-			// Log activity
+			// Catat activity log (satu log untuk seluruh import)
 			await activityLogModel.logActivity(supabase, {
 				userId: profile.id,
 				branchId: profile.branch_id,
 				action: 'item_added',
 				entityType: 'bulk_upload',
 				entityId: profile.branch_id || 'all',
-				metadata: { count: insertData.length }
+				metadata: { count: insertData.length } // Berapa item yang berhasil diimport
 			});
 
 			return { success: true, count: insertData.length };
