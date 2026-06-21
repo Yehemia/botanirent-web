@@ -26,6 +26,11 @@ export async function load({ locals }) {
 		throw redirect(303, '/login');
 	}
 
+	// Guard role: hanya owner yang diizinkan mengakses pengaturan sistem
+	if (profile.role !== 'owner') {
+		throw redirect(303, '/dashboard');
+	}
+
 	// Delegasikan ke controller untuk mengambil dataset pengaturan
 	return settingsController.getRentalSettings(supabase);
 }
@@ -43,6 +48,11 @@ export const actions = {
 		const { session, profile } = await locals.safeGetSession();
 
 		if (!session || !profile) return fail(401, { error: 'Unauthorized' });
+
+		// Guard role: hanya owner yang diizinkan memperbarui pengaturan
+		if (profile.role !== 'owner') {
+			return fail(403, { error: 'Akses ditolak. Hanya owner yang diizinkan.' });
+		}
 
 		const formData = await request.formData();
 		

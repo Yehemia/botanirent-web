@@ -336,17 +336,19 @@
 						</p>
 					</div>
 
-					<!-- Body: link ke halaman -->
-					<div class="p-1">
-						<a
-							href="/settings"
-							class="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-stone)] transition-colors hover:bg-[var(--color-sand)] hover:text-[var(--color-earth)]"
-							onclick={closeDropdown}
-						>
-							<Settings size={16} />
-							<span>Pengaturan Sistem</span>
-						</a>
-					</div>
+					<!-- Body: link ke halaman (hanya owner) -->
+					{#if userProfile?.role === 'owner'}
+						<div class="p-1">
+							<a
+								href="/settings"
+								class="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-stone)] transition-colors hover:bg-[var(--color-sand)] hover:text-[var(--color-earth)]"
+								onclick={closeDropdown}
+							>
+								<Settings size={16} />
+								<span>Pengaturan Sistem</span>
+							</a>
+						</div>
+					{/if}
 
 					<div class="my-1 border-t border-[var(--color-border-light)]/60"></div>
 

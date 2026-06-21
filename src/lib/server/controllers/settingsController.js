@@ -45,9 +45,9 @@ export const settingsController = {
 	 * @param {FormData} formData
 	 */
 	async updateRentalSettings(supabase, profile, formData) {
-		// RBAC: hanya owner/admin yang boleh ubah pengaturan
-		if (profile.role !== 'admin' && profile.role !== 'owner') {
-			return { success: false, status: 403, error: 'Akses ditolak.' };
+		// RBAC: hanya owner yang boleh ubah pengaturan
+		if (profile.role !== 'owner') {
+			return { success: false, status: 403, error: 'Akses ditolak. Hanya owner yang diizinkan.' };
 		}
 
 		// Ambil dan parse nilai dari form (semua string dari FormData → angka)
