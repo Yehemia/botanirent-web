@@ -1,11 +1,30 @@
+/**
+ * ============================================================
+ * FILE: routes/api/midtrans/status/[id]/+server.js
+ * TUJUAN: API Endpoint (GET) untuk memeriksa status transaksi QRIS secara real-time ke Midtrans.
+ *
+ * MENGAPA KODE INI DITULIS?
+ *   Ketika kasir/frontend menampilkan QRIS ke pelanggan, frontend akan melakukan polling (pemantauan berulang)
+ *   ke endpoint API ini untuk mendeteksi apakah pelanggan sudah memindai & membayar QRIS tersebut.
+ *   API ini bertindak sebagai jembatan yang:
+ *     1. Menerima request polling dari frontend.
+ *     2. Menghubungi API resmi Midtrans menggunakan server key rahasia untuk memeriksa status pembayaran.
+ *     3. Mengupdate database lokal (tabel transactions / penalties) jika pembayaran terdeteksi sukses.
+ * ============================================================
+ */
+
 import { json } from '@sveltejs/kit';
 import { MIDTRANS_SERVER_KEY } from '$env/static/private';
 import { PUBLIC_MIDTRANS_ENV } from '$env/static/public';
 
+/**
+ * HANDLER GET REQUEST
+ * Dipanggil secara asynchronous ketika frontend memanggil GET /api/midtrans/status/[id].
+ */
 export async function GET({ params, locals }) {
 	const { session } = await locals.safeGetSession();
 
-	// Proteksi route
+	// Guard Keamanan: Hanya user terautentikasi (staf/owner) yang boleh melakukan cek status
 	if (!session) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
@@ -16,12 +35,15 @@ export async function GET({ params, locals }) {
 		return json({ error: 'Transaction ID is required' }, { status: 400 });
 	}
 
-	// Handle status check for penalties (denda)
+	// ============================================================
+	// SKENARIO A: Cek Status Pembayaran DENDA (ID diawali 'DENDA-TX-')
+	// ============================================================
 	if (id.startsWith('DENDA-TX-')) {
 		try {
+			// Potong string 'DENDA-TX-' untuk mendapatkan ID transaksi murni (UUID)
 			const transactionId = id.substring(9);
 			
-			// 1. Ambil semua item ID transaksi ini
+			// 1. Ambil semua ID item transaksi dari transaksi ini
 			const { data: items, error: itemsError } = await locals.supabase
 				.from('transaction_items')
 				.select('id')
@@ -37,7 +59,7 @@ export async function GET({ params, locals }) {
 				return json({ payment_status: 'paid' });
 			}
 
-			// 2. Ambil denda unpaid
+			// 2. Ambil daftar denda yang masih berstatus 'unpaid'
 			const { data: unpaidPenalties, error: penError } = await locals.supabase
 				.from('penalties')
 				.select('id')
@@ -49,12 +71,12 @@ export async function GET({ params, locals }) {
 				return json({ error: 'Error checking penalties' }, { status: 500 });
 			}
 
-			// Jika tidak ada denda unpaid, anggap lunas
+			// Jika tidak ada denda unpaid di database lokal, berarti sudah lunas
 			if (unpaidPenalties.length === 0) {
 				return json({ payment_status: 'paid' });
 			}
 
-			// Verifikasi status ke Midtrans
+			// 3. Verifikasi status pembayaran QRIS ke Midtrans API secara langsung
 			const authString = btoa(`${MIDTRANS_SERVER_KEY}:`);
 			const isProduction = PUBLIC_MIDTRANS_ENV === 'production';
 			const midtransUrl = isProduction
@@ -77,6 +99,7 @@ export async function GET({ params, locals }) {
 				let newStatus = 'unpaid';
 				let paidAt = null;
 
+				// Status sukses di Midtrans diwakili oleh 'capture' atau 'settlement'
 				if (['capture', 'settlement'].includes(transaction_status)) {
 					if (!fraud_status || fraud_status === 'accept') {
 						newStatus = 'paid';
@@ -84,8 +107,8 @@ export async function GET({ params, locals }) {
 					}
 				}
 
+				// Jika di Midtrans sukses, perbarui DB lokal
 				if (newStatus === 'paid') {
-					// Update denda
 					const { error: updateError } = await locals.supabase
 						.from('penalties')
 						.update({
@@ -111,7 +134,11 @@ export async function GET({ params, locals }) {
 		}
 	}
 
+	// ============================================================
+	// SKENARIO B: Cek Status Pembayaran TRANSAKSI BIASA (Sewa / Beli)
+	// ============================================================
 	try {
+		// Ambil data transaksi dari DB lokal
 		const { data: transaction, error } = await locals.supabase
 			.from('transactions')
 			.select('id, transaction_code, payment_status, payment_method')
@@ -123,16 +150,17 @@ export async function GET({ params, locals }) {
 			return json({ error: 'Transaksi tidak ditemukan' }, { status: 404 });
 		}
 
-		// Jika transaksi sudah lunas (paid), tidak perlu cek ke Midtrans lagi
+		// Optimasi: Jika database lokal sudah mencatat 'paid' (lunas), tidak perlu memanggil API Midtrans lagi
 		if (transaction.payment_status === 'paid') {
 			return json({ payment_status: 'paid' });
 		}
 
-		// Jika transaksi bertipe QRIS dan statusnya masih pending/belum lunas, cek ke Midtrans
+		// Hanya cek ke Midtrans jika transaksi ber-metode QRIS dan statusnya belum lunas
 		if (transaction.payment_method === 'qris') {
 			try {
 				const authString = btoa(`${MIDTRANS_SERVER_KEY}:`);
 				const isProduction = PUBLIC_MIDTRANS_ENV === 'production';
+				// Midtrans melacak order berdasarkan Transaction Code unik yang kita kirim
 				const midtransUrl = isProduction
 					? `https://api.midtrans.com/v2/${transaction.transaction_code}/status`
 					: `https://api.sandbox.midtrans.com/v2/${transaction.transaction_code}/status`;
@@ -153,6 +181,7 @@ export async function GET({ params, locals }) {
 					let newStatus = transaction.payment_status;
 					let paidAt = null;
 
+					// Analisis status dari Midtrans
 					if (['capture', 'settlement'].includes(transaction_status)) {
 						if (!fraud_status || fraud_status === 'accept') {
 							newStatus = 'paid';
@@ -162,6 +191,7 @@ export async function GET({ params, locals }) {
 						newStatus = 'failed';
 					}
 
+					// Jika terjadi perubahan status di Midtrans dibandingkan database lokal
 					if (newStatus !== transaction.payment_status) {
 						const updatePayload = {
 							payment_status: newStatus,
@@ -173,6 +203,7 @@ export async function GET({ params, locals }) {
 								: {})
 						};
 						
+						// Perbarui status transaksi di database lokal
 						const { error: updateError } = await locals.supabase
 							.from('transactions')
 							.update(updatePayload)
@@ -204,3 +235,4 @@ export async function GET({ params, locals }) {
 		return json({ error: 'Server error saat memeriksa status transaksi' }, { status: 500 });
 	}
 }
+

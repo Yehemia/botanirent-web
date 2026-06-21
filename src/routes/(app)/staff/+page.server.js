@@ -1,15 +1,34 @@
+/**
+ * ============================================================
+ * FILE: routes/(app)/staff/+page.server.js
+ * TUJUAN: Logika server untuk Pengelolaan Karyawan/Staf (Staff Management).
+ *
+ * MENGAPA KODE INI DITULIS?
+ *   Aplikasi Botanirent memerlukan pengelolaan akun staf kasir/gudang.
+ *   Halaman ini membatasi akses hanya untuk Owner dan mengimplementasikan:
+ *     1. Supabase Admin SDK (Service Role) untuk mendaftarkan akun staf secara instan.
+ *     2. Proteksi lockout agar owner tidak menonaktifkan dirinya sendiri secara tidak sengaja.
+ *     3. Cache invalidation agar data baru segera terlihat di dashboard & tabel staff.
+ * ============================================================
+ */
+
 import { error, fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { cacheGet, cacheInvalidate, cacheInvalidatePrefix } from '$lib/server/cache.js';
 
+/**
+ * LOAD FUNCTION
+ * Dijalankan di server untuk mengambil daftar staff aktif/nonaktif dan daftar cabang toko.
+ */
 export const load = async ({ locals: { supabase, safeGetSession } }) => {
 	const { profile } = await safeGetSession();
 
+	// Guard Hak Akses: Hanya Owner yang boleh mengakses manajemen karyawan
 	if (profile?.role !== 'owner') {
 		throw error(403, 'Akses ditolak. Hanya Owner yang dapat mengakses halaman ini.');
 	}
 
-	// Fetch profiles (staff)
+	// 1. Ambil data profil staf dengan caching 15 detik untuk mengurangi beban DB
 	const staffPromise = cacheGet(
 		'staff_list',
 		async () => {
@@ -24,10 +43,10 @@ export const load = async ({ locals: { supabase, safeGetSession } }) => {
 			}
 			return data || [];
 		},
-		15000
+		15000 // Cache selama 15 detik
 	);
 
-	// Fetch branches for the dropdown
+	// 2. Ambil daftar cabang aktif untuk dropdown di form undang staff
 	const branchesPromise = cacheGet(
 		'active_branches_dropdown',
 		async () => {
@@ -43,9 +62,10 @@ export const load = async ({ locals: { supabase, safeGetSession } }) => {
 			}
 			return data || [];
 		},
-		30000
+		30000 // Cache selama 30 detik
 	);
 
+	// Ambil kedua data secara paralel
 	const [staff, branches] = await Promise.all([staffPromise, branchesPromise]);
 
 	return {
@@ -54,7 +74,15 @@ export const load = async ({ locals: { supabase, safeGetSession } }) => {
 	};
 };
 
+/**
+ * SVELTEKIT FORM ACTIONS
+ * Menyediakan aksi 'invite' (mendaftarkan staf baru) dan 'updateStatus' (mengaktifkan/nonaktifkan staf).
+ */
 export const actions = {
+	/**
+	 * Aksi 'invite': Mendaftarkan akun staf baru
+	 * Menggunakan Supabase Admin API untuk langsung membuat user di auth.users bypass email confirmation.
+	 */
 	invite: async ({ request, locals: { safeGetSession } }) => {
 		const { profile } = await safeGetSession();
 
@@ -69,6 +97,7 @@ export const actions = {
 		const branch_id = formData.get('branch_id');
 		const full_name = formData.get('full_name');
 
+		// Validasi input wajib
 		if (!email || !password || !role || !branch_id || !full_name) {
 			return fail(400, { error: 'Semua field harus diisi.' });
 		}
@@ -77,11 +106,13 @@ export const actions = {
 			return fail(400, { error: 'Password minimal 6 karakter.' });
 		}
 
-		// 1. Create user directly via Supabase Admin API
+		// LANGKAH 1: Buat user baru di Supabase Auth via Admin Client (Service Role)
+		// Mengapa pakai supabaseAdmin? Karena client Supabase biasa tidak diizinkan membuat user lain
+		// secara bypass demi keamanan (signup flow biasa mewajibkan verifikasi email).
 		const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
 			email: email.toString(),
 			password: password.toString(),
-			email_confirm: true, // Langsung aktif tanpa verifikasi email
+			email_confirm: true, // Bypass verifikasi email (langsung terkonfirmasi)
 			user_metadata: { full_name: full_name.toString() }
 		});
 
@@ -95,7 +126,8 @@ export const actions = {
 
 		const userId = userData.user.id;
 
-		// 2. Update their profile with the assigned role, branch, and name
+		// LANGKAH 2: Update tabel public.profiles untuk mencatat detail nama, role, dan cabangnya.
+		// User ID diperoleh dari hasil kembalian auth.admin.createUser di atas.
 		const { error: profileError } = await supabaseAdmin
 			.from('profiles')
 			.update({
@@ -111,13 +143,16 @@ export const actions = {
 			return fail(500, { error: 'Akun dibuat, namun gagal mengatur role/cabang.' });
 		}
 
-		// Invalidate cached staff list and dashboard counts
+		// Invalidasi cache staff agar data langsung terupdate tanpa perlu reload
 		cacheInvalidate('staff_list');
 		cacheInvalidatePrefix('staff_count_');
 
 		return { success: true };
 	},
 
+	/**
+	 * Aksi 'updateStatus': Mengaktifkan atau menonaktifkan staf.
+	 */
 	updateStatus: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { profile: currentUser } = await safeGetSession();
 		if (currentUser?.role !== 'owner') return fail(403, { error: 'Akses ditolak.' });
@@ -126,20 +161,24 @@ export const actions = {
 		const id = formData.get('id');
 		const is_active = formData.get('is_active') === 'true';
 
+		// PROTEKSI LOCKOUT: Cegah owner menonaktifkan dirinya sendiri.
+		// Jika ini terjadi, tidak akan ada admin yang bisa login kembali untuk mengelola sistem.
 		if (id === currentUser.id) {
 			return fail(400, { error: 'Anda tidak dapat menonaktifkan akun Anda sendiri.' });
 		}
 
+		// Update kolom is_active di tabel profiles
 		const { error } = await supabase.from('profiles').update({ is_active }).eq('id', id);
 
 		if (error) {
 			return fail(500, { error: 'Gagal mengubah status staff.' });
 		}
 
-		// Invalidate cached staff list and dashboard counts
+		// Invalidasi cache staff
 		cacheInvalidate('staff_list');
 		cacheInvalidatePrefix('staff_count_');
 
 		return { success: true };
 	}
 };
+
