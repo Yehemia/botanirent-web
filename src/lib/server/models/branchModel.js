@@ -110,22 +110,44 @@ export const branchModel = {
 	},
 
 	/**
-	 * Hapus cabang berdasarkan ID.
+	 * Nonaktifkan cabang berdasarkan ID (Soft Deactivation).
 	 *
-	 * PERINGATAN: Jika cabang masih punya data terkait (staff, items, transaksi),
-	 *             penghapusan bisa gagal akibat foreign key constraint database.
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {string} id
+	 * @param {string|null} notes - alasan penonaktifan
+	 */
+	async deactivateBranch(supabase, id, notes) {
+		const { data, error } = await supabase
+			.from('branches')
+			.update({ is_active: false, deactivation_notes: notes })
+			.eq('id', id)
+			.select();
+
+		if (error) {
+			console.error('Deactivate branch error:', error);
+			throw new Error(error.message);
+		}
+		return data;
+	},
+
+	/**
+	 * Aktifkan kembali cabang berdasarkan ID.
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string} id
 	 */
-	async deleteBranch(supabase, id) {
-		const { error } = await supabase.from('branches').delete().eq('id', id);
+	async activateBranch(supabase, id) {
+		const { data, error } = await supabase
+			.from('branches')
+			.update({ is_active: true, deactivation_notes: null })
+			.eq('id', id)
+			.select();
 
 		if (error) {
-			console.error('Delete branch error:', error);
+			console.error('Activate branch error:', error);
 			throw new Error(error.message);
 		}
-		return true;
+		return data;
 	},
 
 	/**

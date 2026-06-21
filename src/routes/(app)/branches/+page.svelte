@@ -20,12 +20,31 @@
 		name: '',
 		address: '',
 		phone: '',
-		is_active: true
+		is_active: true,
+		deactivation_notes: ''
 	});
+
+	// State untuk modal deaktifasi
+	let showDeactivateModal = $state(false);
+	let deactivateId = $state('');
+	let deactivateNotes = $state('');
+	let deactivateLoading = $state(false);
+
+	/** @type {import('@sveltejs/kit').SubmitFunction} */
+	function handleDeactivateSubmit() {
+		deactivateLoading = true;
+		return async ({ update, result }) => {
+			deactivateLoading = false;
+			if (result.type === 'success') {
+				showDeactivateModal = false;
+			}
+			update();
+		};
+	}
 
 	function openAddModal() {
 		isEditing = false;
-		formData = { id: '', name: '', address: '', phone: '', is_active: true };
+		formData = { id: '', name: '', address: '', phone: '', is_active: true, deactivation_notes: '' };
 		showModal = true;
 	}
 
@@ -96,6 +115,12 @@
 					<Phone size={16} class="shrink-0" />
 					<span>{branch.phone || '-'}</span>
 				</div>
+				{#if !branch.is_active && branch.deactivation_notes}
+					<div class="mt-3 rounded-xl bg-[var(--color-error-bg)]/30 border border-[var(--color-error)]/15 p-3 text-xs text-[var(--color-error)]">
+						<strong class="block mb-0.5">Alasan Nonaktif:</strong>
+						{branch.deactivation_notes}
+					</div>
+				{/if}
 			</div>
 
 			<div class="mt-6 flex justify-end gap-2 border-t border-[var(--color-border-light)] pt-4">
@@ -104,20 +129,32 @@
 					Edit
 				</Button>
 
-				<form method="POST" action="?/delete" use:enhance>
-					<input type="hidden" name="id" value={branch.id} />
+				{#if branch.is_active}
 					<Button
 						variant="ghost"
 						size="sm"
-						type="submit"
 						class="text-[var(--color-error)] hover:bg-[var(--color-error-bg)] hover:text-[var(--color-error)]"
-						onclick={(e) => {
-							if (!confirm('Yakin ingin menghapus cabang ini?')) e.preventDefault();
+						onclick={() => {
+							deactivateId = branch.id;
+							deactivateNotes = '';
+							showDeactivateModal = true;
 						}}
 					>
-						{#snippet iconLeft()}<Trash2 size={16} />{/snippet}
+						{#snippet iconLeft()}<Trash2 size={16} />{/snippet} Nonaktifkan
 					</Button>
-				</form>
+				{:else}
+					<form method="POST" action="?/activate" use:enhance>
+						<input type="hidden" name="id" value={branch.id} />
+						<Button
+							variant="ghost"
+							size="sm"
+							type="submit"
+							class="text-[var(--color-forest)] hover:bg-[var(--color-sage-10)]"
+						>
+							Aktifkan Kembali
+						</Button>
+					</form>
+				{/if}
 			</div>
 		</Card>
 	{:else}
@@ -183,12 +220,63 @@
 				</span>
 			</label>
 		</div>
+
+		{#if !formData.is_active}
+			<div class="flex flex-col gap-1.5 animate-fade-in">
+				<label for="deactivation_notes" class="text-[13px] font-medium text-[var(--color-error)]"
+					>Catatan Penonaktifan <span class="text-[var(--color-error)]">*</span></label
+				>
+				<textarea
+					id="deactivation_notes"
+					name="deactivation_notes"
+					rows="2"
+					class="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:border-[var(--color-error)] focus:ring-[3px] focus:ring-[var(--color-error-bg)] focus:outline-none"
+					placeholder="Tuliskan alasan penonaktifan cabang..."
+					bind:value={formData.deactivation_notes}
+					required={!formData.is_active}
+				></textarea>
+			</div>
+		{/if}
 	</form>
 
 	{#snippet footer()}
 		<Button variant="ghost" onclick={() => (showModal = false)}>Batal</Button>
 		<Button form="branch-form" type="submit" disabled={loading}>
 			{loading ? 'Menyimpan...' : 'Simpan Cabang'}
+		</Button>
+	{/snippet}
+</Modal>
+
+<!-- Modal Konfirmasi Nonaktifkan Cabang -->
+<Modal bind:open={showDeactivateModal} title="Nonaktifkan Cabang">
+	<form id="deactivate-form" method="POST" action="?/delete" use:enhance={handleDeactivateSubmit} class="space-y-4">
+		<input type="hidden" name="id" value={deactivateId} />
+		<div class="flex flex-col gap-3">
+			<p class="text-sm leading-relaxed text-[var(--color-stone)]">
+				Apakah Anda yakin ingin menonaktifkan cabang ini? Cabang yang dinonaktifkan tidak akan muncul di kasir (POS) dan menu pemilih cabang.
+			</p>
+			
+			<div class="flex flex-col gap-1.5">
+				<label for="modal_deactivation_notes" class="text-[13px] font-medium text-[var(--color-error)]"
+					>Alasan Penonaktifan <span class="text-[var(--color-error)]">*</span></label
+				>
+				<textarea
+					id="modal_deactivation_notes"
+					name="deactivation_notes"
+					rows="3"
+					class="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:border-[var(--color-error)] focus:ring-[3px] focus:ring-[var(--color-error-bg)] focus:outline-none"
+					placeholder="Tuliskan alasan mengapa cabang ini dinonaktifkan..."
+					bind:value={deactivateNotes}
+					required
+				></textarea>
+			</div>
+		</div>
+	</form>
+
+	{#snippet footer()}
+		<Button variant="ghost" onclick={() => (showDeactivateModal = false)}>Batal</Button>
+		<Button form="deactivate-form" type="submit" disabled={deactivateLoading} class="bg-[var(--color-error)] text-white hover:bg-[var(--color-error)]/90">
+			{deactivateLoading ? 'Memproses...' : 'Nonaktifkan Cabang'}
 		</Button>
 	{/snippet}
 </Modal>

@@ -69,7 +69,7 @@ export const actions = {
 	},
 
 	/**
-	 * Aksi 'delete': Menghapus cabang berdasarkan ID
+	 * Aksi 'delete': Menonaktifkan cabang berdasarkan ID (Soft Deactivation)
 	 */
 	delete: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { profile } = await safeGetSession();
@@ -81,9 +81,34 @@ export const actions = {
 
 		const formData = await request.formData();
 		const id = formData.get('id')?.toString() || null;
+		const notes = formData.get('deactivation_notes')?.toString() || null;
 
-		// Delegasikan ke controller untuk proses penghapusan
-		const result = await branchController.deleteBranch(supabase, id);
+		// Delegasikan ke controller untuk proses penonaktifan
+		const result = await branchController.deactivateBranch(supabase, id, notes);
+
+		if (!result.success) {
+			return fail(result.status || 500, { error: result.error });
+		}
+
+		return { success: true };
+	},
+
+	/**
+	 * Aksi 'activate': Mengaktifkan kembali cabang berdasarkan ID
+	 */
+	activate: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { profile } = await safeGetSession();
+
+		// Proteksi aksi di tingkat server
+		if (profile?.role !== 'owner') {
+			return fail(403, { error: 'Akses ditolak.' });
+		}
+
+		const formData = await request.formData();
+		const id = formData.get('id')?.toString() || null;
+
+		// Delegasikan ke controller untuk proses pengaktifan kembali
+		const result = await branchController.activateBranch(supabase, id);
 
 		if (!result.success) {
 			return fail(result.status || 500, { error: result.error });

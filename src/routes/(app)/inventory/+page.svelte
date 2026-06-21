@@ -1,5 +1,7 @@
 <script>
-	import { Plus, Search, Package, Filter, MoreHorizontal, Edit, Trash2 } from '@lucide/svelte';
+	import { enhance } from '$app/forms';
+	import { toast } from 'svelte-sonner';
+	import { Plus, Search, Package, Filter, MoreHorizontal, Edit, Trash2, RefreshCw } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -24,6 +26,48 @@
 			return matchSearch && matchCategory;
 		})
 	);
+
+	/**
+	 * @param {any} item
+	 * @returns {import('@sveltejs/kit').SubmitFunction}
+	 */
+	const handleDeactivateSubmit = (item) => {
+		return ({ cancel }) => {
+			if (!confirm(`Apakah Anda yakin ingin menonaktifkan barang "${item.name}"? Barang yang dinonaktifkan tidak akan muncul di katalog kasir (POS).`)) {
+				cancel();
+				return;
+			}
+			return async ({ result, update }) => {
+				await update();
+				if (result.type === 'success') {
+					toast.success(`Barang "${item.name}" berhasil dinonaktifkan.`);
+				} else if (result.type === 'failure') {
+					toast.error(result.data?.error || 'Gagal menonaktifkan barang.');
+				} else {
+					toast.error('Terjadi kesalahan sistem.');
+				}
+			};
+		};
+	};
+
+	/**
+	 * @param {any} item
+	 * @returns {import('@sveltejs/kit').SubmitFunction}
+	 */
+	const handleActivateSubmit = (item) => {
+		return () => {
+			return async ({ result, update }) => {
+				await update();
+				if (result.type === 'success') {
+					toast.success(`Barang "${item.name}" berhasil diaktifkan kembali.`);
+				} else if (result.type === 'failure') {
+					toast.error(result.data?.error || 'Gagal mengaktifkan kembali barang.');
+				} else {
+					toast.error('Terjadi kesalahan sistem.');
+				}
+			};
+		};
+	};
 </script>
 
 <div class="mx-auto max-w-7xl space-y-6 pb-12">
@@ -162,7 +206,7 @@
 								</td>
 								<td class="px-6 py-4 text-right">
 									<div
-										class="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100"
+										class="flex justify-end items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100"
 									>
 										<!-- eslint-disable-next-line -->
 										<a
@@ -172,13 +216,30 @@
 										>
 											<Edit size={16} />
 										</a>
-										<button
-											type="button"
-											class="rounded-md p-1.5 text-[var(--color-stone)] transition-colors hover:bg-[var(--color-error)]/10 hover:text-[var(--color-error)]"
-											title="Hapus"
-										>
-											<Trash2 size={16} />
-										</button>
+										
+										{#if item.is_active}
+											<form method="POST" action="?/deactivate" use:enhance={handleDeactivateSubmit(item)} class="inline">
+												<input type="hidden" name="id" value={item.id} />
+												<button
+													type="submit"
+													class="rounded-md p-1.5 text-[var(--color-stone)] transition-colors hover:bg-[var(--color-error)]/10 hover:text-[var(--color-error)]"
+													title="Nonaktifkan"
+												>
+													<Trash2 size={16} />
+												</button>
+											</form>
+										{:else}
+											<form method="POST" action="?/activate" use:enhance={handleActivateSubmit(item)} class="inline">
+												<input type="hidden" name="id" value={item.id} />
+												<button
+													type="submit"
+													class="rounded-md p-1.5 text-[var(--color-stone)] transition-colors hover:bg-[var(--color-forest)]/10 hover:text-[var(--color-forest)]"
+													title="Aktifkan Kembali"
+												>
+													<RefreshCw size={16} />
+												</button>
+											</form>
+										{/if}
 									</div>
 								</td>
 							</tr>

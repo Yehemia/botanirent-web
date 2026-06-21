@@ -78,6 +78,7 @@
 	let displayValue = $state('');
 
 	// Format raw value to currency string (e.g., 150000 -> "Rp 150.000")
+	/** @param {any} numStr */
 	function formatToRupiah(numStr) {
 		if (numStr === null || numStr === undefined || numStr === '') return '';
 		const clean = String(numStr).replace(/[^0-9]/g, '');
@@ -89,6 +90,7 @@
 	}
 
 	// Extract raw number from currency string (e.g., "Rp 150.000" -> "150000")
+	/** @param {string} str */
 	function getRawNumber(str) {
 		return str.replace(/[^0-9]/g, '');
 	}

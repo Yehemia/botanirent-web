@@ -665,5 +665,90 @@ export const itemController = {
 					'Gagal memproses file Excel. Pastikan file tidak corrupt dan menggunakan format .xlsx atau .csv.'
 			};
 		}
+	},
+
+	/**
+	 * Nonaktifkan item sewa/retail (is_active = false)
+	 *
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {{ id: string, role: string, branch_id: string|null }} profile
+	 * @param {string} id
+	 */
+	async deactivateItem(supabase, profile, id) {
+		if (!id) {
+			return { success: false, status: 400, error: 'ID tidak valid' };
+		}
+
+		try {
+			const item = await itemModel.getItemDetails(supabase, id);
+			if (!item) {
+				return { success: false, status: 404, error: 'Barang tidak ditemukan.' };
+			}
+
+			// Cek akses cabang
+			if (profile.role !== 'owner' && item.branch_id !== profile.branch_id) {
+				return { success: false, status: 403, error: 'Akses ditolak. Barang ini milik cabang lain.' };
+			}
+
+			await itemModel.updateItem(supabase, id, { is_active: false });
+
+			// Catat log aktivitas
+			await activityLogModel.logActivity(supabase, {
+				userId: profile.id,
+				branchId: item.branch_id,
+				action: 'item_updated',
+				entityType: 'item',
+				entityId: id,
+				metadata: { name: item.name, barcode: item.barcode, is_active: false }
+			});
+
+			return { success: true };
+		} catch (error) {
+			console.error('Error deactivating item in controller:', error);
+			return { success: false, status: 500, error: 'Gagal menonaktifkan barang.' };
+		}
+	},
+
+	/**
+	 * Aktifkan kembali item sewa/retail (is_active = true)
+	 *
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {{ id: string, role: string, branch_id: string|null }} profile
+	 * @param {string} id
+	 */
+	async activateItem(supabase, profile, id) {
+		if (!id) {
+			return { success: false, status: 400, error: 'ID tidak valid' };
+		}
+
+		try {
+			const item = await itemModel.getItemDetails(supabase, id);
+			if (!item) {
+				return { success: false, status: 404, error: 'Barang tidak ditemukan.' };
+			}
+
+			// Cek akses cabang
+			if (profile.role !== 'owner' && item.branch_id !== profile.branch_id) {
+				return { success: false, status: 403, error: 'Akses ditolak. Barang ini milik cabang lain.' };
+			}
+
+			await itemModel.updateItem(supabase, id, { is_active: true });
+
+			// Catat log aktivitas
+			await activityLogModel.logActivity(supabase, {
+				userId: profile.id,
+				branchId: item.branch_id,
+				action: 'item_updated',
+				entityType: 'item',
+				entityId: id,
+				metadata: { name: item.name, barcode: item.barcode, is_active: true }
+			});
+
+			return { success: true };
+		} catch (error) {
+			console.error('Error activating item in controller:', error);
+			return { success: false, status: 500, error: 'Gagal mengaktifkan kembali barang.' };
+		}
 	}
 };
+

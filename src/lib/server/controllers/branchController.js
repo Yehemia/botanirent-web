@@ -64,6 +64,7 @@ export const branchController = {
 		const phone = formData.get('phone');
 		// formData.get() mengembalikan string 'true'/'false', perlu konversi ke boolean
 		const is_active = formData.get('is_active') === 'true';
+		const deactivation_notes = formData.get('deactivation_notes')?.toString() || null;
 
 		if (!name) {
 			return { success: false, status: 400, error: 'Nama cabang harus diisi.' };
@@ -73,7 +74,8 @@ export const branchController = {
 			name: name.toString(),
 			address: address ? address.toString() : null, // null jika kosong
 			phone: phone ? phone.toString() : null,
-			is_active
+			is_active,
+			deactivation_notes: is_active ? null : deactivation_notes
 		};
 
 		try {
@@ -100,24 +102,21 @@ export const branchController = {
 	},
 
 	/**
-	 * Hapus cabang berdasarkan ID.
-	 *
-	 * PERINGATAN: Database akan menolak penghapusan jika cabang masih punya
-	 *             data terkait (staff, items, transaksi).
-	 *             Ini adalah fitur keamanan, bukan bug.
+	 * Nonaktifkan cabang berdasarkan ID.
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string|null} id
+	 * @param {string|null} notes
 	 */
-	async deleteBranch(supabase, id) {
+	async deactivateBranch(supabase, id, notes) {
 		if (!id) {
 			return { success: false, status: 400, error: 'ID tidak valid' };
 		}
 
 		try {
-			await branchModel.deleteBranch(supabase, id);
+			await branchModel.deactivateBranch(supabase, id, notes);
 
-			// Invalidasi cache setelah hapus
+			// Invalidasi cache setelah dinonaktifkan
 			cacheInvalidate('get_branches');
 			cacheInvalidate('layout_branches');
 			cacheInvalidate('branch_count');
@@ -126,11 +125,43 @@ export const branchController = {
 
 			return { success: true };
 		} catch (error) {
-			console.error('Error deleting branch in controller:', error);
+			console.error('Error deactivating branch in controller:', error);
 			return {
 				success: false,
 				status: 500,
-				error: 'Gagal menghapus cabang (mungkin masih ada data terkait).'
+				error: 'Gagal menonaktifkan cabang.'
+			};
+		}
+	},
+
+	/**
+	 * Aktifkan kembali cabang berdasarkan ID.
+	 *
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {string|null} id
+	 */
+	async activateBranch(supabase, id) {
+		if (!id) {
+			return { success: false, status: 400, error: 'ID tidak valid' };
+		}
+
+		try {
+			await branchModel.activateBranch(supabase, id);
+
+			// Invalidasi cache setelah diaktifkan
+			cacheInvalidate('get_branches');
+			cacheInvalidate('layout_branches');
+			cacheInvalidate('branch_count');
+			cacheInvalidate('active_branches');
+			cacheInvalidatePrefix('branch_details_');
+
+			return { success: true };
+		} catch (error) {
+			console.error('Error activating branch in controller:', error);
+			return {
+				success: false,
+				status: 500,
+				error: 'Gagal mengaktifkan kembali cabang.'
 			};
 		}
 	}
