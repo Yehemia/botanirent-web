@@ -53,13 +53,23 @@ create index idx_profiles_role on public.profiles (role);
 
 comment on table public.profiles is 'Profil user yang extends auth.users. 1 user = 1 role, 1 cabang.';
 
--- Trigger: otomatis buat profile saat user baru sign up
+-- Trigger: otomatis buat profile saat user baru sign up di Supabase Auth
+--
+-- KONSEP INTEGRASI AUTH DI SUPABASE:
+--   1. Supabase menyimpan data login secara privat di tabel `auth.users`.
+--   2. Kita tidak diperbolehkan memodifikasi tabel privat tersebut.
+--   3. Oleh karena itu, kita membuat tabel pendamping `public.profiles`.
+--   4. Fungsi ini bertindak sebagai jembatan otomatis: setiap kali ada baris baru masuk
+--      di `auth.users`, fungsi ini akan di-trigger untuk meng-copy ID user tersebut 
+--      dan membuat baris profile baru di skema publik kita secara otomatis.
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, full_name, avatar_url)
   values (
-    new.id,
+    new.id, -- ID user baru yang digenerate oleh auth.users
+    -- coalescence: ambil full_name dari metadata pendaftaran (OAuth/Social/Sign up),
+    -- jika kosong, jadikan alamat email sebagai nama default.
     coalesce(new.raw_user_meta_data ->> 'full_name', new.email),
     new.raw_user_meta_data ->> 'avatar_url'
   );
@@ -67,6 +77,7 @@ begin
 end;
 $$ language plpgsql security definer;
 
+-- Daftarkan trigger ke tabel auth.users
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
@@ -382,16 +393,26 @@ comment on table public.activity_logs is 'Log aktivitas user untuk audit trail. 
 -- ============================================================
 
 -- ==========================================
--- Helper functions untuk RLS
+-- HELPER FUNCTIONS UNTUK ROW LEVEL SECURITY (RLS)
 -- ==========================================
 
 -- Ambil branch_id user yang sedang login
+--
+-- KONSEP STABLE & SECURITY DEFINER:
+--   - security definer: Fungsi ini dieksekusi menggunakan hak akses pembuat fungsi (admin/postgres),
+--     bukan hak akses user biasa yang login. Sangat penting karena user biasa tidak memiliki
+--     hak untuk langsung membaca tabel public.profiles sebelum RLS disetujui.
+--   - stable: Menandakan ke PostgreSQL bahwa fungsi ini mengembalikan nilai yang sama selama
+--     satu query transaksi berlangsung. Ini mengoptimalkan performa agar database tidak memanggil
+--     query SELECT profil berulang kali untuk setiap baris data yang difilter.
 create or replace function public.user_branch_id()
 returns uuid as $$
+  -- auth.uid() adalah fungsi bawaan Supabase untuk mengambil ID user aktif dari token JWT
   select branch_id from public.profiles where id = auth.uid()
 $$ language sql security definer stable;
 
--- Ambil role user yang sedang login
+-- Ambil role user yang sedang login (owner, kasir, atau gudang)
+-- Sama seperti fungsi di atas, ini digunakan dalam filter RLS untuk membedakan otorisasi role (RBAC)
 create or replace function public.user_role()
 returns text as $$
   select role from public.profiles where id = auth.uid()
