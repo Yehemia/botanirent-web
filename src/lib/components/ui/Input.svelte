@@ -32,12 +32,12 @@
 <script>
 	/**
 	 * @typedef {Object} ExtraProps
-	 * @property {string} [label] — label di atas input
-	 * @property {string} [helperText] — teks bantuan di bawah input
-	 * @property {string} [error] — pesan error (jika ada, border jadi merah)
-	 * @property {'md' | 'lg'} [size] — ukuran input
-	 * @property {import('svelte').Snippet} [iconLeft] — ikon di kiri
-	 * @property {import('svelte').Snippet} [iconRight] — ikon di kanan
+	 * @property {string} [label] - label di atas input
+	 * @property {string} [helperText] - teks bantuan di bawah input
+	 * @property {string} [error] - pesan error (jika ada, border jadi merah)
+	 * @property {'md' | 'lg'} [size] - ukuran input
+	 * @property {import('svelte').Snippet} [iconLeft] - ikon di kiri
+	 * @property {import('svelte').Snippet} [iconRight] - snippet/ikon di kanan
 	 *
 	 * Omit<..., 'size'> = ambil semua atribut HTMLInput KECUALI 'size'
 	 * karena kita mendefinisikan 'size' sendiri dengan tipe berbeda ('md'|'lg' vs number)

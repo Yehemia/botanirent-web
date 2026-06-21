@@ -11,8 +11,8 @@
 	let branch = $derived(data.branch);
 	let isSuccess = $derived(data.isSuccess);
 	let penalties = $derived(
-		transaction?.items?.flatMap((item) =>
-			(item.penalties || []).map((p) => ({ ...p, item_name: item.item_name }))
+		transaction?.items?.flatMap(/** @param {any} item */ (item) =>
+			(item.penalties || []).map(/** @param {any} p */ (p) => ({ ...p, item_name: item.item_name }))
 		) || []
 	);
 

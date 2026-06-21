@@ -29,12 +29,12 @@
 
 	/**
 	 * @typedef {Object} Props
-	 * @property {boolean} sidebarExpanded — status sidebar buka/tutup
-	 * @property {string} title — judul halaman (untuk mobile fallback)
-	 * @property {any} userProfile — data profil user
-	 * @property {any} [branch] — data cabang aktif saat ini
-	 * @property {any[]} [branches] — daftar semua cabang (untuk owner)
-	 * @property {() => void} toggleSidebar — function toggle sidebar
+	 * @property {boolean} sidebarExpanded - status sidebar buka/tutup
+	 * @property {string} title - judul halaman (untuk mobile fallback)
+	 * @property {any} userProfile - data profil user
+	 * @property {any} [branch] - data cabang aktif saat ini
+	 * @property {any[]} [branches] - daftar semua cabang (untuk owner)
+	 * @property {() => void} toggleSidebar - function toggle sidebar
 	 */
 
 	/** @type {Props} */

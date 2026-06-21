@@ -37,12 +37,12 @@
 	 * TYPE DEFINITIONS (JSDoc)
 	 * Mendefinisikan tipe data untuk setiap prop yang diterima komponen ini.
 	 *
-	 * @typedef {Object} ExtraProps — prop tambahan khusus komponen ini
-	 * @property {'primary' | 'secondary' | 'danger' | 'ghost' | 'outline'} [variant] — gaya visual
-	 * @property {'sm' | 'md' | 'lg'} [size] — ukuran tombol
-	 * @property {boolean} [fullWidth] — apakah tombol selebar container
-	 * @property {import('svelte').Snippet} [iconLeft] — snippet ikon di kiri
-	 * @property {import('svelte').Snippet} [iconRight] — snippet ikon di kanan
+	 * @typedef {Object} ExtraProps - prop tambahan khusus komponen ini
+	 * @property {'primary' | 'secondary' | 'danger' | 'ghost' | 'outline'} [variant] - gaya visual
+	 * @property {'sm' | 'md' | 'lg'} [size] - ukuran tombol
+	 * @property {boolean} [fullWidth] - apakah tombol selebar container
+	 * @property {import('svelte').Snippet} [iconLeft] - snippet ikon di kiri
+	 * @property {import('svelte').Snippet} [iconRight] - snippet ikon di kanan
 	 *
 	 * HTMLButtonAttributes = semua atribut HTML standar untuk <button>
 	 * (type, disabled, onclick, id, class, dll)

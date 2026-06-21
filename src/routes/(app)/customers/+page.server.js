@@ -177,8 +177,9 @@ export const actions = {
 				let customerName = 'Pelanggan';
 				let customerPhone = '-';
 				if (customerData?.customer) {
-					customerName = customerData.customer.full_name || customerName;
-					customerPhone = customerData.customer.phone || customerPhone;
+					const customer = /** @type {any} */ (customerData.customer);
+					customerName = customer.full_name || customerName;
+					customerPhone = customer.phone || customerPhone;
 				}
 
 				// Import environment variables secara dinamis agar tidak membebani memory saat startup
@@ -228,7 +229,7 @@ export const actions = {
 					// qr_string adalah raw string QR code yang bisa digenerate menjadi gambar QR di frontend
 					const qr_string = midtransData.qr_string;
 					const qr_url =
-						midtransData.actions?.find((act) => act.name === 'generate-qr-code')
+						midtransData.actions?.find(/** @param {any} act */ (act) => act.name === 'generate-qr-code')
 							?.url || '';
 
 					return {

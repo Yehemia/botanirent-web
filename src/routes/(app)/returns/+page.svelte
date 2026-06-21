@@ -382,12 +382,13 @@
 							return async ({ update, result }) => {
 								loading = false;
 								console.log('[use:enhance] Result received:', result);
+								const res = /** @type {any} */ (result);
 								if (
-									result.type === 'success' &&
-									result.data?.payment_method === 'qris' &&
-									result.data?.qr_url
+									res.type === 'success' &&
+									res.data?.payment_method === 'qris' &&
+									res.data?.qr_url
 								) {
-									const resData = /** @type {any} */ (result.data);
+									const resData = /** @type {any} */ (res.data);
 									qrUrl = resData.qr_url;
 									qrisTxnId = resData.order_id;
 									qrisTxnCode = resData.order_id;
@@ -395,12 +396,12 @@
 									startStatusPolling(resData.order_id);
 									startTimer();
 								} else {
-									if (result.type === 'failure' || result.type === 'error') {
-										console.error('[use:enhance] Error detail:', result);
-										alert('Gagal memproses pengembalian: ' + (result.data?.error || result.error?.message || 'Error tidak diketahui'));
+									if (res.type === 'failure' || res.type === 'error') {
+										console.error('[use:enhance] Error detail:', res);
+										alert('Gagal memproses pengembalian: ' + (res.data?.error || res.error?.message || 'Error tidak diketahui'));
 									}
 									await update();
-									if (result.type === 'success') {
+									if (res.type === 'success') {
 										selectedTrx = null; // reset selection
 									}
 								}

@@ -28,7 +28,7 @@
  *   formatCurrency(0)        → "Rp0"
  *   formatCurrency(null)     → "-"
  *
- * @param {number | null | undefined} amount — angka yang akan diformat
+ * @param {number | null | undefined} amount - angka yang akan diformat
  */
 export function formatCurrency(amount) {
 	// Jika amount null/undefined → tampilkan strip (data kosong)
@@ -59,8 +59,8 @@ export function formatCurrency(amount) {
  *   formatDate('2025-01-15', { day: 'numeric', month: 'long', year: 'numeric' })
  *   → "15 Januari 2025"
  *
- * @param {string | Date} dateStr — tanggal (string ISO atau objek Date)
- * @param {Intl.DateTimeFormatOptions} [options] — opsi format (opsional)
+ * @param {string | Date} dateStr - tanggal (string ISO atau objek Date)
+ * @param {Intl.DateTimeFormatOptions} [options] - opsi format (opsional)
  */
 export function formatDate(dateStr, options) {
 	if (!dateStr) return '-';

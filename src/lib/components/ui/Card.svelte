@@ -19,10 +19,10 @@
 <script>
 	/**
 	 * @typedef {Object} Props
-	 * @property {string} [class] — class CSS tambahan
-	 * @property {boolean} [hoverable] — efek hover (naik + shadow)
-	 * @property {'none' | 'sm' | 'md' | 'lg'} [padding] — ukuran padding dalam
-	 * @property {import('svelte').Snippet} children — konten di dalam kartu
+	 * @property {string} [class] - class CSS tambahan
+	 * @property {boolean} [hoverable] - efek hover (naik + shadow)
+	 * @property {'none' | 'sm' | 'md' | 'lg'} [padding] - ukuran padding dalam
+	 * @property {import('svelte').Snippet} children - konten di dalam kartu
 	 */
 
 	/** @type {Props} */

@@ -43,13 +43,13 @@
 
 	/**
 	 * @typedef {Object} Props
-	 * @property {boolean} open — status buka/tutup modal
-	 * @property {Function} [onclose] — callback dipanggil saat modal ditutup
-	 * @property {string} [title] — judul di atas modal
-	 * @property {'sm' | 'md' | 'lg'} [size] — ukuran lebar modal
-	 * @property {boolean} [hideCloseButton] — sembunyikan tombol X
-	 * @property {import('svelte').Snippet} [children] — konten utama
-	 * @property {import('svelte').Snippet} [footer] — snippet untuk tombol-tombol bawah
+	 * @property {boolean} open - status buka/tutup modal
+	 * @property {Function} [onclose] - callback dipanggil saat modal ditutup
+	 * @property {string} [title] - judul di atas modal
+	 * @property {'sm' | 'md' | 'lg'} [size] - ukuran lebar modal
+	 * @property {boolean} [hideCloseButton] - sembunyikan tombol X
+	 * @property {import('svelte').Snippet} [children] - konten utama
+	 * @property {import('svelte').Snippet} [footer] - snippet untuk tombol-tombol bawah
 	 */
 
 	/** @type {Props} */

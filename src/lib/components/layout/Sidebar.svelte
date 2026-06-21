@@ -48,9 +48,9 @@
 
 	/**
 	 * @typedef {Object} Props
-	 * @property {any} userProfile — data profil user (nama, role, avatar)
-	 * @property {boolean} [expanded] — status buka/tutup sidebar ($bindable)
-	 * @property {number} [unpaidDendaCount] — jumlah customer dengan denda
+	 * @property {any} userProfile - data profil user (nama, role, avatar)
+	 * @property {boolean} [expanded] - status buka/tutup sidebar ($bindable)
+	 * @property {number} [unpaidDendaCount] - jumlah customer dengan denda
 	 */
 
 	/** @type {Props} */

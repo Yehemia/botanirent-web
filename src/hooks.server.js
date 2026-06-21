@@ -67,9 +67,7 @@ globalThis['sessionCacheCleanupInterval'] = setInterval(() => {
  * Function 'handle' adalah function KHUSUS SvelteKit.
  * SvelteKit akan memanggil function ini untuk SETIAP request yang masuk.
  *
- * @param {object} params
- * @param {object} params.event - Objek request (berisi URL, cookies, headers, method, dll)
- * @param {Function} params.resolve - Function untuk melanjutkan ke halaman yang diminta
+ * @type {import('@sveltejs/kit').Handle}
  *
  * ANALOGI:
  *   event  = tamu yang datang (siapa, mau ke mana)
@@ -281,7 +279,7 @@ export const handle = async ({ event, resolve }) => {
 	// resolve(event) = proses request dan render halaman yang sesuai
 	// Return the resolved response, injecting supabase into the context
 	return resolve(event, {
-		filterSerializedResponseHeaders(name) {
+		filterSerializedResponseHeaders(/** @type {string} */ name) {
 			/**
 			 * SvelteKit secara default MENGHAPUS sebagian response headers.
 			 * Tapi Supabase butuh 2 header ini untuk berfungsi:

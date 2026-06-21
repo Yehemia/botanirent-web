@@ -1399,16 +1399,17 @@
 											penaltySubmitting = true;
 											return async ({ result, update }) => {
 												penaltySubmitting = false;
-												if (result.type === 'success' && result.data?.payment_method === 'qris' && result.data?.qr_url) {
-													qrUrl = result.data.qr_url;
-													qrisTxnId = result.data.order_id;
-													qrisTxnCode = result.data.order_id;
+												const res = /** @type {any} */ (result);
+												if (res.type === 'success' && res.data?.payment_method === 'qris' && res.data?.qr_url) {
+													qrUrl = res.data.qr_url;
+													qrisTxnId = res.data.order_id;
+													qrisTxnCode = res.data.order_id;
 													showQrisModal = true;
-													startStatusPolling(result.data.order_id);
+													startStatusPolling(res.data.order_id);
 													startTimer();
 												} else {
 													await update();
-													if (result.type === 'success') {
+													if (res.type === 'success') {
 														// Re-fetch updated customer details
 														const updated = data.customers?.find((c) => c.id === selectedCustomer.id);
 														if (updated) {
@@ -1417,8 +1418,8 @@
 															isDetailModalOpen = false;
 															selectedCustomer = null;
 														}
-													} else if (result.type === 'failure') {
-														alert('Gagal memproses pembayaran: ' + (result.data?.error || 'Error tidak diketahui'));
+													} else if (res.type === 'failure') {
+														alert('Gagal memproses pembayaran: ' + (res.data?.error || 'Error tidak diketahui'));
 													}
 												}
 											};

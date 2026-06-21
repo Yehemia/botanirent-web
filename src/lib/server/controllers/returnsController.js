@@ -133,7 +133,7 @@ export const returnsController = {
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ id: string, branch_id: string|null }} profile
 	 * @param {FormData} formData
-	 * @param {object} [midtransConfig] - Config Midtrans untuk pembayaran QRIS
+	 * @param {{ fetch?: any, serverKey?: string, env?: string }} [midtransConfig] - Config Midtrans untuk pembayaran QRIS
 	 */
 	async processReturn(supabase, profile, formData, midtransConfig) {
 		try {
