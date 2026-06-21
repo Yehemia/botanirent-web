@@ -161,28 +161,26 @@
 									<Input
 										id="rental_price_per_day"
 										name="rental_price_per_day"
-										type="number"
 										label="Harga Sewa (per Siklus)"
-										placeholder="misal: 35000"
-										min="0"
+										placeholder="misal: 35.000"
 										required
 										value={form?.values?.rental_price_per_day || ''}
+										isCurrency
 									/>
 									<p class="mt-1 text-xs text-[var(--color-stone)]">
-										Hanya angka tanpa titik/koma.
+										Akan otomatis terformat ke Rupiah.
 									</p>
 								{:else if selectedCategory?.type === 'retail'}
 									<Input
 										id="sell_price"
 										name="sell_price"
-										type="number"
 										label="Harga Jual"
-										placeholder="misal: 150000"
-										min="0"
+										placeholder="misal: 150.000"
 										required
 										value={form?.values?.sell_price || ''}
+										isCurrency
 									/>
-									<p class="mt-1 text-xs text-[var(--color-stone)]">Harga jual ke konsumen.</p>
+									<p class="mt-1 text-xs text-[var(--color-stone)]">Harga jual ke konsumen (otomatis terformat).</p>
 								{/if}
 							</div>
 

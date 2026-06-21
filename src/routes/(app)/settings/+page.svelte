@@ -95,13 +95,12 @@
 					</div>
 					<div class="w-full sm:max-w-xs">
 						<Input
-							type="number"
 							id="late_fee_per_day_per_transaction"
 							name="late_fee_per_day_per_transaction"
 							label="Nominal Denda (Rp) / Hari"
 							value={rentalSettings.late_fee_per_day_per_transaction}
-							min="0"
 							required
+							isCurrency
 						/>
 					</div>
 				</div>
@@ -123,13 +122,12 @@
 					</div>
 					<div class="w-full sm:max-w-xs">
 						<Input
-							type="number"
 							id="monthly_revenue_target"
 							name="monthly_revenue_target"
 							label="Target Pendapatan (Rp) / Bulan"
 							value={rentalSettings.monthly_revenue_target || 20000000}
-							min="0"
 							required
+							isCurrency
 						/>
 					</div>
 				</div>

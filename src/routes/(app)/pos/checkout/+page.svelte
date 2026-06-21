@@ -44,7 +44,21 @@
 	let startDate = $state('');
 
 	let paidAmount = $state('');
+	let paidAmountDisplay = $state('');
 	let paymentMethod = $state('cash');
+
+	// Synchronize paidAmountDisplay with paidAmount (to support shortcuts and inputs)
+	$effect(() => {
+		const clean = String(paidAmount).replace(/[^0-9]/g, '');
+		if (!clean) {
+			paidAmountDisplay = '';
+		} else {
+			const formatted = new Intl.NumberFormat('id-ID', {
+				minimumFractionDigits: 0
+			}).format(parseInt(clean, 10));
+			paidAmountDisplay = formatted;
+		}
+	});
 
 	let loading = $state(false);
 
@@ -551,10 +565,23 @@
 										>
 										<input
 											id="paidAmountInput"
-											type="number"
-											bind:value={paidAmount}
+											type="text"
+											value={paidAmountDisplay}
+											oninput={(e) => {
+												let val = e.currentTarget.value.replace(/[^0-9]/g, '');
+												if (val.length > 1 && val.startsWith('0')) {
+													val = val.replace(/^0+/, '');
+												}
+												if (val === '') val = '0';
+												paidAmount = val;
+
+												const formatted = val === '0' ? '0' : new Intl.NumberFormat('id-ID', {
+													minimumFractionDigits: 0
+												}).format(parseInt(val, 10));
+												e.currentTarget.value = formatted;
+												paidAmountDisplay = formatted;
+											}}
 											placeholder="0"
-											min={subtotal()}
 											required
 											class="cash-input"
 										/>

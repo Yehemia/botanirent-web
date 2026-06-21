@@ -463,20 +463,18 @@
 											class="mt-3 grid grid-cols-1 gap-4 rounded-lg border border-[var(--color-error)]/10 bg-[var(--color-error)]/5 p-3 md:grid-cols-2"
 										>
 											<div>
-												<label class="mb-1 block text-xs font-bold text-[var(--color-earth)]">
-													Denda Kerusakan (Rp)
-													<input
-														type="number"
-														class="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-normal focus:border-[var(--color-forest)] focus:outline-none"
-														value={currentDamagePenalty}
-														oninput={(e) => {
-															const val = e.currentTarget.value;
-															returnData[item.id].damagePenaltyOverride =
-																val === '' ? null : parseFloat(val);
-														}}
-														placeholder="Masukkan nominal denda"
-													/>
-												</label>
+												<Input
+													id="damage-penalty-{item.id}"
+													label="Denda Kerusakan (Rp)"
+													placeholder="Masukkan nominal denda"
+													value={currentDamagePenalty}
+													oninput={(e) => {
+														const raw = e.currentTarget.value.replace(/[^0-9]/g, '');
+														returnData[item.id].damagePenaltyOverride =
+															raw === '' ? null : parseFloat(raw);
+													}}
+													isCurrency
+												/>
 												<span class="mt-0.5 block text-[10px] text-[var(--color-stone)]">
 													Default aturan: {formatCurrency(calculatedDamagePenalty)}
 													{#if returnData[item.id].damagePenaltyOverride !== null}
@@ -526,19 +524,17 @@
 
 										<div class="mt-3 grid max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
 											<div>
-												<label class="mb-1 block text-xs font-bold text-[var(--color-earth)]">
-													Nominal Denda Keterlambatan (Rp)
-													<input
-														type="number"
-														class="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-normal focus:border-[var(--color-forest)] focus:outline-none"
-														value={currentLatePenalty}
-														oninput={(e) => {
-															const val = e.currentTarget.value;
-															latePenaltyOverride = val === '' ? null : parseFloat(val);
-														}}
-														placeholder="Nominal denda keterlambatan"
-													/>
-												</label>
+												<Input
+													id="late-penalty-override"
+													label="Nominal Denda Keterlambatan (Rp)"
+													placeholder="Nominal denda keterlambatan"
+													value={currentLatePenalty}
+													oninput={(e) => {
+														const raw = e.currentTarget.value.replace(/[^0-9]/g, '');
+														latePenaltyOverride = raw === '' ? null : parseFloat(raw);
+													}}
+													isCurrency
+												/>
 												<span class="mt-0.5 block text-[10px] text-[var(--color-stone)]">
 													Default aturan: {formatCurrency(calculatedLatePenalty())}
 													{#if latePenaltyOverride !== null}

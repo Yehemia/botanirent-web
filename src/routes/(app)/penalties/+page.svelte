@@ -163,12 +163,11 @@
 						<Input
 							id="amount-{rule.id}"
 							name="amount"
-							type="number"
 							label="Jumlah / Nilai Aturan"
 							value={rule.amount}
 							required
-							min="0"
 							placeholder="misal: 10000"
+							isCurrency={rule.calculation_method !== 'percentage'}
 						>
 							{#snippet iconLeft()}
 								<span class="text-xs font-bold text-[var(--color-muted)]">

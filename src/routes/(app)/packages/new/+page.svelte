@@ -263,6 +263,15 @@
 									type="text"
 									name="package_price"
 									bind:value={packagePriceInput}
+									oninput={(e) => {
+										let val = e.currentTarget.value.replace(/[^0-9]/g, '');
+										if (val.length > 1 && val.startsWith('0')) {
+											val = val.replace(/^0+/, '');
+											if (val === '') val = '0';
+										}
+										packagePriceInput = val;
+										e.currentTarget.value = val;
+									}}
 									required
 									class="h-11 w-full rounded-lg border border-[var(--color-border)] bg-white pr-4 pl-11 font-mono text-sm font-bold transition-all outline-none focus:border-transparent focus:ring-2 focus:ring-[var(--color-sage)]"
 								/>
