@@ -148,40 +148,42 @@
 								</div>
 
 								<!-- Status Change Actions (Hover) -->
-								<div
-									class="absolute inset-x-0 top-auto bottom-0 z-10 flex translate-y-full flex-wrap justify-center gap-1 rounded-b-xl border-t border-[var(--color-border-light)] bg-white/95 p-2 opacity-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] backdrop-blur transition-all group-hover:translate-y-0 group-hover:opacity-100"
-								>
-									{#each columns as targetCol}
-										{@const TargetIcon = targetCol.icon}
-										{#if targetCol.id !== col.id}
-											<form
-												method="POST"
-												action="?/updateStatus"
-												use:enhance={() => {
-													updatingId = asset.id;
-													return async ({ update }) => {
-														await update();
-														updatingId = null;
-													};
-												}}
-												class="min-w-[30%] flex-1"
-											>
-												<input type="hidden" name="id" value={asset.id} />
-												<input type="hidden" name="status" value={targetCol.id} />
-												<button
-													type="submit"
-													class="w-full rounded-md border px-1 py-1 text-[10px] font-medium transition-colors {targetCol.color} {targetCol.bg} {targetCol.border} flex flex-col items-center gap-0.5 hover:opacity-80"
-													title="Pindah ke {targetCol.title}"
+								{#if col.id !== 'rented'}
+									<div
+										class="absolute inset-x-0 top-auto bottom-0 z-10 flex translate-y-full flex-wrap justify-center gap-1 rounded-b-xl border-t border-[var(--color-border-light)] bg-white/95 p-2 opacity-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] backdrop-blur transition-all group-hover:translate-y-0 group-hover:opacity-100"
+									>
+										{#each columns as targetCol}
+											{@const TargetIcon = targetCol.icon}
+											{#if targetCol.id !== col.id && targetCol.id !== 'rented'}
+												<form
+													method="POST"
+													action="?/updateStatus"
+													use:enhance={() => {
+														updatingId = asset.id;
+														return async ({ update }) => {
+															await update();
+															updatingId = null;
+														};
+													}}
+													class="min-w-[30%] flex-1"
 												>
-													<TargetIcon size={12} />
-													<span class="w-full truncate text-center"
-														>{targetCol.title.split(' ')[0]}</span
+													<input type="hidden" name="id" value={asset.id} />
+													<input type="hidden" name="status" value={targetCol.id} />
+													<button
+														type="submit"
+														class="w-full rounded-md border px-1 py-1 text-[10px] font-medium transition-colors {targetCol.color} {targetCol.bg} {targetCol.border} flex flex-col items-center gap-0.5 hover:opacity-80"
+														title="Pindah ke {targetCol.title}"
 													>
-												</button>
-											</form>
-										{/if}
-									{/each}
-								</div>
+														<TargetIcon size={12} />
+														<span class="w-full truncate text-center"
+															>{targetCol.title.split(' ')[0]}</span
+														>
+													</button>
+												</form>
+											{/if}
+										{/each}
+									</div>
+								{/if}
 							</div>
 						{/each}
 					{/if}

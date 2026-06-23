@@ -82,7 +82,34 @@ export const assetStatusController = {
 			return { success: false, status: 400, error: 'Data tidak lengkap.' };
 		}
 
+		if (status === 'rented') {
+			return {
+				success: false,
+				status: 400,
+				error: 'Status "Sedang Disewa" hanya bisa diubah otomatis melalui transaksi penyewaan di POS.'
+			};
+		}
+
 		try {
+			// Cek status saat ini di database
+			const { data: currentAsset, error: fetchError } = await supabase
+				.from('rental_assets')
+				.select('status')
+				.eq('id', id)
+				.single();
+
+			if (fetchError) {
+				throw fetchError;
+			}
+
+			if (currentAsset && currentAsset.status === 'rented') {
+				return {
+					success: false,
+					status: 400,
+					error: 'Aset yang sedang disewa tidak dapat diubah statusnya secara manual. Harap lakukan proses Pengembalian.'
+				};
+			}
+
 			// Update status di database
 			await assetModel.updateAssetStatus(supabase, id, status);
 
