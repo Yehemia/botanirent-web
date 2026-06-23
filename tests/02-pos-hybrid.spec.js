@@ -38,10 +38,10 @@ test.describe('POS Hybrid Transaction & Checkout', () => {
 
 		// Verify individual items and prices in the cart list
 		await expect(
-			page.locator('h4:has-text("Tenda Dome 4 Orang")').filter({ visible: true }).first()
+			page.locator('span:has-text("Tenda Dome 4 Orang")').filter({ visible: true }).first()
 		).toBeVisible();
 		await expect(
-			page.locator('h4:has-text("Gas Kaleng Hi-Cook 230g")').filter({ visible: true }).first()
+			page.locator('span:has-text("Gas Kaleng Hi-Cook 230g")').filter({ visible: true }).first()
 		).toBeVisible();
 
 		// 6. Proceed to payment page

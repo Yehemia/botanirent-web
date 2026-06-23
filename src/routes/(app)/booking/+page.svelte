@@ -233,14 +233,13 @@
 	 * @param {Date} day
 	 */
 	function getBookingLabel(booking, day) {
+		const prefix = booking.status === 'completed' ? '[Selesai] ' : '';
 		if (isMaintenance(booking)) {
-			return 'Maintenance';
+			return `${prefix}Maintenance`;
 		}
 
 		const customerName = booking.transaction_item?.transaction?.customer?.full_name || 'Customer';
 		const dayStr = format(day, 'yyyy-MM-dd');
-
-		const prefix = booking.status === 'completed' ? '[Selesai] ' : '';
 
 		if (booking.end_date === dayStr) {
 			return `${prefix}Sewa - ${customerName} (End)`;
@@ -897,32 +896,63 @@
 			>
 				<!-- Cancel/Finish block (Only for maintenance OR if cashiers can cancel bookings) -->
 				{#if isMaint}
-					<form
-						method="POST"
-						action="?/deleteBooking"
-						use:enhance={() => {
-							isSubmitting = true;
-							return async ({ result, update }) => {
-								isSubmitting = false;
-								if (result.type === 'success') {
-									isDetailModalOpen = false;
-								}
-								await update();
-							};
-						}}
-					>
-						<input type="hidden" name="id" value={selectedBooking.id} />
-						<input type="hidden" name="rental_asset_id" value={ra?.id} />
-						<Button
-							type="submit"
-							variant="danger"
-							size="sm"
-							class="flex items-center gap-1.5"
-							disabled={isSubmitting}
+					<div class="flex flex-wrap gap-2">
+						{#if selectedBooking.status !== 'completed'}
+							<form
+								method="POST"
+								action="?/completeMaintenance"
+								use:enhance={() => {
+									isSubmitting = true;
+									return async ({ result, update }) => {
+										isSubmitting = false;
+										if (result.type === 'success') {
+											isDetailModalOpen = false;
+										}
+										await update();
+									};
+								}}
+							>
+								<input type="hidden" name="id" value={selectedBooking.id} />
+								<input type="hidden" name="rental_asset_id" value={ra?.id} />
+								<Button
+									type="submit"
+									variant="primary"
+									size="sm"
+									class="flex items-center gap-1.5 bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)]"
+									disabled={isSubmitting}
+								>
+									<CheckCircle size={14} /> Selesaikan Maintenance
+								</Button>
+							</form>
+						{/if}
+
+						<form
+							method="POST"
+							action="?/deleteBooking"
+							use:enhance={() => {
+								isSubmitting = true;
+								return async ({ result, update }) => {
+									isSubmitting = false;
+									if (result.type === 'success') {
+										isDetailModalOpen = false;
+									}
+									await update();
+								};
+							}}
 						>
-							<Trash2 size={14} /> Selesaikan Maintenance
-						</Button>
-					</form>
+							<input type="hidden" name="id" value={selectedBooking.id} />
+							<input type="hidden" name="rental_asset_id" value={ra?.id} />
+							<Button
+								type="submit"
+								variant="danger"
+								size="sm"
+								class="flex items-center gap-1.5"
+								disabled={isSubmitting}
+							>
+								<Trash2 size={14} /> Hapus Blokir
+							</Button>
+						</form>
+					</div>
 				{:else}
 					<!-- For normal bookings, we can release the block in case of cancellations -->
 					<form

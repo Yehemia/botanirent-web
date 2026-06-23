@@ -87,6 +87,29 @@ export const actions = {
 		}
 
 		return { success: true };
+	},
+
+	/**
+	 * Aksi 'completeMaintenance' dipanggil untuk menyelesaikan perawatan alat
+	 */
+	completeMaintenance: async ({ request, locals }) => {
+		const { supabase } = locals;
+		const { session, profile } = await locals.safeGetSession();
+
+		if (!session || !profile) {
+			return fail(401, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		
+		// Proses penyelesaian maintenance
+		const result = await bookingController.completeMaintenance(supabase, profile, formData);
+
+		if (!result.success) {
+			return fail(result.status || 500, { error: result.error });
+		}
+
+		return { success: true };
 	}
 };
 

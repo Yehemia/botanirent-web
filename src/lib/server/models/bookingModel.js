@@ -154,5 +154,25 @@ export const bookingModel = {
 			throw new Error(error.message);
 		}
 		return true;
+	},
+
+	/**
+	 * Update status satu booking berdasarkan ID.
+	 *
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {string} id
+	 * @param {string} status - Status baru: 'completed' | 'cancelled' | 'active'
+	 */
+	async updateBookingStatus(supabase, id, status) {
+		const { error } = await supabase
+			.from('bookings')
+			.update({ status })
+			.eq('id', id);
+
+		if (error) {
+			console.error('Error updating booking status in model:', error);
+			throw new Error(error.message);
+		}
+		return true;
 	}
 };

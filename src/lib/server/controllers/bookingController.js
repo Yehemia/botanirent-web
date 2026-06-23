@@ -28,6 +28,7 @@ import { assetModel } from '../models/assetModel.js';
 import { branchModel } from '../models/branchModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
 import { cacheGet } from '../cache.js';
+import { supabaseAdmin } from '../supabase.js';
 
 export const bookingController = {
 	/**
@@ -140,7 +141,7 @@ export const bookingController = {
 
 		try {
 			// Buat booking baru di database
-			const booking = await bookingModel.createBooking(supabase, {
+			const booking = await bookingModel.createBooking(supabaseAdmin, {
 				rental_asset_id,
 				branch_id,
 				start_date,
@@ -149,7 +150,7 @@ export const bookingController = {
 			});
 
 			// Catat activity log
-			await activityLogModel.logActivity(supabase, {
+			await activityLogModel.logActivity(supabaseAdmin, {
 				userId: profile.id,
 				branchId: branch_id,
 				action: 'create_maintenance',
@@ -159,10 +160,10 @@ export const bookingController = {
 			});
 
 			// Efek samping: Jika maintenance berlaku mulai hari ini → update status asset sekarang
-			const todayStr = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+			const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' }); // "YYYY-MM-DD"
 			if (start_date <= todayStr && todayStr <= end_date) {
 				// Hari ini ada dalam rentang maintenance → asset langsung tidak tersedia
-				await assetModel.updateAssetStatus(supabase, rental_asset_id, status, notes);
+				await assetModel.updateAssetStatus(supabaseAdmin, rental_asset_id, status, notes);
 			}
 
 			return { success: true };
@@ -197,7 +198,7 @@ export const bookingController = {
 
 		try {
 			// Ambil detail booking sebelum dihapus (perlu untuk log dan cek efek samping)
-			const booking = await bookingModel.getBookingDetails(supabase, id);
+			const booking = await bookingModel.getBookingDetails(supabaseAdmin, id);
 			if (!booking) {
 				return { success: false, status: 404, error: 'Booking tidak ditemukan.' };
 			}
@@ -207,10 +208,10 @@ export const bookingController = {
 			const isMaintenance = !booking.transaction_item_id;
 
 			// Hapus booking dari database
-			await bookingModel.deleteBooking(supabase, id);
+			await bookingModel.deleteBooking(supabaseAdmin, id);
 
 			// Catat log penghapusan
-			await activityLogModel.logActivity(supabase, {
+			await activityLogModel.logActivity(supabaseAdmin, {
 				userId: profile.id,
 				branchId: booking.branch_id,
 				action: 'delete_booking',
@@ -219,22 +220,85 @@ export const bookingController = {
 				metadata: { isMaintenance, rental_asset_id: booking.rental_asset_id }
 			});
 
-			// Efek samping: Jika booking maintenance yang aktif hari ini dihapus
-			// → kembalikan status asset ke 'ready' (maintenance selesai lebih awal)
-			const todayStr = new Date().toISOString().split('T')[0];
-			if (isMaintenance && booking.start_date <= todayStr && todayStr <= booking.end_date) {
-				await assetModel.updateAssetStatus(
-					supabase,
-					booking.rental_asset_id,
-					'ready', // Kembalikan ke siap pakai
-					'Maintenance selesai'
-				);
+			// Efek samping: Jika booking dihapus, kembalikan status asset ke 'ready' jika sesuai
+			const { data: assetData } = await supabaseAdmin
+				.from('rental_assets')
+				.select('status')
+				.eq('id', booking.rental_asset_id)
+				.single();
+
+			if (assetData) {
+				if (isMaintenance && (assetData.status === 'maintenance' || assetData.status === 'washing')) {
+					await assetModel.updateAssetStatus(
+						supabaseAdmin,
+						booking.rental_asset_id,
+						'ready', // Kembalikan ke siap pakai
+						'Maintenance dibatalkan/dilepas'
+					);
+				} else if (!isMaintenance && assetData.status === 'rented') {
+					await assetModel.updateAssetStatus(
+						supabaseAdmin,
+						booking.rental_asset_id,
+						'ready', // Kembalikan ke siap pakai
+						'Booking sewa dilepas'
+					);
+				}
 			}
 
 			return { success: true };
 		} catch (error) {
 			console.error('Error deleting booking in controller:', error);
 			return { success: false, status: 500, error: 'Gagal menghapus booking.' };
+		}
+	},
+
+	/**
+	 * Tandai booking maintenance sebagai selesai.
+	 *
+	 * EFEK SAMPING:
+	 *   Status asset dikembalikan ke 'ready'
+	 *
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {{ id: string }} profile
+	 * @param {FormData} formData
+	 */
+	async completeMaintenance(supabase, profile, formData) {
+		const id = formData.get('id')?.toString();
+		if (!id) {
+			return { success: false, status: 400, error: 'ID booking tidak ditemukan.' };
+		}
+
+		try {
+			const booking = await bookingModel.getBookingDetails(supabaseAdmin, id);
+			if (!booking) {
+				return { success: false, status: 404, error: 'Booking tidak ditemukan.' };
+			}
+
+			// Update status booking ke 'completed'
+			await bookingModel.updateBookingStatus(supabaseAdmin, id, 'completed');
+
+			// Catat log
+			await activityLogModel.logActivity(supabaseAdmin, {
+				userId: profile.id,
+				branchId: booking.branch_id,
+				action: 'complete_maintenance',
+				entityType: 'booking',
+				entityId: id,
+				metadata: { rental_asset_id: booking.rental_asset_id }
+			});
+
+			// Kembalikan status asset ke 'ready'
+			await assetModel.updateAssetStatus(
+				supabaseAdmin,
+				booking.rental_asset_id,
+				'ready',
+				'Maintenance selesai'
+			);
+
+			return { success: true };
+		} catch (error) {
+			console.error('Error completing maintenance in controller:', error);
+			return { success: false, status: 500, error: 'Gagal menyelesaikan maintenance.' };
 		}
 	}
 };
