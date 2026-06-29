@@ -156,7 +156,7 @@
 		return labels[type] || type;
 	}
 
-	const DASHES = '- - - - - - - - - - - - - - - - - - - -';
+	const DASHES = '- - - - - - - - - - - - - - - -';
 </script>
 
 <!-- ============================================================
@@ -419,18 +419,20 @@
 		</div>
 
 		<!-- ===== Payment Info ===== -->
-		<div class="receipt-payment">
-			<div class="receipt-total-row">
-				<span>Bayar: {paymentLabel(transaction.payment_method)}</span>
-				<span>{formatCurrency(transaction.paid_amount)}</span>
-			</div>
-			{#if transaction.change_amount > 0}
+		{#if transaction.payment_method !== 'qris'}
+			<div class="receipt-payment">
 				<div class="receipt-total-row">
-					<span>Kembali:</span>
-					<span>{formatCurrency(transaction.change_amount)}</span>
+					<span>Bayar: {paymentLabel(transaction.payment_method)}</span>
+					<span>{formatCurrency(transaction.paid_amount)}</span>
 				</div>
-			{/if}
-		</div>
+				{#if transaction.change_amount > 0}
+					<div class="receipt-total-row">
+						<span>Kembali:</span>
+						<span>{formatCurrency(transaction.change_amount)}</span>
+					</div>
+				{/if}
+			</div>
+		{/if}
 
 		<div class="receipt-dashes">{DASHES}</div>
 
