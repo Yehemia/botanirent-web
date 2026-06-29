@@ -357,13 +357,10 @@
 					{#if item.quantity > 1 && item.unit_price > 0}
 						<span class="receipt-item-detail">
 							{item.quantity}x {formatCurrency(item.unit_price)}
-							{#if item.rental_days && item.rental_days > 0}
-								x {item.rental_days} hari
-							{/if}
 						</span>
-					{:else if item.rental_days && item.rental_days > 0 && item.unit_price > 0}
+					{:else if item.unit_price > 0}
 						<span class="receipt-item-detail">
-							{formatCurrency(item.unit_price)} x {item.rental_days} hari
+							{formatCurrency(item.unit_price)}
 						</span>
 					{/if}
 					{#if (item.type === 'rental' || item.type === 'package') && item.rental_start_date}
