@@ -89,6 +89,13 @@
 					rental_start_date: item.rental_start_date,
 					rental_end_date: item.rental_end_date,
 					type: item.type
+				})),
+				penalties: penalties.map((/** @type {any} */ p) => ({
+					type: p.type,
+					calculated_amount: p.calculated_amount,
+					item_name: p.item_name,
+					payment_status: p.payment_status,
+					notes: p.notes
 				}))
 			};
 			await printReceiptFromMobile(receiptPayload);
