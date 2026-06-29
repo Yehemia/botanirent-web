@@ -741,40 +741,168 @@
 		color: var(--color-warning);
 	}
 
-	/* ===== Print Styles ===== */
+	/* ===== Print Styles — Optimized for 58mm Thermal Printer ===== */
+	@page {
+		size: 58mm auto;
+		margin: 0;
+	}
+
 	@media print {
+		/* Reset global layout */
 		:global(body) {
-			background-color: white !important;
+			background: white !important;
+			margin: 0 !important;
+			padding: 0 !important;
+			width: 58mm !important;
+			min-width: 0 !important;
+			max-width: 58mm !important;
+			font-size: 9px !important;
 		}
+
+		/* Hide ALL non-receipt elements */
 		:global(nav),
 		:global(aside),
-		:global(header) {
+		:global(header),
+		:global(.sidebar),
+		:global(.bottom-nav),
+		:global(.mobile-nav) {
 			display: none !important;
 		}
+
 		:global(main) {
 			padding: 0 !important;
 			margin: 0 !important;
+			width: 100% !important;
+			max-width: 58mm !important;
 		}
 
-		.receipt-overlay {
+		/* Hide overlays, action bars, modals, QRIS sidebar */
+		.receipt-overlay,
+		.receipt-modal-actions,
+		.receipt-status-badge {
 			display: none !important;
+		}
+
+		/* ---- Receipt Paper: 58mm (printable area ~54mm) ---- */
+		.receipt-page-wrapper {
+			max-width: 54mm !important;
+			width: 100% !important;
+			margin: 0 !important;
+			padding: 0 !important;
+			border: none !important;
+			box-shadow: none !important;
 		}
 
 		.receipt-paper {
 			box-shadow: none;
+			border: none;
 			border-top: none;
-			padding: 0;
-			max-width: 80mm;
-			margin: 0 auto;
-			font-size: 11px;
+			border-radius: 0;
+			padding: 1mm 2mm;
+			max-width: 54mm;
+			width: 100%;
+			margin: 0;
+			font-size: 9px;
+			line-height: 1.3;
+			font-family: 'Courier New', 'Consolas', monospace;
+			color: #000;
 		}
 
-		.receipt-grand-total {
+		/* ---- Header compact ---- */
+		.receipt-header {
+			margin-bottom: 1mm;
+		}
+		.receipt-logo {
+			gap: 2px;
+			margin-bottom: 1mm;
+		}
+		.receipt-brand {
 			font-size: 13px;
+			letter-spacing: 0;
+		}
+		.receipt-branch-name {
+			font-size: 8px;
+			line-height: 1.2;
+		}
+		.receipt-branch-info {
+			font-size: 7px;
+			line-height: 1.2;
 		}
 
+		/* ---- Dashes compact ---- */
+		.receipt-dashes {
+			font-size: 7px;
+			letter-spacing: -1px;
+			margin: 1mm 0;
+		}
+
+		/* ---- Info block ---- */
+		.receipt-info-block {
+			font-size: 8px;
+			gap: 0;
+			line-height: 1.4;
+		}
+
+		/* ---- Items compact ---- */
+		.receipt-items {
+			gap: 1mm;
+		}
+		.receipt-item-row {
+			font-size: 9px;
+			gap: 2px;
+		}
+		.receipt-item-name {
+			font-size: 9px;
+		}
+		.receipt-item-subtotal {
+			font-size: 9px;
+		}
+		.receipt-item-detail {
+			font-size: 7px;
+			padding-left: 1mm;
+		}
+		.receipt-item-rental {
+			font-size: 7px;
+			padding-left: 1mm;
+		}
+
+		/* ---- Totals ---- */
+		.receipt-totals {
+			gap: 0;
+			margin-bottom: 1mm;
+		}
+		.receipt-total-row {
+			font-size: 9px;
+		}
+		.receipt-grand-total {
+			font-size: 12px;
+			font-weight: 700;
+			margin-top: 1px;
+			padding-top: 1px;
+		}
+
+		/* ---- Payment ---- */
+		.receipt-payment {
+			gap: 0;
+			font-size: 9px;
+		}
+
+		/* ---- Footer ---- */
+		.receipt-footer {
+			margin-top: 1mm;
+		}
+		.receipt-thankyou {
+			font-size: 8px;
+			margin: 0 0 2mm 0;
+		}
+
+		/* ---- Barcode compact ---- */
 		.receipt-barcode {
-			height: 36px;
+			height: 24px;
+		}
+		.receipt-barcode-label {
+			font-size: 6px;
+			letter-spacing: 0.1em;
 		}
 	}
 
