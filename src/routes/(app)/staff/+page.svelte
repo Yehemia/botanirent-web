@@ -77,6 +77,18 @@
 				Staff baru berhasil diundang!
 			{/if}
 		</div>
+
+		{#if form.emailSent}
+			<p class="text-xs text-[var(--color-success)] font-medium">
+				✓ Email undangan otomatis berhasil dikirimkan ke alamat email staff.
+			</p>
+		{:else if form.emailError}
+			<div class="text-xs text-[var(--color-error)] font-medium bg-[var(--color-error-bg)] border border-[var(--color-error)]/10 rounded p-2 mt-1">
+				⚠️ Email gagal dikirim otomatis: {form.emailError}.<br>
+				Silakan salin dan berikan link di bawah ini secara manual kepada staff terkait.
+			</div>
+		{/if}
+
 		{#if form.inviteLink}
 			<div class="mt-2 rounded bg-white p-3 border border-[var(--color-success)]/10 text-[var(--color-stone)]">
 				<p class="text-xs font-semibold text-[var(--color-earth)] mb-1">
