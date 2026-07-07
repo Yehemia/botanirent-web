@@ -34,6 +34,20 @@ import { fail, redirect } from '@sveltejs/kit';
  *   - Jika belum login → tampilkan form login (return data error dari URL jika ada)
  */
 export const load = async ({ locals, url }) => {
+	const code = url.searchParams.get('code');
+	const type = url.searchParams.get('type');
+	if (code) {
+		const { error } = await locals.supabase.auth.exchangeCodeForSession(code);
+		if (!error) {
+			if (type === 'invite' || type === 'recovery') {
+				throw redirect(303, '/set-password');
+			}
+			throw redirect(303, '/dashboard');
+		} else {
+			console.error('Error exchanging code in login page load:', error.message);
+		}
+	}
+
 	const { session, profile } = await locals.safeGetSession();
 	if (session) {
 		if (profile) {

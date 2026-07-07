@@ -16,7 +16,6 @@
 	let formData = $state({
 		email: '',
 		full_name: '',
-		password: '',
 		role: 'kasir',
 		branch_id: ''
 	});
@@ -25,7 +24,6 @@
 		formData = {
 			email: '',
 			full_name: '',
-			password: '',
 			role: 'kasir',
 			branch_id: data.branches[0]?.id || ''
 		};
@@ -69,9 +67,28 @@
 
 {#if form?.success}
 	<div
-		class="mb-6 flex items-center gap-2 rounded-md border border-[var(--color-success)]/20 bg-[var(--color-success-bg)] p-4 text-sm text-[var(--color-success)]"
+		class="mb-6 flex flex-col gap-2 rounded-md border border-[var(--color-success)]/20 bg-[var(--color-success-bg)] p-4 text-sm text-[var(--color-success)]"
 	>
-		<CheckCircle2 size={18} /> Akun staff berhasil dibuat! Mereka sekarang bisa langsung login.
+		<div class="flex items-center gap-2 font-semibold">
+			<CheckCircle2 size={18} /> 
+			{#if form.isExisting}
+				Detail & Peran Staff Berhasil Diperbarui!
+			{:else}
+				Staff baru berhasil diundang!
+			{/if}
+		</div>
+		{#if form.inviteLink}
+			<div class="mt-2 rounded bg-white p-3 border border-[var(--color-success)]/10 text-[var(--color-stone)]">
+				<p class="text-xs font-semibold text-[var(--color-earth)] mb-1">
+					{#if form.isExisting}
+						Email ini sudah terdaftar sebelumnya. Peran/cabang berhasil diperbarui! Silakan kirimkan link reset password berikut agar mereka dapat mengatur kata sandi baru:
+					{:else}
+						Link Aktivasi (Salin dan kirimkan link ini ke staff agar mereka bisa membuat password):
+					{/if}
+				</p>
+				<code class="break-all select-all block text-xs font-mono text-[var(--color-forest)] bg-[var(--color-sand-lightest)] px-2 py-1.5 rounded border border-[var(--color-border-light)]">{form.inviteLink}</code>
+			</div>
+		{/if}
 	</div>
 {/if}
 
@@ -212,7 +229,7 @@
 		class="space-y-4"
 	>
 		<p class="mb-4 text-sm text-[var(--color-stone)]">
-			Buat akun staff secara langsung. Silakan berikan email dan password ini kepada staff terkait.
+			Undang staff baru melalui email. Supabase akan mengirimkan email berisi tautan/link bagi staff untuk membuat password dan mengaktifkan akun mereka.
 		</p>
 
 		<Input
@@ -238,18 +255,7 @@
 			{#snippet iconLeft()}<Mail size={18} />{/snippet}
 		</Input>
 
-		<Input
-			id="password"
-			name="password"
-			type="password"
-			label="Password Sementara"
-			placeholder="Minimal 6 karakter"
-			bind:value={formData.password}
-			required
-			minlength={6}
-		>
-			{#snippet iconLeft()}<Lock size={18} />{/snippet}
-		</Input>
+
 
 		<Select id="role" name="role" label="Role / Jabatan" bind:value={formData.role} required>
 			{#snippet iconLeft()}

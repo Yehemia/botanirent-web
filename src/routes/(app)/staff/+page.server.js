@@ -83,7 +83,7 @@ export const actions = {
 	 * Aksi 'invite': Mendaftarkan akun staf baru
 	 * Menggunakan Supabase Admin API untuk langsung membuat user di auth.users bypass email confirmation.
 	 */
-	invite: async ({ request, locals: { safeGetSession } }) => {
+	invite: async ({ request, url, locals: { safeGetSession } }) => {
 		const { profile } = await safeGetSession();
 
 		if (profile?.role !== 'owner') {
@@ -92,42 +92,94 @@ export const actions = {
 
 		const formData = await request.formData();
 		const email = formData.get('email');
-		const password = formData.get('password');
 		const role = formData.get('role');
 		const branch_id = formData.get('branch_id');
 		const full_name = formData.get('full_name');
 
 		// Validasi input wajib
-		if (!email || !password || !role || !branch_id || !full_name) {
+		if (!email || !role || !branch_id || !full_name) {
 			return fail(400, { error: 'Semua field harus diisi.' });
 		}
 
-		if (password.toString().length < 6) {
-			return fail(400, { error: 'Password minimal 6 karakter.' });
-		}
-
-		// LANGKAH 1: Buat user baru di Supabase Auth via Admin Client (Service Role)
-		// Mengapa pakai supabaseAdmin? Karena client Supabase biasa tidak diizinkan membuat user lain
-		// secara bypass demi keamanan (signup flow biasa mewajibkan verifikasi email).
-		const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+		// LANGKAH 1: Buat user dan buat link undangan ke staff via Admin Client (generateLink)
+		// generateLink membuat user di auth.users dan menghasilkan link aktivasi tanpa bergantung pada SMTP email lokal.
+		const { data: linkData, error: createError } = await supabaseAdmin.auth.admin.generateLink({
+			type: 'invite',
 			email: email.toString(),
-			password: password.toString(),
-			email_confirm: true, // Bypass verifikasi email (langsung terkonfirmasi)
-			user_metadata: { full_name: full_name.toString() }
+			options: {
+				redirectTo: `${url.origin}/callback?type=invite`,
+				data: { full_name: full_name.toString() }
+			}
 		});
 
 		if (createError) {
-			console.error('Error creating user:', createError);
-			if (createError.message.includes('already registered')) {
-				return fail(400, { error: 'Email tersebut sudah terdaftar.' });
+			const isAlreadyRegistered = createError.status === 422 && 
+				(createError.code === 'email_exists' || createError.message.includes('already registered') || createError.message.includes('already exists'));
+
+			if (isAlreadyRegistered) {
+				console.log(`User ${email} already exists in auth.users. Fetching existing user for update/recovery link...`);
+				// Fetch existing users to retrieve user ID
+				const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+				if (listError) {
+					console.error('Error listing users for recovery link:', listError);
+					return fail(500, { error: 'Email sudah terdaftar, dan gagal memuat detail user.' });
+				}
+
+				const existingUser = users.find((/** @type {any} */ u) => u.email === email.toString());
+				if (!existingUser) {
+					return fail(500, { error: 'Email sudah terdaftar, tetapi detail user tidak ditemukan.' });
+				}
+
+				const userId = existingUser.id;
+
+				// Generate recovery link for existing user to let them reset password / activate
+				const { data: recoveryData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
+					type: 'recovery',
+					email: email.toString(),
+					options: {
+						redirectTo: `${url.origin}/callback?type=recovery`
+					}
+				});
+
+				if (recoveryError) {
+					console.error('Error generating recovery link:', recoveryError);
+					return fail(500, { error: 'Gagal membuat link reset password: ' + recoveryError.message });
+				}
+
+				const inviteLink = `${url.origin}/callback?token_hash=${recoveryData.properties.hashed_token}&type=recovery`;
+
+				// Update existing profile details
+				const { error: profileError } = await supabaseAdmin
+					.from('profiles')
+					.update({
+						full_name: full_name.toString(),
+						role: role.toString(),
+						branch_id: branch_id.toString(),
+						is_active: true
+					})
+					.eq('id', userId);
+
+				if (profileError) {
+					console.error('Error updating existing profile:', profileError);
+					return fail(500, { error: 'Gagal memperbarui peran/cabang staff.' });
+				}
+
+				// Invalidasi cache staff agar data langsung terupdate tanpa perlu reload
+				cacheInvalidate('staff_list');
+				cacheInvalidatePrefix('staff_count_');
+
+				return { success: true, inviteLink, isExisting: true };
 			}
-			return fail(500, { error: 'Gagal membuat akun staff: ' + createError.message });
+
+			console.error('Error generating invite link:', createError);
+			return fail(500, { error: 'Gagal mengundang staff: ' + createError.message });
 		}
 
-		const userId = userData.user.id;
+		const userId = linkData.user.id;
+		const inviteLink = `${url.origin}/callback?token_hash=${linkData.properties.hashed_token}&type=invite`;
 
 		// LANGKAH 2: Update tabel public.profiles untuk mencatat detail nama, role, dan cabangnya.
-		// User ID diperoleh dari hasil kembalian auth.admin.createUser di atas.
+		// User ID diperoleh dari hasil kembalian auth.admin.generateLink di atas.
 		const { error: profileError } = await supabaseAdmin
 			.from('profiles')
 			.update({
@@ -147,7 +199,7 @@ export const actions = {
 		cacheInvalidate('staff_list');
 		cacheInvalidatePrefix('staff_count_');
 
-		return { success: true };
+		return { success: true, inviteLink };
 	},
 
 	/**

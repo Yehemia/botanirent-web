@@ -32,8 +32,8 @@ import { redirect } from '@sveltejs/kit';
  * @param {{ url: URL, locals: { supabase: any } }} context
  */
 export const GET = async ({ url, locals: { supabase } }) => {
-	// Ambil parameter dari URL callback
 	const code = url.searchParams.get('code'); // Kode otorisasi dari Supabase/Google
+	const token_hash = url.searchParams.get('token_hash'); // Hash token OTP dari direct link
 	const next = url.searchParams.get('next') || '/dashboard'; // Tujuan setelah berhasil
 	const type = url.searchParams.get('type'); // 'invite', 'recovery', atau null
 
@@ -48,6 +48,27 @@ export const GET = async ({ url, locals: { supabase } }) => {
 			303,
 			`/login?error=${encodeURIComponent(errorParam)}&error_description=${encodeURIComponent(errorDescription || '')}`
 		);
+	}
+
+	if (token_hash) {
+		// Verifikasi OTP/token_hash secara langsung di server-side (bypass verify redirect)
+		const { error } = await supabase.auth.verifyOtp({
+			token_hash,
+			type: type === 'recovery' ? 'recovery' : 'invite'
+		});
+
+		if (!error) {
+			if (type === 'invite' || type === 'recovery') {
+				throw redirect(303, '/set-password');
+			}
+			throw redirect(303, next);
+		} else {
+			console.error('Error verifying token_hash:', error.message);
+			throw redirect(
+				303,
+				`/login?error=auth_callback_failed&error_description=${encodeURIComponent(error.message)}`
+			);
+		}
 	}
 
 	if (code) {

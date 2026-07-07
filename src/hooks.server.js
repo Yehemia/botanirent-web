@@ -21,6 +21,7 @@
  * ============================================================
  */
 
+import { redirect } from '@sveltejs/kit';
 import { createSupabaseServerClient, supabaseAdmin } from '$lib/server/supabase';
 
 // =====================================================
@@ -84,6 +85,34 @@ export const handle = async ({ event, resolve }) => {
 	//   - +page.server.js (load function & form actions)
 	//   - API routes (+server.js)
 	event.locals.supabase = createSupabaseServerClient(event);
+
+	// Intercept auth code from any page request (except auth routes)
+	const code = event.url.searchParams.get('code');
+	const path = event.url.pathname;
+	if (code && path !== '/callback' && path !== '/set-password') {
+		try {
+			await event.locals.supabase.auth.exchangeCodeForSession(code);
+			
+			// Clean up 'code' parameter and redirect to refresh/authenticate
+			const cleanUrl = new URL(event.url);
+			cleanUrl.searchParams.delete('code');
+			
+			throw redirect(303, cleanUrl.pathname + cleanUrl.search);
+		} catch (err) {
+			const redirectError = /** @type {any} */ (err);
+			// Rethrow redirect errors so SvelteKit handles them
+			if (
+				redirectError &&
+				typeof redirectError === 'object' &&
+				'status' in redirectError &&
+				redirectError.status >= 300 &&
+				redirectError.status < 400
+			) {
+				throw redirectError;
+			}
+			console.error('Error exchanging code in global middleware:', err);
+		}
+	}
 
 	// ─────────────────────────────────────────────────
 	// LANGKAH 2: Siapkan function safeGetSession
