@@ -196,11 +196,35 @@ export const actions = {
 			});
 
 			if (fallbackError) {
-				return fail(500, { error: 'Gagal mengundang staff (email gagal terkirim & pembuatan link manual gagal): ' + fallbackError.message });
+				// Jika pembuatan link invite gagal (misal karena user sebenarnya berhasil dibuat tapi emailnya gagal kirim),
+				// kita coba buat link recovery/reset password sebagai gantinya.
+				console.warn('generateLink invite failed. Trying recovery link fallback...', fallbackError.message);
+				
+				const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+				const existingUser = users.find((/** @type {any} */ u) => u.email === email.toString());
+				
+				if (existingUser) {
+					userId = existingUser.id;
+					const { data: recoveryData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
+						type: 'recovery',
+						email: email.toString(),
+						options: {
+							redirectTo: `${url.origin}/callback?type=recovery`
+						}
+					});
+					
+					if (recoveryError) {
+						return fail(500, { error: 'Gagal membuat link aktivasi fallback: ' + recoveryError.message });
+					}
+					
+					inviteLink = `${url.origin}/callback?token_hash=${recoveryData.properties.hashed_token}&type=recovery`;
+				} else {
+					return fail(500, { error: 'Gagal mengundang staff: ' + fallbackError.message });
+				}
+			} else {
+				userId = linkData.user.id;
+				inviteLink = `${url.origin}/callback?token_hash=${linkData.properties.hashed_token}&type=invite`;
 			}
-
-			userId = linkData.user.id;
-			inviteLink = `${url.origin}/callback?token_hash=${linkData.properties.hashed_token}&type=invite`;
 		} else {
 			userId = inviteData.user.id;
 		}
