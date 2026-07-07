@@ -51,7 +51,6 @@
 		"@vercel/speed-insights": "^2.0.0",
 		"chart.js": "^4.5.1",
 		"date-fns": "^4.2.1",
-		"resend": "^6.17.1",
 		"svelte-chartjs": "^4.0.1",
 		"svelte-sonner": "^1.1.1",
 		"xlsx": "^0.18.5",
