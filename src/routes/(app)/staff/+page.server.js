@@ -103,6 +103,10 @@ export const actions = {
 
 		// LANGKAH 1: Undang user via Admin Client (inviteUserByEmail)
 		// inviteUserByEmail otomatis membuat user di auth.users dan mengirimkan email undangan via SMTP Supabase.
+		let userId;
+		let inviteLink = null;
+		let emailError = null;
+
 		const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
 			email.toString(),
 			{
@@ -116,7 +120,7 @@ export const actions = {
 				(inviteError.code === 'email_exists' || inviteError.message.includes('already registered') || inviteError.message.includes('already exists'));
 
 			if (isAlreadyRegistered) {
-				console.log(`User ${email} already exists in auth.users. Fetching existing user for update & recovery email...`);
+				console.log(`User ${email} already exists in auth.users. Fetching details for update & recovery email...`);
 				// Fetch existing users to retrieve user ID
 				const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
 				if (listError) {
@@ -129,7 +133,7 @@ export const actions = {
 					return fail(500, { error: 'Email sudah terdaftar, tetapi detail user tidak ditemukan.' });
 				}
 
-				const userId = existingUser.id;
+				userId = existingUser.id;
 
 				// Kirim email reset password secara otomatis via SMTP Supabase
 				const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email.toString(), {
@@ -137,8 +141,22 @@ export const actions = {
 				});
 
 				if (resetError) {
-					console.error('Error sending recovery email via Supabase Auth:', resetError);
-					return fail(500, { error: 'Gagal mengirim email pemulihan: ' + resetError.message });
+					console.warn('Supabase resetPasswordForEmail failed. Falling back to generateLink...', resetError.message);
+					emailError = `Email pemulihan gagal dikirim otomatis (${resetError.message}).`;
+
+					// Fallback to generating link manually
+					const { data: recoveryData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
+						type: 'recovery',
+						email: email.toString(),
+						options: {
+							redirectTo: `${url.origin}/callback?type=recovery`
+						}
+					});
+
+					if (recoveryError) {
+						return fail(500, { error: 'Gagal membuat link reset password: ' + recoveryError.message });
+					}
+					inviteLink = `${url.origin}/callback?token_hash=${recoveryData.properties.hashed_token}&type=recovery`;
 				}
 
 				// Update existing profile details
@@ -161,14 +179,31 @@ export const actions = {
 				cacheInvalidate('staff_list');
 				cacheInvalidatePrefix('staff_count_');
 
-				return { success: true, isExisting: true };
+				return { success: true, isExisting: true, inviteLink, emailError };
 			}
 
-			console.error('Error inviting staff:', inviteError);
-			return fail(500, { error: 'Gagal mengundang staff: ' + inviteError.message });
-		}
+			// SMTP configuration failure on new user invite: Fallback to generateLink directly!
+			console.warn('Supabase inviteUserByEmail failed. Falling back to generateLink...', inviteError.message);
+			emailError = `Email undangan gagal terkirim otomatis (${inviteError.message}).`;
 
-		const userId = inviteData.user.id;
+			const { data: linkData, error: fallbackError } = await supabaseAdmin.auth.admin.generateLink({
+				type: 'invite',
+				email: email.toString(),
+				options: {
+					redirectTo: `${url.origin}/callback?type=invite`,
+					data: { full_name: full_name.toString() }
+				}
+			});
+
+			if (fallbackError) {
+				return fail(500, { error: 'Gagal mengundang staff (email gagal terkirim & pembuatan link manual gagal): ' + fallbackError.message });
+			}
+
+			userId = linkData.user.id;
+			inviteLink = `${url.origin}/callback?token_hash=${linkData.properties.hashed_token}&type=invite`;
+		} else {
+			userId = inviteData.user.id;
+		}
 
 		// LANGKAH 2: Update tabel public.profiles untuk mencatat detail nama, role, dan cabangnya.
 		const { error: profileError } = await supabaseAdmin
@@ -190,7 +225,7 @@ export const actions = {
 		cacheInvalidate('staff_list');
 		cacheInvalidatePrefix('staff_count_');
 
-		return { success: true, isExisting: false };
+		return { success: true, isExisting: false, inviteLink, emailError };
 	},
 
 	/**

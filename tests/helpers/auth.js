@@ -17,8 +17,8 @@ export async function loginAs(page, email, password) {
 	// Submit form
 	await page.click('button[type="submit"]');
 
-	// Wait for redirect to dashboard (increased to 20s for database tolerance)
-	await page.waitForURL('**/dashboard', { timeout: 20000 });
+	// Wait for redirect to dashboard (increased to 60s for database tolerance)
+	await page.waitForURL('**/dashboard', { timeout: 60000 });
 }
 
 /**
@@ -27,5 +27,5 @@ export async function loginAs(page, email, password) {
  */
 export async function logout(page) {
 	await page.goto('/logout', { waitUntil: 'domcontentloaded' });
-	await page.waitForURL('**/login', { timeout: 15000 });
+	await page.waitForURL('**/login', { timeout: 30000 });
 }

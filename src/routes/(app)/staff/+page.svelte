@@ -77,13 +77,34 @@
 				Staff baru berhasil diundang!
 			{/if}
 		</div>
-		<p class="text-xs text-[var(--color-success)] font-medium">
-			{#if form.isExisting}
-				Email untuk mengatur ulang kata sandi baru telah otomatis dikirimkan oleh Supabase ke alamat email staff.
-			{:else}
-				Email undangan berisi tautan aktivasi akun telah otomatis dikirimkan oleh Supabase ke alamat email staff.
-			{/if}
-		</p>
+
+		{#if form.emailError}
+			<div class="text-xs text-[var(--color-error)] font-medium bg-[var(--color-error-bg)] border border-[var(--color-error)]/10 rounded p-2 mt-1 mb-2">
+				⚠️ {form.emailError}<br>
+				Silakan salin dan berikan link di bawah ini secara manual kepada staff terkait.
+			</div>
+		{:else}
+			<p class="text-xs text-[var(--color-success)] font-medium">
+				{#if form.isExisting}
+					Email untuk mengatur ulang kata sandi baru telah otomatis dikirimkan oleh Supabase ke alamat email staff.
+				{:else}
+					Email undangan berisi tautan aktivasi akun telah otomatis dikirimkan oleh Supabase ke alamat email staff.
+				{/if}
+			</p>
+		{/if}
+
+		{#if form.inviteLink}
+			<div class="mt-2 rounded bg-white p-3 border border-[var(--color-success)]/10 text-[var(--color-stone)]">
+				<p class="text-xs font-semibold text-[var(--color-earth)] mb-1">
+					{#if form.isExisting}
+						Link Reset Password Manual:
+					{:else}
+						Link Aktivasi Akun Manual:
+					{/if}
+				</p>
+				<code class="break-all select-all block text-xs font-mono text-[var(--color-forest)] bg-[var(--color-sand-lightest)] px-2 py-1.5 rounded border border-[var(--color-border-light)]">{form.inviteLink}</code>
+			</div>
+		{/if}
 	</div>
 {/if}
 
