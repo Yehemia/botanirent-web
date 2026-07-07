@@ -27,20 +27,22 @@ export const transactionController = {
 	 * @param {number} page - Nomor halaman
 	 * @param {number} limit - Jumlah per halaman
 	 */
-	async getTransactionsList(supabase, profile, search = '', page = 1, limit = 10) {
+	async getTransactionsList(supabase, profile, search = '', page = 1, limit = 10, filters = {}) {
 		const { data, count } = await transactionModel.getTransactions(
 			supabase,
 			profile.branch_id, // null untuk owner (lihat semua cabang)
 			search,
 			page,
-			limit
+			limit,
+			filters
 		);
 		return {
 			transactions: data,
 			totalCount: count, // Total semua transaksi (untuk pagination)
 			search,
 			page,
-			limit
+			limit,
+			filters
 		};
 	},
 

@@ -1,21 +1,75 @@
 <script>
-	import { Search, Receipt, ArrowRight, CheckCircle, Clock, ChevronLeft, ChevronRight } from '@lucide/svelte';
+	import { Search, Receipt, ArrowRight, CheckCircle, Clock, ChevronLeft, ChevronRight, Filter } from '@lucide/svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Select from '$lib/components/ui/Select.svelte';
 
 	import { formatCurrency, formatDate } from '$lib/utils/format';
 
 	let { data } = $props();
 	let transactions = $derived(data.transactions);
-	let search = $derived(data.search);
 	let currentPage = $derived(data.page);
 	let totalCount = $derived(data.totalCount);
 	let limit = $derived(data.limit);
 	let totalPages = $derived(Math.ceil(totalCount / limit));
+	let colSpan = $derived(data.profile?.role === 'owner' ? 6 : 5);
+
+	// Filter state
+	let searchVal = $state(data.search || '');
+	let selectedBranch = $state(data.filters?.branchId || '');
+	let selectedType = $state(data.filters?.type || '');
+	let selectedStatus = $state(data.filters?.status || '');
+
+	// Keep states in sync with loader data (e.g. back navigation or page loads)
+	$effect(() => {
+		searchVal = data.search || '';
+		selectedBranch = data.filters?.branchId || '';
+		selectedType = data.filters?.type || '';
+		selectedStatus = data.filters?.status || '';
+	});
+
+	function handleFilterChange() {
+		const url = new URL($page.url);
+		url.searchParams.set('page', '1'); // Reset ke halaman pertama saat filter berubah
+		
+		if (searchVal.trim()) {
+			url.searchParams.set('q', searchVal.trim());
+		} else {
+			url.searchParams.delete('q');
+		}
+
+		if (selectedBranch) {
+			url.searchParams.set('branchId', selectedBranch);
+		} else {
+			url.searchParams.delete('branchId');
+		}
+
+		if (selectedType) {
+			url.searchParams.set('type', selectedType);
+		} else {
+			url.searchParams.delete('type');
+		}
+
+		if (selectedStatus) {
+			url.searchParams.set('status', selectedStatus);
+		} else {
+			url.searchParams.delete('status');
+		}
+
+		goto(url.toString(), { keepFocus: true, noScroll: false });
+	}
+
+	function resetFilters() {
+		searchVal = '';
+		selectedBranch = '';
+		selectedType = '';
+		selectedStatus = '';
+		handleFilterChange();
+	}
 
 	/**
 	 * Navigate to a new page using SvelteKit goto
@@ -39,15 +93,63 @@
 		</div>
 	</div>
 
-	<!-- Pencarian -->
+	<!-- Pencarian & Filter -->
 	<Card padding="md">
-		<form method="GET" class="relative max-w-md">
-			<Input name="q" value={search} placeholder="Cari berdasarkan kode transaksi (TRX-...)">
-				{#snippet iconLeft()}
-					<Search size={18} />
-				{/snippet}
-			</Input>
-		</form>
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+			<!-- Pencarian Teks -->
+			<div class="sm:col-span-2 md:col-span-1">
+				<form onsubmit={(e) => { e.preventDefault(); handleFilterChange(); }} class="relative w-full">
+					<Input
+						name="q"
+						bind:value={searchVal}
+						placeholder="Cari kode / pelanggan..."
+					>
+						{#snippet iconLeft()}
+							<Search size={18} />
+						{/snippet}
+					</Input>
+				</form>
+			</div>
+
+			<!-- Filter Tipe -->
+			<div>
+				<Select bind:value={selectedType} onchange={handleFilterChange}>
+					<option value="">Semua Tipe</option>
+					<option value="retail">Retail</option>
+					<option value="rental">Sewa</option>
+					<option value="hybrid">Hybrid</option>
+				</Select>
+			</div>
+
+			<!-- Filter Status -->
+			<div>
+				<Select bind:value={selectedStatus} onchange={handleFilterChange}>
+					<option value="">Semua Status</option>
+					<option value="paid">Lunas</option>
+					<option value="unpaid">Belum Lunas</option>
+				</Select>
+			</div>
+
+			<!-- Filter Cabang (hanya untuk Owner) -->
+			{#if data.profile?.role === 'owner'}
+				<div>
+					<Select bind:value={selectedBranch} onchange={handleFilterChange}>
+						<option value="">Semua Cabang</option>
+						{#each data.activeBranches as br}
+							<option value={br.id}>{br.name}</option>
+						{/each}
+					</Select>
+				</div>
+			{/if}
+		</div>
+
+		{#if searchVal || selectedBranch || selectedType || selectedStatus}
+			<div class="mt-4 flex justify-end">
+				<Button variant="ghost" size="sm" onclick={resetFilters} class="text-[var(--color-stone)] hover:text-[var(--color-earth)]">
+					Reset Filter
+				</Button>
+			</div>
+		{/if}
 	</Card>
 
 	<!-- Tabel Data -->
@@ -58,23 +160,24 @@
 					class="border-b border-[var(--color-border)] bg-[var(--color-sand-light)] font-semibold text-[var(--color-earth)]"
 				>
 					<tr>
-						<th class="px-6 py-4">Kode Transaksi</th>
-						<th class="px-6 py-4">Waktu</th>
+						<th class="px-6 py-4">Transaksi</th>
+						{#if data.profile?.role === 'owner'}
+							<th class="px-6 py-4">Cabang</th>
+						{/if}
 						<th class="px-6 py-4">Pelanggan</th>
 						<th class="px-6 py-4">Tipe</th>
-						<th class="px-6 py-4">Total Tagihan</th>
-						<th class="px-6 py-4">Status</th>
+						<th class="px-6 py-4">Pembayaran</th>
 						<th class="px-6 py-4 text-right">Aksi</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-[var(--color-border-light)]">
 					{#if transactions.length === 0}
 						<tr>
-							<td colspan="7" class="px-6 py-12 text-center text-[var(--color-stone)]">
+							<td colspan={colSpan} class="px-6 py-12 text-center text-[var(--color-stone)]">
 								<Receipt size={48} class="mx-auto mb-3 opacity-20" />
 								<p class="text-lg font-medium">Tidak ada transaksi ditemukan</p>
-								{#if search}
-									<p class="mt-1 text-sm">Pencarian "{search}" tidak membuahkan hasil.</p>
+								{#if searchVal}
+									<p class="mt-1 text-sm">Pencarian atau filter tidak membuahkan hasil.</p>
 								{/if}
 							</td>
 						</tr>
@@ -82,13 +185,20 @@
 						{#each transactions as trx (trx.id)}
 							<tr class="group transition-colors hover:bg-[var(--color-sand-lightest)]/50">
 								<td class="px-6 py-4">
-									<span class="font-mono font-bold text-[var(--color-earth)]"
-										>{trx.transaction_code}</span
-									>
+									<div class="font-mono font-bold text-[var(--color-earth)]">
+										{trx.transaction_code}
+									</div>
+									<div class="text-[11px] text-[var(--color-stone)] mt-0.5">
+										{formatDate(trx.created_at)}
+									</div>
 								</td>
-								<td class="px-6 py-4 text-[var(--color-stone)]">
-									{formatDate(trx.created_at)}
-								</td>
+								{#if data.profile?.role === 'owner'}
+									<td class="px-6 py-4">
+										<span class="inline-flex items-center rounded-md bg-[var(--color-sand-light)] px-2.5 py-1 text-xs font-semibold text-[var(--color-earth)]">
+											{trx.branch?.name || 'BotaniRent'}
+										</span>
+									</td>
+								{/if}
 								<td class="px-6 py-4">
 									<div class="font-medium text-[var(--color-earth)]">
 										{trx.customer?.full_name || '-'}
@@ -107,21 +217,15 @@
 									<div class="font-bold text-[var(--color-forest)]">
 										{formatCurrency(trx.total_amount)}
 									</div>
-									<div class="text-[10px] tracking-wider text-[var(--color-stone)] uppercase">
-										{trx.payment_method}
+									<div class="flex items-center gap-1.5 mt-0.5 text-xs text-[var(--color-stone)]">
+										<span class="uppercase tracking-wider text-[10px]">{trx.payment_method}</span>
+										<span>•</span>
+										{#if trx.payment_status === 'paid'}
+											<span class="text-xs font-semibold text-[var(--color-forest)]">Lunas</span>
+										{:else}
+											<span class="text-xs font-semibold text-[var(--color-warning)]">{trx.payment_status}</span>
+										{/if}
 									</div>
-								</td>
-								<td class="px-6 py-4">
-									{#if trx.payment_status === 'paid'}
-										<Badge variant="success" class="flex w-max items-center gap-1">
-											<CheckCircle size={12} /> Lunas
-										</Badge>
-									{:else}
-										<Badge variant="warning" class="flex w-max items-center gap-1">
-											<Clock size={12} />
-											{trx.payment_status}
-										</Badge>
-									{/if}
 								</td>
 								<td class="px-6 py-4 text-right">
 									<!-- eslint-disable-next-line -->

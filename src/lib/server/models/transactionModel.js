@@ -347,20 +347,33 @@ export const transactionModel = {
 	 * @param {number} limit - Jumlah data per halaman
 	 * @returns {Promise<{ data: any[], count: number }>}
 	 */
-	async getTransactions(supabase, branchId = null, search = '', page = 1, limit = 10) {
+	async getTransactions(supabase, branchId = null, search = '', page = 1, limit = 10, filters = {}) {
 		let query = supabase
 			.from('transactions')
 			// { count: 'exact' } → hitung total baris (untuk info "halaman X dari Y")
-			.select('*, customer:customers(full_name), cashier:profiles(full_name)', { count: 'exact' })
+			.select('*, customer:customers(full_name), cashier:profiles(full_name), branch:branches(name)', { count: 'exact' })
 			.order('created_at', { ascending: false });
 
+		// Filter berdasarkan cabang (jika user biasa, paksa cabang mereka; jika owner, ikuti filter jika ada)
 		if (branchId) {
 			query = query.eq('branch_id', branchId);
+		} else if (filters.branchId) {
+			query = query.eq('branch_id', filters.branchId);
+		}
+
+		// Filter berdasarkan tipe transaksi
+		if (filters.type) {
+			query = query.eq('type', filters.type);
+		}
+
+		// Filter berdasarkan status pembayaran
+		if (filters.status) {
+			query = query.eq('payment_status', filters.status);
 		}
 
 		if (search) {
-			// Cari transaksi berdasarkan kode (contoh: "TRX-AB12-123456")
-			query = query.ilike('transaction_code', `%${search}%`);
+			// Cari transaksi berdasarkan kode atau nama pelanggan (case-insensitive)
+			query = query.or(`transaction_code.ilike.%${search}%,customers.full_name.ilike.%${search}%`);
 		}
 
 		// Hitung offset dari nomor halaman
