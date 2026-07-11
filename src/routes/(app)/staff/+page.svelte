@@ -1,6 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { UserPlus, Shield, Store, Mail, Power, CheckCircle2, Lock, User } from '@lucide/svelte';
+	import { UserPlus, Shield, Store, Mail, Power, CheckCircle2, Lock, User, Phone } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -17,7 +17,8 @@
 		email: '',
 		full_name: '',
 		role: 'kasir',
-		branch_id: ''
+		branch_id: '',
+		phone: ''
 	});
 
 	function openAddModal() {
@@ -25,7 +26,8 @@
 			email: '',
 			full_name: '',
 			role: 'kasir',
-			branch_id: data.branches[0]?.id || ''
+			branch_id: data.branches[0]?.id || '',
+			phone: ''
 		};
 		showModal = true;
 	}
@@ -78,26 +80,28 @@
 			{/if}
 		</div>
 
-		{#if form.emailError}
+		{#if form.waSuccess}
+			<p class="text-xs text-[var(--color-success)] font-medium">
+				Tautan aktivasi akun telah **berhasil dikirim otomatis via WhatsApp** ke nomor staff.
+			</p>
+		{:else}
 			<div class="text-xs text-[var(--color-error)] font-medium bg-[var(--color-error-bg)] border border-[var(--color-error)]/10 rounded p-2 mt-1 mb-2">
-				⚠️ {form.emailError}<br>
+				⚠️ WhatsApp gagal terkirim otomatis: {form.waError || 'Error tidak diketahui'}<br>
 				Silakan salin dan berikan link di bawah ini secara manual kepada staff terkait.
 			</div>
-		{:else}
-			<p class="text-xs text-[var(--color-success)] font-medium">
-				{#if form.isExisting}
-					Email untuk mengatur ulang kata sandi baru telah otomatis dikirimkan oleh Supabase ke alamat email staff.
-				{:else}
-					Email undangan berisi tautan aktivasi akun telah otomatis dikirimkan oleh Supabase ke alamat email staff.
-				{/if}
-			</p>
+		{/if}
+
+		{#if form.dbWarning}
+			<div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mt-1 mb-2">
+				⚠️ {form.dbWarning}
+			</div>
 		{/if}
 
 		{#if form.inviteLink}
 			<div class="mt-2 rounded bg-white p-3 border border-[var(--color-success)]/10 text-[var(--color-stone)]">
 				<p class="text-xs font-semibold text-[var(--color-earth)] mb-1">
 					{#if form.isExisting}
-						Link Reset Password Manual:
+						Link Reset Password/Aktivasi Manual:
 					{:else}
 						Link Aktivasi Akun Manual:
 					{/if}
@@ -245,7 +249,7 @@
 		class="space-y-4"
 	>
 		<p class="mb-4 text-sm text-[var(--color-stone)]">
-			Undang staff baru melalui email. Supabase akan mengirimkan email berisi tautan/link bagi staff untuk membuat password dan mengaktifkan akun mereka.
+			Undang staff baru dengan mengisi data di bawah. Sistem akan mendaftarkan akun di database dan mengirimkan tautan aktivasi langsung ke WhatsApp staff menggunakan Fontee.
 		</p>
 
 		<Input
@@ -269,6 +273,18 @@
 			required
 		>
 			{#snippet iconLeft()}<Mail size={18} />{/snippet}
+		</Input>
+
+		<Input
+			id="phone"
+			name="phone"
+			type="tel"
+			label="Nomor WhatsApp"
+			placeholder="Contoh: 08123456789"
+			bind:value={formData.phone}
+			required
+		>
+			{#snippet iconLeft()}<Phone size={18} />{/snippet}
 		</Input>
 
 

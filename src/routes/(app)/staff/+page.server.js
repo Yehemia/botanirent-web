@@ -15,6 +15,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { cacheGet, cacheInvalidate, cacheInvalidatePrefix } from '$lib/server/cache.js';
+import { sendWhatsApp } from '$lib/server/fontee';
 
 /**
  * LOAD FUNCTION
@@ -95,32 +96,37 @@ export const actions = {
 		const role = formData.get('role');
 		const branch_id = formData.get('branch_id');
 		const full_name = formData.get('full_name');
+		const phone = formData.get('phone');
 
 		// Validasi input wajib
-		if (!email || !role || !branch_id || !full_name) {
-			return fail(400, { error: 'Semua field harus diisi.' });
+		if (!email || !role || !branch_id || !full_name || !phone) {
+			return fail(400, { error: 'Semua field (termasuk nomor WhatsApp) harus diisi.' });
 		}
 
-		// LANGKAH 1: Undang user via Admin Client (inviteUserByEmail)
-		// inviteUserByEmail otomatis membuat user di auth.users dan mengirimkan email undangan via SMTP Supabase.
+		// LANGKAH 1: Generate link aktivasi via Admin Client (tanpa kirim email)
 		let userId;
 		let inviteLink = null;
-		let emailError = null;
+		let isExisting = false;
 
-		const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-			email.toString(),
-			{
+		const { data: linkData, error: inviteError } = await supabaseAdmin.auth.admin.generateLink({
+			type: 'invite',
+			email: email.toString(),
+			options: {
 				redirectTo: `${url.origin}/callback?type=invite`,
 				data: { full_name: full_name.toString() }
 			}
-		);
+		});
 
 		if (inviteError) {
-			const isAlreadyRegistered = inviteError.status === 422 && 
-				(inviteError.code === 'email_exists' || inviteError.message.includes('already registered') || inviteError.message.includes('already exists'));
+			const isAlreadyRegistered = inviteError.status === 422 || 
+				inviteError.code === 'email_exists' || 
+				inviteError.message.includes('already registered') || 
+				inviteError.message.includes('already exists');
 
 			if (isAlreadyRegistered) {
-				console.log(`User ${email} already exists in auth.users. Fetching details for update & recovery email...`);
+				console.log(`User ${email} already exists in auth.users. Fetching details for recovery link...`);
+				isExisting = true;
+
 				// Fetch existing users to retrieve user ID
 				const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
 				if (listError) {
@@ -135,32 +141,46 @@ export const actions = {
 
 				userId = existingUser.id;
 
-				// Kirim email reset password secara otomatis via SMTP Supabase
-				const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email.toString(), {
-					redirectTo: `${url.origin}/callback?type=recovery`
+				// Buat link recovery/reset password manual
+				const { data: recoveryData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
+					type: 'recovery',
+					email: email.toString(),
+					options: {
+						redirectTo: `${url.origin}/callback?type=recovery`
+					}
 				});
 
-				if (resetError) {
-					console.warn('Supabase resetPasswordForEmail failed. Falling back to generateLink...', resetError.message);
-					emailError = `Email pemulihan gagal dikirim otomatis (${resetError.message}).`;
-
-					// Fallback to generating link manually
-					const { data: recoveryData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
-						type: 'recovery',
-						email: email.toString(),
-						options: {
-							redirectTo: `${url.origin}/callback?type=recovery`
-						}
-					});
-
-					if (recoveryError) {
-						return fail(500, { error: 'Gagal membuat link reset password: ' + recoveryError.message });
-					}
-					inviteLink = `${url.origin}/callback?token_hash=${recoveryData.properties.hashed_token}&type=recovery`;
+				if (recoveryError) {
+					return fail(500, { error: 'Gagal membuat link reset password: ' + recoveryError.message });
 				}
+				inviteLink = `${url.origin}/callback?token_hash=${recoveryData.properties.hashed_token}&type=recovery`;
+			} else {
+				console.error('Error generating link:', inviteError);
+				return fail(500, { error: 'Gagal memproses pendaftaran staff: ' + inviteError.message });
+			}
+		} else {
+			userId = linkData.user.id;
+			inviteLink = `${url.origin}/callback?token_hash=${linkData.properties.hashed_token}&type=invite`;
+		}
 
-				// Update existing profile details
-				const { error: profileError } = await supabaseAdmin
+		// LANGKAH 2: Update tabel public.profiles untuk mencatat detail nama, role, cabang, dan nomor telepon.
+		let dbWarning = null;
+		const { error: profileError } = await supabaseAdmin
+			.from('profiles')
+			.update({
+				full_name: full_name.toString(),
+				role: role.toString(),
+				branch_id: branch_id.toString(),
+				is_active: true,
+				phone: phone.toString()
+			})
+			.eq('id', userId);
+
+		if (profileError) {
+			console.warn('Error updating profile with phone column, retrying without phone...', profileError.message);
+			if (profileError.message.includes('phone') || profileError.message.includes('column') || profileError.message.includes('not exist')) {
+				// Retry without phone column
+				const { error: retryError } = await supabaseAdmin
 					.from('profiles')
 					.update({
 						full_name: full_name.toString(),
@@ -170,86 +190,42 @@ export const actions = {
 					})
 					.eq('id', userId);
 
-				if (profileError) {
-					console.error('Error updating existing profile:', profileError);
-					return fail(500, { error: 'Gagal memperbarui peran/cabang staff.' });
+				if (retryError) {
+					console.error('Error retrying profile update:', retryError);
+					return fail(500, { error: 'Akun dibuat, namun gagal mengatur role/cabang.' });
 				}
-
-				// Invalidasi cache staff agar data langsung terupdate tanpa perlu reload
-				cacheInvalidate('staff_list');
-				cacheInvalidatePrefix('staff_count_');
-
-				return { success: true, isExisting: true, inviteLink, emailError };
-			}
-
-			// SMTP configuration failure on new user invite: Fallback to generateLink directly!
-			console.warn('Supabase inviteUserByEmail failed. Falling back to generateLink...', inviteError.message);
-			emailError = `Email undangan gagal terkirim otomatis (${inviteError.message}).`;
-
-			const { data: linkData, error: fallbackError } = await supabaseAdmin.auth.admin.generateLink({
-				type: 'invite',
-				email: email.toString(),
-				options: {
-					redirectTo: `${url.origin}/callback?type=invite`,
-					data: { full_name: full_name.toString() }
-				}
-			});
-
-			if (fallbackError) {
-				// Jika pembuatan link invite gagal (misal karena user sebenarnya berhasil dibuat tapi emailnya gagal kirim),
-				// kita coba buat link recovery/reset password sebagai gantinya.
-				console.warn('generateLink invite failed. Trying recovery link fallback...', fallbackError.message);
-				
-				const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
-				const existingUser = users.find((/** @type {any} */ u) => u.email === email.toString());
-				
-				if (existingUser) {
-					userId = existingUser.id;
-					const { data: recoveryData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
-						type: 'recovery',
-						email: email.toString(),
-						options: {
-							redirectTo: `${url.origin}/callback?type=recovery`
-						}
-					});
-					
-					if (recoveryError) {
-						return fail(500, { error: 'Gagal membuat link aktivasi fallback: ' + recoveryError.message });
-					}
-					
-					inviteLink = `${url.origin}/callback?token_hash=${recoveryData.properties.hashed_token}&type=recovery`;
-				} else {
-					return fail(500, { error: 'Gagal mengundang staff: ' + fallbackError.message });
-				}
+				dbWarning = 'Kolom phone belum dibuat di tabel profiles. Akun berhasil dibuat tanpa menyimpan nomor telepon di database.';
 			} else {
-				userId = linkData.user.id;
-				inviteLink = `${url.origin}/callback?token_hash=${linkData.properties.hashed_token}&type=invite`;
+				return fail(500, { error: 'Akun dibuat, namun gagal mengatur role/cabang: ' + profileError.message });
 			}
-		} else {
-			userId = inviteData.user.id;
-		}
-
-		// LANGKAH 2: Update tabel public.profiles untuk mencatat detail nama, role, dan cabangnya.
-		const { error: profileError } = await supabaseAdmin
-			.from('profiles')
-			.update({
-				full_name: full_name.toString(),
-				role: role.toString(),
-				branch_id: branch_id.toString(),
-				is_active: true
-			})
-			.eq('id', userId);
-
-		if (profileError) {
-			console.error('Error updating profile after creation:', profileError);
-			return fail(500, { error: 'Akun dibuat, namun gagal mengatur role/cabang.' });
 		}
 
 		// Invalidasi cache staff agar data langsung terupdate tanpa perlu reload
 		cacheInvalidate('staff_list');
 		cacheInvalidatePrefix('staff_count_');
 
-		return { success: true, isExisting: false, inviteLink, emailError };
+		// LANGKAH 3: Kirim WhatsApp via Fontee
+		const cleanPhone = phone.toString().replace(/[^0-9]/g, '');
+		const formattedRole = role.toString() === 'kasir' ? 'Kasir' : 'Admin Gudang';
+		
+		let waMessage = `Halo *${full_name.toString()}*.\n\n`;
+		waMessage += `Anda telah diundang sebagai *${formattedRole}* di *BotaniRent*.\n\n`;
+		if (isExisting) {
+			waMessage += `Silakan atur ulang kata sandi akun Anda melalui tautan berikut:\n${inviteLink}`;
+		} else {
+			waMessage += `Silakan aktifkan akun Anda dan buat kata sandi baru melalui tautan berikut:\n${inviteLink}`;
+		}
+
+		const waResult = await sendWhatsApp(cleanPhone, waMessage);
+
+		return { 
+			success: true, 
+			isExisting, 
+			inviteLink, 
+			waSuccess: waResult.success, 
+			waError: waResult.success ? null : waResult.message,
+			dbWarning 
+		};
 	},
 
 	/**
