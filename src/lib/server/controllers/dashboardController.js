@@ -54,10 +54,18 @@ export const dashboardController = {
 		// --- BAGIAN 1: DATA UMUM (Semua Role) ---
 		// Jalankan 2 query secara paralel untuk efisiensi
 		const [assetStats, recentTransactions] = await Promise.all([
-			// Hitung jumlah asset per status (ready, rented, maintenance, washing)
-			assetModel.getAssetsStatusCounts(supabase, branchId),
-			// Ambil 5 transaksi terbaru
-			transactionModel.getRecentTransactions(supabase, branchId, 5)
+			// Hitung jumlah asset per status (ready, rented, maintenance, washing) - di-cache 15 detik
+			cacheGet(
+				`asset_status_counts_${branchId || 'all'}`,
+				() => assetModel.getAssetsStatusCounts(supabase, branchId),
+				15000
+			),
+			// Ambil 5 transaksi terbaru - di-cache 15 detik
+			cacheGet(
+				`recent_transactions_${branchId || 'all'}`,
+				() => transactionModel.getRecentTransactions(supabase, branchId, 5),
+				15000
+			)
 		]);
 
 		// --- BAGIAN 2: DATA KHUSUS OWNER ---
@@ -79,20 +87,32 @@ export const dashboardController = {
 
 			// Jalankan 7 query secara paralel
 			const [
-				allTrx,       // Semua transaksi dari queryDate hingga sekarang
-				allPenalties, // Semua denda dari queryDate hingga sekarang
+				allTrx,       // Semua transaksi dari queryDate hingga sekarang - di-cache 15 detik
+				allPenalties, // Semua denda dari queryDate hingga sekarang - di-cache 15 detik
 				staffCount,   // Jumlah staf (di-cache 15 detik)
 				branchCount,  // Jumlah cabang (di-cache 30 detik)
 				customerCount, // Jumlah pelanggan (di-cache 15 detik)
-				recentLogs,   // 5 aktivitas terbaru
+				recentLogs,   // 5 aktivitas terbaru - di-cache 15 detik
 				rentalSettings // Pengaturan sewa (target pendapatan, dll) — di-cache 30 detik
 			] = await Promise.all([
-				transactionModel.getTransactionsForRevenue(supabase, branchId, queryDate.toISOString()),
-				transactionModel.getPaidPenaltiesForRevenue(supabase, branchId, queryDate.toISOString()),
+				cacheGet(
+					`transactions_for_revenue_${branchId || 'all'}_${queryDate.toISOString()}`,
+					() => transactionModel.getTransactionsForRevenue(supabase, branchId, queryDate.toISOString()),
+					15000
+				),
+				cacheGet(
+					`paid_penalties_for_revenue_${branchId || 'all'}_${queryDate.toISOString()}`,
+					() => transactionModel.getPaidPenaltiesForRevenue(supabase, branchId, queryDate.toISOString()),
+					15000
+				),
 				cacheGet(`staff_count_${branchId || 'all'}`, () => staffModel.getStaffCount(supabase, branchId), 15000),
 				cacheGet('branch_count', () => branchModel.getBranchesCount(supabase), 30000),
 				cacheGet(`customer_count_${branchId || 'all'}`, () => customerModel.getCustomersCount(supabase, branchId), 15000),
-				activityLogModel.getRecentLogs(supabase, branchId, 5),
+				cacheGet(
+					`recent_logs_${branchId || 'all'}`,
+					() => activityLogModel.getRecentLogs(supabase, branchId, 5),
+					15000
+				),
 				cacheGet('rental_settings', () => settingsModel.getRentalSettings(supabase), 30000)
 			]);
 
@@ -202,17 +222,32 @@ export const dashboardController = {
 				const startOfToday = new Date();
 				startOfToday.setHours(0, 0, 0, 0);
 
-				// Jalankan 4 query paralel untuk data kasir
+				// Jalankan 4 query paralel untuk data kasir - di-cache 15 detik
 				const [todayTrx, activeRentalsCount, todaysPickups, todaysReturnsDue] = await Promise.all([
-					transactionModel.getTodayPaidTransactions(supabase, branchId, startOfToday.toISOString()),
-					transactionModel.getActiveRentalsCount(supabase, branchId),
-					transactionModel.getTodaysPickups(supabase, branchId, todayStr),
-					transactionModel.getTodaysReturnsDue(supabase, branchId, todayStr)
+					cacheGet(
+						`today_paid_transactions_${branchId}_${startOfToday.toISOString()}`,
+						() => transactionModel.getTodayPaidTransactions(supabase, branchId, startOfToday.toISOString()),
+						15000
+					),
+					cacheGet(
+						`active_rentals_count_${branchId}`,
+						() => transactionModel.getActiveRentalsCount(supabase, branchId),
+						15000
+					),
+					cacheGet(
+						`todays_pickups_${branchId}_${todayStr}`,
+						() => transactionModel.getTodaysPickups(supabase, branchId, todayStr),
+						15000
+					),
+					cacheGet(
+						`todays_returns_due_${branchId}_${todayStr}`,
+						() => transactionModel.getTodaysReturnsDue(supabase, branchId, todayStr),
+						15000
+					)
 				]);
 
 				// Hitung total pendapatan hari ini dari semua transaksi lunas
 				const todayRevenue = todayTrx.reduce((acc, t) => acc + (Number(t.total_amount) || 0), 0);
-				// acc = accumulator (total yang terkumpul), dimulai dari 0
 
 				kasirData = {
 					todayRevenue,
@@ -235,11 +270,23 @@ export const dashboardController = {
 					todaysShipments: []
 				};
 			} else {
-				// Jalankan 3 query paralel untuk data gudang
+				// Jalankan 3 query paralel untuk data gudang - di-cache 15 detik
 				const [washingAssets, maintenanceAssets, todaysShipments] = await Promise.all([
-					assetModel.getWashingAssets(supabase, branchId),  // Barang yang sedang dicuci
-					assetModel.getMaintenanceAssets(supabase, branchId), // Barang yang sedang diperbaiki
-					transactionModel.getTodaysPickups(supabase, branchId, todayStr) // Pengiriman hari ini
+					cacheGet(
+						`washing_assets_${branchId}`,
+						() => assetModel.getWashingAssets(supabase, branchId),
+						15000
+					),
+					cacheGet(
+						`maintenance_assets_${branchId}`,
+						() => assetModel.getMaintenanceAssets(supabase, branchId),
+						15000
+					),
+					cacheGet(
+						`todays_pickups_${branchId}_${todayStr}`,
+						() => transactionModel.getTodaysPickups(supabase, branchId, todayStr),
+						15000
+					)
 				]);
 
 				gudangData = {

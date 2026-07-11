@@ -33,6 +33,7 @@ import { settingsModel } from '../models/settingsModel.js';
 import { bookingModel } from '../models/bookingModel.js';
 import { assetModel } from '../models/assetModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
+import { cacheGet, invalidateDashboardCache } from '../cache.js';
 
 export const returnsController = {
 	/**
@@ -88,8 +89,16 @@ export const returnsController = {
 			});
 		}
 
-		const penaltyRules = await penaltyModel.getPenaltyRules(supabase);
-		const rentalSettings = await settingsModel.getRentalSettings(supabase);
+		const penaltyRules = await cacheGet(
+			'penalty_rules',
+			() => penaltyModel.getPenaltyRules(supabase),
+			60000
+		);
+		const rentalSettings = await cacheGet(
+			'rental_settings',
+			() => settingsModel.getRentalSettings(supabase),
+			60000
+		);
 
 		return {
 			transactions: Object.values(grouped), // Konversi objek ke array
@@ -176,13 +185,21 @@ export const returnsController = {
 			console.log('[returnsController.processReturn] Extracted parameters - items count:', items.length, 'paymentStatus:', paymentStatus, 'paymentMethod:', paymentMethod);
 
 			// 2. Ambil pengaturan dan aturan denda
-			const rentalSettings = await settingsModel.getRentalSettings(supabase);
+			const rentalSettings = await cacheGet(
+				'rental_settings',
+				() => settingsModel.getRentalSettings(supabase),
+				60000
+			);
 			console.log('[returnsController.processReturn] Fetched rental settings:', rentalSettings);
 			// Biaya keterlambatan per hari per transaksi (default: Rp 10.000)
 			const lateRate =
 				parseFloat(rentalSettings.late_fee_per_day_per_transaction?.toString() || '10000') || 10000;
 
-			const penaltyRules = await penaltyModel.getPenaltyRules(supabase);
+			const penaltyRules = await cacheGet(
+				'penalty_rules',
+				() => penaltyModel.getPenaltyRules(supabase),
+				60000
+			);
 			console.log('[returnsController.processReturn] Fetched penalty rules count:', penaltyRules?.length);
 
 			// 3. Hitung denda keterlambatan (1 per transaksi, dari item paling terlambat)
@@ -493,6 +510,9 @@ export const returnsController = {
 							midtransData.actions?.find((/** @type {any} */ act) => act.name === 'generate-qr-code')
 								?.url || '';
 
+						// Invalidate cache since items/bookings statuses have been updated
+						invalidateDashboardCache(profile.branch_id);
+
 						return {
 							success: true,
 							payment_method: 'qris',
@@ -522,6 +542,10 @@ export const returnsController = {
 
 			// 6. Selesai — kembalikan total denda (untuk ditampilkan di UI)
 			console.log('[returnsController.processReturn] Completed return processing successfully. Total Penalty:', totalPenalty);
+			
+			// Invalidate cache since items/bookings statuses have been updated
+			invalidateDashboardCache(profile.branch_id);
+
 			return { success: true, totalPenalty };
 		} catch (err) {
 			// Error tidak terduga — tangkap dan return error yang informatif

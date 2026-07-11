@@ -16,6 +16,7 @@
 import { json } from '@sveltejs/kit';
 import { MIDTRANS_SERVER_KEY } from '$env/static/private';
 import { PUBLIC_MIDTRANS_ENV } from '$env/static/public';
+import { invalidateDashboardCache } from '$lib/server/cache.js';
 
 /**
  * HANDLER GET REQUEST
@@ -122,6 +123,10 @@ export async function GET({ params, locals }) {
 						console.error('[Penalty Status API] Gagal update status denda ke DB:', updateError);
 					} else {
 						console.log(`[Penalty Status API] Berhasil update status denda untuk transaction_id ${transactionId} menjadi paid`);
+						
+						// Invalidate cache since penalties have been paid
+						invalidateDashboardCache();
+						
 						return json({ payment_status: 'paid' });
 					}
 				}
@@ -141,7 +146,7 @@ export async function GET({ params, locals }) {
 		// Ambil data transaksi dari DB lokal
 		const { data: transaction, error } = await locals.supabase
 			.from('transactions')
-			.select('id, transaction_code, payment_status, payment_method')
+			.select('id, transaction_code, payment_status, payment_method, branch_id')
 			.eq('id', id)
 			.single();
 
@@ -215,6 +220,10 @@ export async function GET({ params, locals }) {
 							console.log(
 								`[Transaction Status API] Berhasil update status transaksi ${transaction.transaction_code} dari Midtrans menjadi ${newStatus}`
 							);
+							
+							// Invalidate cache since transaction has been paid
+							invalidateDashboardCache(transaction.branch_id);
+							
 							return json({ payment_status: newStatus });
 						}
 					}

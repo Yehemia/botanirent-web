@@ -115,3 +115,38 @@ export function cacheInvalidatePrefix(prefix) {
 		}
 	}
 }
+
+/**
+ * Invalidate all cached data related to layout counts and dashboard metrics.
+ *
+ * @param {string|null} branchId - The specific branch ID to invalidate, or null to invalidate all.
+ */
+export function invalidateDashboardCache(branchId = null) {
+	if (branchId) {
+		cache.delete(`asset_status_counts_${branchId}`);
+		cache.delete(`recent_transactions_${branchId}`);
+		cache.delete(`active_rentals_count_${branchId}`);
+		cache.delete(`washing_assets_${branchId}`);
+		cache.delete(`maintenance_assets_${branchId}`);
+		cacheInvalidatePrefix(`unpaid_denda_count_`);
+		cacheInvalidatePrefix(`transactions_for_revenue_${branchId}`);
+		cacheInvalidatePrefix(`paid_penalties_for_revenue_${branchId}`);
+		cacheInvalidatePrefix(`today_paid_transactions_${branchId}`);
+		cacheInvalidatePrefix(`todays_pickups_${branchId}`);
+		cacheInvalidatePrefix(`todays_returns_due_${branchId}`);
+	} else {
+		cacheInvalidatePrefix(`asset_status_counts_`);
+		cacheInvalidatePrefix(`recent_transactions_`);
+		cacheInvalidatePrefix(`transactions_for_revenue_`);
+		cacheInvalidatePrefix(`paid_penalties_for_revenue_`);
+		cacheInvalidatePrefix(`unpaid_denda_count_`);
+		cacheInvalidatePrefix(`today_paid_transactions_`);
+		cacheInvalidatePrefix(`active_rentals_count_`);
+		cacheInvalidatePrefix(`todays_pickups_`);
+		cacheInvalidatePrefix(`todays_returns_due_`);
+		cacheInvalidatePrefix(`washing_assets_`);
+		cacheInvalidatePrefix(`maintenance_assets_`);
+	}
+	cacheInvalidatePrefix(`recent_logs_`);
+}
+

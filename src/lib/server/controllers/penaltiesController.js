@@ -16,6 +16,7 @@
 
 import { penaltyModel } from '../models/penaltyModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
+import { cacheGet, cacheInvalidate, invalidateDashboardCache } from '../cache.js';
 
 export const penaltiesController = {
 	/**
@@ -37,7 +38,11 @@ export const penaltiesController = {
 			};
 		}
 
-		const penaltyRules = await penaltyModel.getPenaltyRules(supabase);
+		const penaltyRules = await cacheGet(
+			'penalty_rules',
+			() => penaltyModel.getPenaltyRules(supabase),
+			60000
+		);
 		return {
 			success: true,
 			penaltyRules
@@ -115,6 +120,10 @@ export const penaltiesController = {
 			entityId: id.toString(),
 			metadata: { updated_amount: parsedAmount }
 		});
+
+		// Invalidate cache
+		cacheInvalidate('penalty_rules');
+		invalidateDashboardCache(profile.branch_id);
 
 		return { success: true };
 	}

@@ -132,47 +132,55 @@ export const load = async ({ locals }) => {
 	// ─────────────────────────────────────────────────
 	// Angka ini ditampilkan sebagai BADGE NOTIFIKASI di Sidebar
 	// (lingkaran merah kecil berisi angka di menu "Denda")
-	let unpaidDendaCount = 0;
-	try {
-		// Query dengan relasi BERSARANG (nested relation):
-		// penalties → transaction_items → transactions → customer_id
-		//
-		// Ini memanfaatkan fitur Supabase "nested select"
-		// yang otomatis melakukan JOIN antar tabel berdasarkan foreign keys
-		let query = locals.supabase
-			.from('penalties')
-			.select('id, transaction_items(transactions(customer_id))')
-			.eq('payment_status', 'unpaid'); // Hanya denda yang BELUM DIBAYAR
+	const cacheKey = `unpaid_denda_count_${profile.branch_id || 'all'}`;
+	const unpaidDendaCount = await cacheGet(
+		cacheKey,
+		async () => {
+			let count = 0;
+			try {
+				// Query dengan relasi BERSARANG (nested relation):
+				// penalties → transaction_items → transactions → customer_id
+				//
+				// Ini memanfaatkan fitur Supabase "nested select"
+				// yang otomatis melakukan JOIN antar tabel berdasarkan foreign keys
+				let query = locals.supabase
+					.from('penalties')
+					.select('id, transaction_items(transactions(customer_id))')
+					.eq('payment_status', 'unpaid'); // Hanya denda yang BELUM DIBAYAR
 
-		// Filter per cabang (kecuali owner yang tidak punya branch_id)
-		if (profile.branch_id) {
-			query = query.eq('branch_id', profile.branch_id);
-		}
-
-		const { data: penData, error: penErr } = await query;
-		if (!penErr && penData) {
-			// Set = koleksi yang HANYA MENYIMPAN NILAI UNIK
-			// Jika 1 customer punya 3 denda, tetap dihitung 1 customer
-			const customerIds = new Set();
-			penData.forEach((p) => {
-				// Navigasi relasi bersarang untuk mendapatkan customer_id
-				// Supabase bisa mengembalikan data sebagai array atau objek tunggal,
-				// jadi kita perlu handle kedua kemungkinan
-				const itemsVal = /** @type {any} */ (p.transaction_items);
-				const firstItem = Array.isArray(itemsVal) ? itemsVal[0] : itemsVal;
-				const txVal = firstItem?.transactions;
-				const transaction = Array.isArray(txVal) ? txVal[0] : txVal;
-				const customerId = transaction?.customer_id;
-				if (customerId) {
-					customerIds.add(customerId); // Set otomatis mencegah duplikat
+				// Filter per cabang (kecuali owner yang tidak punya branch_id)
+				if (profile.branch_id) {
+					query = query.eq('branch_id', profile.branch_id);
 				}
-			});
-			// Hasilnya = jumlah customer UNIK yang punya denda belum bayar
-			unpaidDendaCount = customerIds.size;
-		}
-	} catch (err) {
-		console.error('Error fetching unpaid denda customer count in layout:', err);
-	}
+
+				const { data: penData, error: penErr } = await query;
+				if (!penErr && penData) {
+					// Set = koleksi yang HANYA MENYIMPAN NILAI UNIK
+					// Jika 1 customer punya 3 denda, tetap dihitung 1 customer
+					const customerIds = new Set();
+					penData.forEach((p) => {
+						// Navigasi relasi bersarang untuk mendapatkan customer_id
+						// Supabase bisa mengembalikan data sebagai array atau objek tunggal,
+						// jadi kita perlu handle kedua kemungkinan
+						const itemsVal = /** @type {any} */ (p.transaction_items);
+						const firstItem = Array.isArray(itemsVal) ? itemsVal[0] : itemsVal;
+						const txVal = firstItem?.transactions;
+						const transaction = Array.isArray(txVal) ? txVal[0] : txVal;
+						const customerId = transaction?.customer_id;
+						if (customerId) {
+							customerIds.add(customerId); // Set otomatis mencegah duplikat
+						}
+					});
+					// Hasilnya = jumlah customer UNIK yang punya denda belum bayar
+					count = customerIds.size;
+				}
+			} catch (err) {
+				console.error('Error fetching unpaid denda customer count in layout:', err);
+			}
+			return count;
+		},
+		15000 // Cache selama 15 detik (15000 ms)
+	);
 
 	// ─────────────────────────────────────────────────
 	// LANGKAH 6: Return SEMUA data ke +layout.svelte

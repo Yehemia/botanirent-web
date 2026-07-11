@@ -32,6 +32,7 @@ import { customerModel } from '../models/customerModel.js';
 import { settingsModel } from '../models/settingsModel.js';
 import { transactionModel } from '../models/transactionModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
+import { invalidateDashboardCache } from '../cache.js';
 
 export const posController = {
 	/**
@@ -326,6 +327,9 @@ export const posController = {
 						midtrans_snap_token: JSON.stringify({ qr_string, qr_url })
 					});
 
+					// Invalidate cache
+					invalidateDashboardCache(profile.branch_id);
+
 					// Return data QR ke client untuk ditampilkan ke pelanggan
 					return {
 						success: true,
@@ -352,6 +356,9 @@ export const posController = {
 				};
 			}
 		}
+
+		// Invalidate cache
+		invalidateDashboardCache(profile.branch_id);
 
 		// 8. Cash/Transfer: Redirect ke halaman struk transaksi
 		return {

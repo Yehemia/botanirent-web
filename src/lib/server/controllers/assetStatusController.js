@@ -17,6 +17,7 @@
  */
 
 import { assetModel } from '../models/assetModel.js';
+import { invalidateDashboardCache } from '../cache.js';
 
 export const assetStatusController = {
 	/**
@@ -71,7 +72,7 @@ export const assetStatusController = {
 	 *   padahal sudah bisa digunakan kembali.
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
-	 * @param {{ role: string }} profile
+	 * @param {{ role: string, branch_id: string|null, id: string }} profile
 	 * @param {FormData} formData
 	 */
 	async updateStatus(supabase, profile, formData) {
@@ -117,6 +118,9 @@ export const assetStatusController = {
 			if (status === 'ready') {
 				await assetModel.deleteMaintenanceBookingForAsset(supabase, id);
 			}
+
+			// Invalidate cache
+			invalidateDashboardCache(profile.branch_id);
 
 			return { success: true };
 		} catch (error) {

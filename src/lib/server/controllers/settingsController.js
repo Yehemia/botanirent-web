@@ -16,6 +16,7 @@
  */
 
 import { settingsModel } from '../models/settingsModel.js';
+import { cacheGet, cacheInvalidate, invalidateDashboardCache } from '../cache.js';
 
 export const settingsController = {
 	/**
@@ -24,7 +25,11 @@ export const settingsController = {
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 */
 	async getRentalSettings(supabase) {
-		const rentalSettings = await settingsModel.getRentalSettings(supabase);
+		const rentalSettings = await cacheGet(
+			'rental_settings',
+			() => settingsModel.getRentalSettings(supabase),
+			60000
+		);
 		return {
 			rentalSettings
 		};
@@ -41,7 +46,7 @@ export const settingsController = {
 	 *   || fallback → jika parsing gagal, pakai nilai default yang aman.
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
-	 * @param {{ role: string }} profile
+	 * @param {{ id: string, branch_id: string|null, role: string }} profile
 	 * @param {FormData} formData
 	 */
 	async updateRentalSettings(supabase, profile, formData) {
@@ -65,6 +70,11 @@ export const settingsController = {
 		try {
 			// Simpan menggunakan UPSERT (update jika ada, insert jika belum ada)
 			await settingsModel.upsertRentalSettings(supabase, value);
+
+			// Invalidate cache
+			cacheInvalidate('rental_settings');
+			invalidateDashboardCache(profile.branch_id);
+
 			return { success: true };
 		} catch (error) {
 			console.error('Error updating rental settings in controller:', error);
