@@ -19,10 +19,10 @@
 	let colSpan = $derived(data.profile?.role === 'owner' ? 6 : 5);
 
 	// Filter state
-	let searchVal = $state(data.search || '');
-	let selectedBranch = $state(data.filters?.branchId || '');
-	let selectedType = $state(data.filters?.type || '');
-	let selectedStatus = $state(data.filters?.status || '');
+	let searchVal = $state('');
+	let selectedBranch = $state('');
+	let selectedType = $state('');
+	let selectedStatus = $state('');
 
 	// Keep states in sync with loader data (e.g. back navigation or page loads)
 	$effect(() => {

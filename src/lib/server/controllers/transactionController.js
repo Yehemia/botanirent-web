@@ -26,6 +26,7 @@ export const transactionController = {
 	 * @param {string} search - Kata kunci pencarian (kode transaksi)
 	 * @param {number} page - Nomor halaman
 	 * @param {number} limit - Jumlah per halaman
+	 * @param {{ branchId?: string, type?: string, status?: string }} filters - Filter tambahan
 	 */
 	async getTransactionsList(supabase, profile, search = '', page = 1, limit = 10, filters = {}) {
 		const { data, count } = await transactionModel.getTransactions(

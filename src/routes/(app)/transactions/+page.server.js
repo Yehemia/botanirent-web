@@ -57,7 +57,12 @@ export async function load({ locals, url }) {
 	}
 
 	return {
-		...data,
+		transactions: data.transactions,
+		totalCount: data.totalCount,
+		search: data.search,
+		page: data.page,
+		limit: data.limit,
+		filters: data.filters,
 		activeBranches
 	};
 }

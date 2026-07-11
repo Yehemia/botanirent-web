@@ -345,6 +345,7 @@ export const transactionModel = {
 	 * @param {string} search - Kata kunci pencarian kode transaksi
 	 * @param {number} page - Nomor halaman (mulai dari 1)
 	 * @param {number} limit - Jumlah data per halaman
+	 * @param {{ branchId?: string, type?: string, status?: string }} filters - Filter tambahan
 	 * @returns {Promise<{ data: any[], count: number }>}
 	 */
 	async getTransactions(supabase, branchId = null, search = '', page = 1, limit = 10, filters = {}) {
