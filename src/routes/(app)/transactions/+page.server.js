@@ -12,6 +12,7 @@
 
 import { redirect } from '@sveltejs/kit';
 import { transactionController } from '$lib/server/controllers/transactionController.js';
+import { branchModel } from '$lib/server/models/branchModel.js';
 
 /**
  * LOAD FUNCTION
@@ -29,16 +30,35 @@ export async function load({ locals, url }) {
 	// Membaca keyword pencarian dari URL (?q=nama_atau_kode)
 	const search = url.searchParams.get('q') || '';
 	
+	// Membaca filter dari URL
+	const branchId = url.searchParams.get('branchId') || '';
+	const type = url.searchParams.get('type') || '';
+	const status = url.searchParams.get('status') || '';
+
 	// Validasi & parsing nomor halaman dari parameter URL (?page=2)
-	// Math.max(1, ...) memastikan halaman yang diminta tidak boleh kurang dari 1 (misal 0 atau -5)
-	// Fallback ke 1 jika input berupa NaN (bukan angka)
 	const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
 	
 	// Batasi jumlah transaksi yang ditampilkan per halaman
 	const limit = 10;
 	
+	const filters = { branchId, type, status };
+
 	// Ambil data transaksi terfilter & terpaginasi dari controller
-	const data = await transactionController.getTransactionsList(supabase, profile, search, page, limit);
-	return data;
+	const data = await transactionController.getTransactionsList(supabase, profile, search, page, limit, filters);
+	
+	// Ambil daftar cabang aktif jika user adalah owner
+	let activeBranches = [];
+	if (profile.role === 'owner') {
+		try {
+			activeBranches = await branchModel.getActiveBranches(supabase);
+		} catch (error) {
+			console.error('Failed to load active branches in transactions list:', error);
+		}
+	}
+
+	return {
+		...data,
+		activeBranches
+	};
 }
 

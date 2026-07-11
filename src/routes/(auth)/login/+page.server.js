@@ -108,7 +108,8 @@ export const actions = {
 		});
 
 		if (error) {
-			let errorMsg = 'Email atau password salah.';
+			console.error('Login auth error:', error);
+			let errorMsg = error.message || 'Email atau password salah.';
 			if (error.message.includes('Invalid login credentials')) {
 				errorMsg = 'Email atau password salah.';
 			}
