@@ -1,4 +1,4 @@
-import { FONTEE_API_TOKEN } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 /**
  * Sends a WhatsApp message via Fontee API.
@@ -13,7 +13,7 @@ export async function sendWhatsApp(target, message) {
 		cleanTarget = '62' + cleanTarget.slice(1);
 	}
 
-	const token = FONTEE_API_TOKEN || '';
+	const token = env.FONTEE_API_TOKEN || '';
 	if (!token || token === 'your_fontee_token_here' || token.trim() === '') {
 		console.warn('[WA-Fonnte] API token is not configured.');
 		return { success: false, message: 'Token API Fonnte belum dikonfigurasi di file .env.' };
