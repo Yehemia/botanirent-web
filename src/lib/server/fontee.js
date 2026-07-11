@@ -15,8 +15,8 @@ export async function sendWhatsApp(target, message) {
 
 	const token = FONTEE_API_TOKEN || '';
 	if (!token || token === 'your_fontee_token_here' || token.trim() === '') {
-		console.warn('[WA-Fontee] API token is not configured.');
-		return { success: false, message: 'Token API Fontee belum dikonfigurasi di file .env.' };
+		console.warn('[WA-Fonnte] API token is not configured.');
+		return { success: false, message: 'Token API Fonnte belum dikonfigurasi di file .env.' };
 	}
 
 	try {
@@ -25,8 +25,8 @@ export async function sendWhatsApp(target, message) {
 		formData.append('message', message);
 		formData.append('countryCode', '62');
 
-		console.log(`[WA-Fontee] Sending WA to ${cleanTarget} via Fontee...`);
-		const response = await fetch('https://api.fontee.com/send', {
+		console.log(`[WA-Fonnte] Sending WA to ${cleanTarget} via Fonnte...`);
+		const response = await fetch('https://api.fonnte.com/send', {
 			method: 'POST',
 			headers: {
 				'Authorization': token
@@ -36,15 +36,15 @@ export async function sendWhatsApp(target, message) {
 
 		const result = await response.json();
 		if (response.ok && result.status === true) {
-			console.log(`[WA-Fontee] Message successfully sent to ${cleanTarget}`);
+			console.log(`[WA-Fonnte] Message successfully sent to ${cleanTarget}`);
 			return { success: true };
 		} else {
-			console.error('[WA-Fontee] API failed:', result);
-			return { success: false, message: result.detail || result.reason || 'Gagal mengirim pesan via Fontee.' };
+			console.error('[WA-Fonnte] API failed:', result);
+			return { success: false, message: result.detail || result.reason || 'Gagal mengirim pesan via Fonnte.' };
 		}
 	} catch (error) {
-		console.error('[WA-Fontee] Connection error:', error);
+		console.error('[WA-Fonnte] Connection error:', error);
 		const message = error instanceof Error ? error.message : String(error);
-		return { success: false, message: message || 'Koneksi ke Fontee gagal.' };
+		return { success: false, message: message || 'Koneksi ke Fonnte gagal.' };
 	}
 }
