@@ -54,7 +54,7 @@ export const statisticsController = {
 				branchModel.getAllBranches(supabase),                             // Semua cabang
 				transactionModel.getPaidTransactions(supabase, profile.branch_id), // Transaksi lunas
 				transactionModel.getPaidPenalties(supabase, profile.branch_id),   // Denda lunas
-				transactionModel.getTransactionItems(supabase)                     // Item transaksi
+				transactionModel.getTransactionItems(supabase, profile.branch_id)  // Item transaksi
 			]);
 
 			// 2. Buat Map cabang untuk lookup cepat (O(1) vs O(n) untuk array.find)

@@ -13,6 +13,7 @@
 import { redirect } from '@sveltejs/kit';
 import { transactionController } from '$lib/server/controllers/transactionController.js';
 import { branchModel } from '$lib/server/models/branchModel.js';
+import { cacheGet } from '$lib/server/cache.js';
 
 /**
  * LOAD FUNCTION
@@ -43,18 +44,23 @@ export async function load({ locals, url }) {
 	
 	const filters = { branchId, type, status };
 
-	// Ambil data transaksi terfilter & terpaginasi dari controller
-	const data = await transactionController.getTransactionsList(supabase, profile, search, page, limit, filters);
-	
-	// Ambil daftar cabang aktif jika user adalah owner
-	let activeBranches = [];
-	if (profile.role === 'owner') {
-		try {
-			activeBranches = await branchModel.getActiveBranches(supabase);
-		} catch (error) {
-			console.error('Failed to load active branches in transactions list:', error);
-		}
-	}
+	// Ambil daftar cabang aktif jika user adalah owner (di-cache 30 detik)
+	const activeBranchesPromise = profile.role === 'owner'
+		? cacheGet(
+				'active_branches',
+				() => branchModel.getActiveBranches(supabase),
+				30000
+			).catch((error) => {
+				console.error('Failed to load active branches in transactions list:', error);
+				return [];
+			})
+		: Promise.resolve([]);
+
+	// Jalankan kedua query secara paralel
+	const [data, activeBranches] = await Promise.all([
+		transactionController.getTransactionsList(supabase, profile, search, page, limit, filters),
+		activeBranchesPromise
+	]);
 
 	return {
 		transactions: data.transactions,

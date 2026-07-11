@@ -76,11 +76,19 @@ export const transactionModel = {
 	 * Dipakai untuk menghitung statistik per jenis barang.
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {string|null} branchId
 	 */
-	async getTransactionItems(supabase) {
-		const { data, error } = await supabase
-			.from('transaction_items')
-			.select('transaction_id, item_name, type, quantity, subtotal');
+	async getTransactionItems(supabase, branchId = null) {
+		const query = branchId
+			? supabase
+					.from('transaction_items')
+					.select('transaction_id, item_name, type, quantity, subtotal, transaction:transactions!inner(branch_id)')
+					.eq('transactions.branch_id', branchId)
+			: supabase
+					.from('transaction_items')
+					.select('transaction_id, item_name, type, quantity, subtotal');
+
+		const { data, error } = await query;
 
 		if (error) {
 			console.error('Fetch tx items error:', error);
