@@ -47,29 +47,30 @@ export const dashboardController = {
 	 */
 	async getDashboardData(supabase, profile) {
 		const isOwner = profile.role === 'owner';
+		const isKasir = profile.role === 'kasir';
+		const isGudang = profile.role === 'gudang';
 		const branchId = profile.branch_id; // Null untuk owner (lihat semua cabang)
-		// Format tanggal hari ini: "YYYY-MM-DD" contoh "2025-06-21"
 		const todayStr = new Date().toISOString().split('T')[0];
 
-		// --- BAGIAN 1: DATA UMUM (Semua Role) ---
-		// Jalankan 2 query secara paralel untuk efisiensi
-		const [assetStats, recentTransactions] = await Promise.all([
-			// Hitung jumlah asset per status (ready, rented, maintenance, washing) - di-cache 15 detik
-			cacheGet(
-				`asset_status_counts_${branchId || 'all'}`,
-				() => assetModel.getAssetsStatusCounts(supabase, branchId),
-				15000
-			),
-			// Ambil 5 transaksi terbaru - di-cache 15 detik
-			cacheGet(
-				`recent_transactions_${branchId || 'all'}`,
-				() => transactionModel.getRecentTransactions(supabase, branchId, 5),
-				15000
-			)
-		]);
+		// Tempat penampung semua promise query
+		/** @type {Record<string, Promise<any>>} */
+		const promises = {};
 
-		// --- BAGIAN 2: DATA KHUSUS OWNER ---
-		let ownerData = null;
+		// --- 1. DATA UMUM (Semua Role) ---
+		promises.assetStats = cacheGet(
+			`asset_status_counts_${branchId || 'all'}`,
+			() => assetModel.getAssetsStatusCounts(supabase, branchId),
+			15000
+		);
+		promises.recentTransactions = cacheGet(
+			`recent_transactions_${branchId || 'all'}`,
+			() => transactionModel.getRecentTransactions(supabase, branchId, 5),
+			15000
+		);
+
+		// --- 2. DATA KHUSUS OWNER ---
+		let queryDate = null;
+		let startOfMonth = null;
 		if (isOwner) {
 			// Hitung tanggal 7 hari lalu (untuk grafik 7 hari terakhir)
 			const sevenDaysAgo = new Date();
@@ -77,79 +78,135 @@ export const dashboardController = {
 			sevenDaysAgo.setHours(0, 0, 0, 0); // Set ke jam 00:00:00
 
 			// Hitung awal bulan ini
-			const startOfMonth = new Date();
+			startOfMonth = new Date();
 			startOfMonth.setDate(1); // Tanggal 1 bulan ini
 			startOfMonth.setHours(0, 0, 0, 0);
 
 			// Ambil data dari tanggal yang LEBIH AWAL antara awal bulan vs 7 hari lalu
-			// Ini memastikan kita punya data untuk KEDUA keperluan (grafik 7 hari DAN total bulan)
-			const queryDate = startOfMonth < sevenDaysAgo ? startOfMonth : sevenDaysAgo;
+			queryDate = startOfMonth < sevenDaysAgo ? startOfMonth : sevenDaysAgo;
+			const queryDateIso = queryDate.toISOString();
 
-			// Jalankan 7 query secara paralel
-			const [
-				allTrx,       // Semua transaksi dari queryDate hingga sekarang - di-cache 15 detik
-				allPenalties, // Semua denda dari queryDate hingga sekarang - di-cache 15 detik
-				staffCount,   // Jumlah staf (di-cache 15 detik)
-				branchCount,  // Jumlah cabang (di-cache 30 detik)
-				customerCount, // Jumlah pelanggan (di-cache 15 detik)
-				recentLogs,   // 5 aktivitas terbaru - di-cache 15 detik
-				rentalSettings // Pengaturan sewa (target pendapatan, dll) — di-cache 30 detik
-			] = await Promise.all([
-				cacheGet(
-					`transactions_for_revenue_${branchId || 'all'}_${queryDate.toISOString()}`,
-					() => transactionModel.getTransactionsForRevenue(supabase, branchId, queryDate.toISOString()),
-					15000
-				),
-				cacheGet(
-					`paid_penalties_for_revenue_${branchId || 'all'}_${queryDate.toISOString()}`,
-					() => transactionModel.getPaidPenaltiesForRevenue(supabase, branchId, queryDate.toISOString()),
-					15000
-				),
-				cacheGet(`staff_count_${branchId || 'all'}`, () => staffModel.getStaffCount(supabase, branchId), 15000),
-				cacheGet('branch_count', () => branchModel.getBranchesCount(supabase), 30000),
-				cacheGet(`customer_count_${branchId || 'all'}`, () => customerModel.getCustomersCount(supabase, branchId), 15000),
-				cacheGet(
-					`recent_logs_${branchId || 'all'}`,
-					() => activityLogModel.getRecentLogs(supabase, branchId, 5),
-					15000
-				),
-				cacheGet('rental_settings', () => settingsModel.getRentalSettings(supabase), 30000)
-			]);
+			promises.allTrx = cacheGet(
+				`transactions_for_revenue_${branchId || 'all'}_${queryDateIso}`,
+				() => transactionModel.getTransactionsForRevenue(supabase, branchId, queryDateIso),
+				15000
+			);
+			promises.allPenalties = cacheGet(
+				`paid_penalties_for_revenue_${branchId || 'all'}_${queryDateIso}`,
+				() => transactionModel.getPaidPenaltiesForRevenue(supabase, branchId, queryDateIso),
+				15000
+			);
+			promises.staffCount = cacheGet(`staff_count_${branchId || 'all'}`, () => staffModel.getStaffCount(supabase, branchId), 15000);
+			promises.branchCount = cacheGet('branch_count', () => branchModel.getBranchesCount(supabase), 30000);
+			promises.customerCount = cacheGet(`customer_count_${branchId || 'all'}`, () => customerModel.getCustomersCount(supabase, branchId), 15000);
+			promises.recentLogs = cacheGet(
+				`recent_logs_${branchId || 'all'}`,
+				() => activityLogModel.getRecentLogs(supabase, branchId, 5),
+				15000
+			);
+			promises.rentalSettings = cacheGet('rental_settings', () => settingsModel.getRentalSettings(supabase), 30000);
+		}
 
-			// Target pendapatan bulanan dari pengaturan (default: 20 juta)
-			const monthlyRevenueTarget = Number(rentalSettings.monthly_revenue_target) || 20000000;
-			let totalTxRevenueMonth = 0;    // Total pendapatan sewa bulan ini
-			let totalPenaltyRevenueMonth = 0; // Total pendapatan denda bulan ini
-			let successfulTrxCountMonth = 0; // Jumlah transaksi lunas bulan ini
+		// --- 3. DATA KHUSUS KASIR ---
+		let startOfToday = null;
+		if (isKasir && branchId) {
+			startOfToday = new Date();
+			startOfToday.setHours(0, 0, 0, 0);
+			const startOfTodayIso = startOfToday.toISOString();
 
-			// Siapkan data 7 hari (untuk grafik batang)
-			// Array ini: [{ date: "2025-06-15", label: "Min 15", revenue: 0, penalty: 0 }, ...]
+			promises.todayTrx = cacheGet(
+				`today_paid_transactions_${branchId}_${startOfTodayIso}`,
+				() => transactionModel.getTodayPaidTransactions(supabase, branchId, startOfTodayIso),
+				15000
+			);
+			promises.activeRentalsCount = cacheGet(
+				`active_rentals_count_${branchId}`,
+				() => transactionModel.getActiveRentalsCount(supabase, branchId),
+				15000
+			);
+			promises.todaysPickups = cacheGet(
+				`todays_pickups_${branchId}_${todayStr}`,
+				() => transactionModel.getTodaysPickups(supabase, branchId, todayStr),
+				15000
+			);
+			promises.todaysReturnsDue = cacheGet(
+				`todays_returns_due_${branchId}_${todayStr}`,
+				() => transactionModel.getTodaysReturnsDue(supabase, branchId, todayStr),
+				15000
+			);
+		}
+
+		// --- 4. DATA KHUSUS GUDANG ---
+		if (isGudang && branchId) {
+			promises.washingAssets = cacheGet(
+				`washing_assets_${branchId}`,
+				() => assetModel.getWashingAssets(supabase, branchId),
+				15000
+			);
+			promises.maintenanceAssets = cacheGet(
+				`maintenance_assets_${branchId}`,
+				() => assetModel.getMaintenanceAssets(supabase, branchId),
+				15000
+			);
+			promises.todaysShipments = cacheGet(
+				`todays_pickups_${branchId}_${todayStr}`,
+				() => transactionModel.getTodaysPickups(supabase, branchId, todayStr),
+				15000
+			);
+		}
+
+		// Jalankan semua query yang didefinisikan secara paralel (sekaligus)
+		const keys = Object.keys(promises);
+		const results = await Promise.all(Object.values(promises));
+
+		// Map kembali hasil ke dataMap agar mudah diakses
+		/** @type {Record<string, any>} */
+		const dataMap = {};
+		keys.forEach((key, index) => {
+			dataMap[key] = results[index];
+		});
+
+		const assetStats = dataMap.assetStats;
+		const recentTransactions = dataMap.recentTransactions;
+
+		// --- PROSES DATA OWNER ---
+		let ownerData = null;
+		if (isOwner && queryDate && startOfMonth) {
+			const allTrx = /** @type {any[]} */ (dataMap.allTrx);
+			const allPenalties = /** @type {any[]} */ (dataMap.allPenalties);
+			const staffCount = dataMap.staffCount;
+			const branchCount = dataMap.branchCount;
+			const customerCount = dataMap.customerCount;
+			const recentLogs = dataMap.recentLogs;
+			const rentalSettings = dataMap.rentalSettings;
+
+			const monthlyRevenueTarget = Number(rentalSettings?.monthly_revenue_target) || 20000000;
+			let totalTxRevenueMonth = 0;
+			let totalPenaltyRevenueMonth = 0;
+			let successfulTrxCountMonth = 0;
+
 			/** @type {Array<{date: string, label: string, revenue: number, penalty: number}>} */
 			const last7Days = [];
 			for (let i = 6; i >= 0; i--) {
 				const d = new Date();
-				d.setDate(d.getDate() - i); // i hari yang lalu
+				d.setDate(d.getDate() - i);
 				last7Days.push({
-					date: d.toISOString().split('T')[0], // Format "YYYY-MM-DD"
-					// Format tampilan: "Min 15" / "Sen 16" / dsb
+					date: d.toISOString().split('T')[0],
 					label: new Intl.DateTimeFormat('id-ID', { weekday: 'short', day: 'numeric' }).format(d),
-					revenue: 0, // Akan diisi dari data transaksi
-					penalty: 0  // Akan diisi dari data denda
+					revenue: 0,
+					penalty: 0
 				});
 			}
 
-			// Proses data transaksi: hitung revenue per hari dan total bulan ini
 			if (allTrx) {
 				allTrx.forEach((t) => {
 					if (t.payment_status === 'paid') {
 						const trxDateObj = new Date(t.created_at);
-						// Hitung untuk total bulan ini
 						if (trxDateObj >= startOfMonth) {
 							totalTxRevenueMonth += Number(t.total_amount) || 0;
 							successfulTrxCountMonth++;
 						}
 
-						// Masukkan ke data grafik 7 hari (konversi ke timezone lokal)
 						const tDateStr = new Date(trxDateObj.getTime() - trxDateObj.getTimezoneOffset() * 60000)
 							.toISOString()
 							.split('T')[0];
@@ -161,7 +218,6 @@ export const dashboardController = {
 				});
 			}
 
-			// Proses data denda: hitung penalty per hari dan total bulan ini
 			if (allPenalties) {
 				allPenalties.forEach((p) => {
 					const penaltyDateObj = new Date(p.created_at);
@@ -183,7 +239,6 @@ export const dashboardController = {
 				});
 			}
 
-			// Susun data owner
 			ownerData = {
 				revenueData: {
 					totalRevenueMonth: totalTxRevenueMonth + totalPenaltyRevenueMonth,
@@ -193,9 +248,9 @@ export const dashboardController = {
 					monthlyRevenueTarget
 				},
 				chartData: {
-					labels: last7Days.map((d) => d.label),       // Label untuk sumbu X grafik
-					revenueData: last7Days.map((d) => d.revenue), // Data revenue per hari
-					penaltyData: last7Days.map((d) => d.penalty)  // Data denda per hari
+					labels: last7Days.map((d) => d.label),
+					revenueData: last7Days.map((d) => d.revenue),
+					penaltyData: last7Days.map((d) => d.penalty)
 				},
 				staffCount,
 				branchCount,
@@ -204,11 +259,10 @@ export const dashboardController = {
 			};
 		}
 
-		// --- BAGIAN 3: DATA KHUSUS KASIR ---
+		// --- PROSES DATA KASIR ---
 		let kasirData = null;
-		if (profile.role === 'kasir') {
+		if (isKasir) {
 			if (!branchId) {
-				// Kasir tanpa cabang (kondisi tidak normal, tangani dengan aman)
 				console.error('Cashier has no branch_id assigned.');
 				kasirData = {
 					todayRevenue: 0,
@@ -218,50 +272,26 @@ export const dashboardController = {
 					todaysReturnsDue: []
 				};
 			} else {
-				// Awal hari ini jam 00:00:00 lokal → konversi ke ISO string untuk filter database
-				const startOfToday = new Date();
-				startOfToday.setHours(0, 0, 0, 0);
+				const todayTrx = /** @type {any[]} */ (dataMap.todayTrx || []);
+				const activeRentalsCount = dataMap.activeRentalsCount || 0;
+				const todaysPickups = dataMap.todaysPickups || [];
+				const todaysReturnsDue = dataMap.todaysReturnsDue || [];
 
-				// Jalankan 4 query paralel untuk data kasir - di-cache 15 detik
-				const [todayTrx, activeRentalsCount, todaysPickups, todaysReturnsDue] = await Promise.all([
-					cacheGet(
-						`today_paid_transactions_${branchId}_${startOfToday.toISOString()}`,
-						() => transactionModel.getTodayPaidTransactions(supabase, branchId, startOfToday.toISOString()),
-						15000
-					),
-					cacheGet(
-						`active_rentals_count_${branchId}`,
-						() => transactionModel.getActiveRentalsCount(supabase, branchId),
-						15000
-					),
-					cacheGet(
-						`todays_pickups_${branchId}_${todayStr}`,
-						() => transactionModel.getTodaysPickups(supabase, branchId, todayStr),
-						15000
-					),
-					cacheGet(
-						`todays_returns_due_${branchId}_${todayStr}`,
-						() => transactionModel.getTodaysReturnsDue(supabase, branchId, todayStr),
-						15000
-					)
-				]);
-
-				// Hitung total pendapatan hari ini dari semua transaksi lunas
-				const todayRevenue = todayTrx.reduce((acc, t) => acc + (Number(t.total_amount) || 0), 0);
+				const todayRevenue = todayTrx.reduce((/** @type {number} */ acc, /** @type {any} */ t) => acc + (Number(t.total_amount) || 0), 0);
 
 				kasirData = {
 					todayRevenue,
-					todayTrxCount: todayTrx.length, // Jumlah transaksi hari ini
-					activeRentalsCount, // Total barang yang masih disewa
-					todaysPickups, // Barang yang mulai disewa hari ini
-					todaysReturnsDue // Barang yang harusnya sudah dikembalikan
+					todayTrxCount: todayTrx.length,
+					activeRentalsCount,
+					todaysPickups,
+					todaysReturnsDue
 				};
 			}
 		}
 
-		// --- BAGIAN 4: DATA KHUSUS GUDANG ---
+		// --- PROSES DATA GUDANG ---
 		let gudangData = null;
-		if (profile.role === 'gudang') {
+		if (isGudang) {
 			if (!branchId) {
 				console.error('Warehouse staff has no branch_id assigned.');
 				gudangData = {
@@ -270,42 +300,22 @@ export const dashboardController = {
 					todaysShipments: []
 				};
 			} else {
-				// Jalankan 3 query paralel untuk data gudang - di-cache 15 detik
-				const [washingAssets, maintenanceAssets, todaysShipments] = await Promise.all([
-					cacheGet(
-						`washing_assets_${branchId}`,
-						() => assetModel.getWashingAssets(supabase, branchId),
-						15000
-					),
-					cacheGet(
-						`maintenance_assets_${branchId}`,
-						() => assetModel.getMaintenanceAssets(supabase, branchId),
-						15000
-					),
-					cacheGet(
-						`todays_pickups_${branchId}_${todayStr}`,
-						() => transactionModel.getTodaysPickups(supabase, branchId, todayStr),
-						15000
-					)
-				]);
-
 				gudangData = {
-					washingAssets,
-					maintenanceAssets,
-					todaysShipments
+					washingAssets: dataMap.washingAssets || [],
+					maintenanceAssets: dataMap.maintenanceAssets || [],
+					todaysShipments: dataMap.todaysShipments || []
 				};
 			}
 		}
 
-		// Kembalikan semua data yang sudah disiapkan ke halaman
 		return {
 			role: profile.role,
 			profile,
-			assetStats,         // Untuk semua role: widget status barang
-			recentTransactions, // Untuk semua role: tabel transaksi terkini
-			ownerData,         // Hanya terisi jika role = owner
-			kasirData,         // Hanya terisi jika role = kasir
-			gudangData         // Hanya terisi jika role = gudang
+			assetStats,
+			recentTransactions,
+			ownerData,
+			kasirData,
+			gudangData
 		};
 	}
 };

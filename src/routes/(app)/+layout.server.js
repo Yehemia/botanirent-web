@@ -115,25 +115,12 @@ export const load = async ({ locals }) => {
 		: Promise.resolve({ data: null });
 
 	// ─────────────────────────────────────────────────
-	// LANGKAH 4: Jalankan KEDUA query secara PARALEL (bersamaan)
-	// ─────────────────────────────────────────────────
-	// Promise.all() menjalankan beberapa Promise BERSAMAAN, bukan satu-satu!
-	//
-	// ANALOGI:
-	//   Sequential (satu-satu): Pesan nasi → tunggu selesai → pesan lauk → tunggu selesai
-	//   Parallel (bersamaan):   Pesan nasi DAN lauk SEKALIGUS → tunggu SEKALI saja
-	//
-	// Tanpa Promise.all: total waktu = waktu query 1 + waktu query 2 (lambat!)
-	// Dengan Promise.all: total waktu = waktu query TERLAMA saja (cepat!)
-	const [branchRes, branchesRes] = await Promise.all([branchPromise, branchesPromise]);
-
-	// ─────────────────────────────────────────────────
-	// LANGKAH 5: Hitung jumlah customer dengan denda belum bayar
+	// LANGKAH 4: Hitung jumlah customer dengan denda belum bayar
 	// ─────────────────────────────────────────────────
 	// Angka ini ditampilkan sebagai BADGE NOTIFIKASI di Sidebar
 	// (lingkaran merah kecil berisi angka di menu "Denda")
 	const cacheKey = `unpaid_denda_count_${profile.branch_id || 'all'}`;
-	const unpaidDendaCount = await cacheGet(
+	const unpaidDendaPromise = cacheGet(
 		cacheKey,
 		async () => {
 			let count = 0;
@@ -181,6 +168,19 @@ export const load = async ({ locals }) => {
 		},
 		15000 // Cache selama 15 detik (15000 ms)
 	);
+
+	// ─────────────────────────────────────────────────
+	// LANGKAH 5: Jalankan KETIGA query secara PARALEL (bersamaan)
+	// ─────────────────────────────────────────────────
+	// Promise.all() menjalankan beberapa Promise BERSAMAAN, bukan satu-satu!
+	//
+	// Tanpa Promise.all: total waktu = waktu query 1 + waktu query 2 + waktu query 3 (lambat!)
+	// Dengan Promise.all: total waktu = waktu query TERLAMA saja (cepat!)
+	const [branchRes, branchesRes, unpaidDendaCount] = await Promise.all([
+		branchPromise,
+		branchesPromise,
+		unpaidDendaPromise
+	]);
 
 	// ─────────────────────────────────────────────────
 	// LANGKAH 6: Return SEMUA data ke +layout.svelte
