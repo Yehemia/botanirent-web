@@ -44,7 +44,7 @@
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-		<!-- Memuat 3 FONT dari Google Fonts:
+		<!-- Memuat 3 FONT dari Google Fonts secara NON-BLOCKING:
 		     1. Inter          → Font untuk body text (paragraf, label)
 		     2. Outfit         → Font untuk heading (judul)
 		     3. JetBrains Mono → Font monospace (angka, harga, kode)
@@ -54,8 +54,14 @@
 
 		     display=swap: tampilkan teks dengan font default dulu,
 		       lalu SWAP (ganti) ke Google Font setelah dimuat.
-		       Ini mencegah teks menghilang saat font belum dimuat (FOIT) -->
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+		     TEKNIK NON-BLOCKING:
+		       rel="preload" as="style" → muat CSS di latar belakang (tidak blokir render)
+		       onload="this.rel='stylesheet'" → setelah selesai, aktifkan sebagai stylesheet
+		       media="print" fallback → browser memuat tapi tidak memblokir render
+		       <noscript> → fallback jika JavaScript dimatikan -->
+		<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+		<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" /></noscript>
 
 		<!-- ⭐ PLACEHOLDER SvelteKit
 		     SvelteKit akan MENGGANTI teks ini dengan:

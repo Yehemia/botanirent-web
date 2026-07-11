@@ -16,10 +16,12 @@ import { dashboardController } from '$lib/server/controllers/dashboardController
 /**
  * LOAD FUNCTION
  * Dijalankan di server sebelum dashboard dirender.
+ * Menggunakan parent() untuk mengambil session/profile dari layout
+ * (menghindari pemanggilan safeGetSession() yang redundan).
  */
-export async function load({ locals }) {
+export async function load({ locals, parent }) {
 	const { supabase } = locals;
-	const { session, profile } = await locals.safeGetSession();
+	const { session, profile } = await parent();
 
 	// Guard untuk autentikasi
 	if (!session || !profile) {

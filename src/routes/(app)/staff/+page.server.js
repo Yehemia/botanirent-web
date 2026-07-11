@@ -21,8 +21,8 @@ import { sendWhatsApp } from '$lib/server/fontee';
  * LOAD FUNCTION
  * Dijalankan di server untuk mengambil daftar staff aktif/nonaktif dan daftar cabang toko.
  */
-export const load = async ({ locals: { supabase, safeGetSession } }) => {
-	const { profile } = await safeGetSession();
+export const load = async ({ locals: { supabase }, parent }) => {
+	const { profile } = await parent();
 
 	// Guard Hak Akses: Hanya Owner yang boleh mengakses manajemen karyawan
 	if (profile?.role !== 'owner') {

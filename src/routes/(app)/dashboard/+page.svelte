@@ -27,19 +27,7 @@
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 
-	// Chart.js setup
-	import { Bar } from 'svelte-chartjs';
-	import {
-		Chart as ChartJS,
-		Title,
-		Tooltip,
-		Legend,
-		BarElement,
-		CategoryScale,
-		LinearScale
-	} from 'chart.js';
-
-	ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
+	import { onMount } from 'svelte';
 
 	import { formatCurrency, formatDate } from '$lib/utils/format';
 
@@ -51,6 +39,27 @@
 	let ownerData = $derived(data.ownerData);
 	let kasirData = $derived(data.kasirData);
 	let gudangData = $derived(data.gudangData);
+
+	/** @type {any} */
+	let BarComponent = $state(null);
+
+	onMount(async () => {
+		if (role === 'owner') {
+			try {
+				const [
+					{ Bar },
+					{ Chart, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale }
+				] = await Promise.all([
+					import('svelte-chartjs'),
+					import('chart.js')
+				]);
+				Chart.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
+				BarComponent = Bar;
+			} catch (err) {
+				console.error('Failed to load chart libraries dynamically:', err);
+			}
+		}
+	});
 
 	// Owner targets
 	let monthlyTarget = $derived(ownerData?.revenueData?.monthlyRevenueTarget || 20000000);
@@ -320,7 +329,7 @@
 		</div>
 
 		<!-- Trend Chart -->
-		{#if chartConfig()}
+		{#if BarComponent && chartConfig()}
 			<Card padding="md" class="border border-[var(--color-border)] bg-white shadow-sm">
 				<h3
 					class="mb-6 flex items-center gap-2 text-sm font-bold tracking-wider text-[var(--color-earth)] uppercase"
@@ -328,7 +337,7 @@
 					<TrendingUp size={18} /> Tren Pendapatan Harian (7 Hari Terakhir)
 				</h3>
 				<div class="h-[240px] w-full sm:h-[300px]">
-					<Bar data={chartConfig()} options={chartOptions} />
+					<BarComponent data={chartConfig()} options={chartOptions} />
 				</div>
 			</Card>
 		{/if}

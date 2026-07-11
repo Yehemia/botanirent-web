@@ -18,10 +18,11 @@ import { customerController } from '$lib/server/controllers/customerController.j
 /**
  * LOAD FUNCTION
  * Memuat data pelanggan berdasarkan filter cabang jika ada.
+ * Menggunakan parent() untuk mengambil session/profile dari layout.
  */
-export async function load({ locals, url }) {
+export async function load({ locals, url, parent }) {
 	const { supabase } = locals;
-	const { session, profile } = await locals.safeGetSession();
+	const { session, profile } = await parent();
 
 	if (!session || !profile) {
 		throw redirect(303, '/login');

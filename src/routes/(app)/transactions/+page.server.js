@@ -19,9 +19,9 @@ import { cacheGet } from '$lib/server/cache.js';
  * LOAD FUNCTION
  * Dijalankan sebelum halaman daftar transaksi dirender.
  */
-export async function load({ locals, url }) {
+export async function load({ locals, url, parent }) {
 	const { supabase } = locals;
-	const { session, profile } = await locals.safeGetSession();
+	const { session, profile } = await parent();
 
 	// Guard login
 	if (!session || !profile) {

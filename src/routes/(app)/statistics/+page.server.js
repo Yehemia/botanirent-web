@@ -17,9 +17,9 @@ import { statisticsController } from '$lib/server/controllers/statisticsControll
  * LOAD FUNCTION
  * Dijalankan di server sebelum grafik analisis statistik dirender di halaman.
  */
-export async function load({ locals }) {
+export async function load({ locals, parent }) {
 	const { supabase } = locals;
-	const { session, profile } = await locals.safeGetSession();
+	const { session, profile } = await parent();
 
 	// Guard login
 	if (!session || !profile) {

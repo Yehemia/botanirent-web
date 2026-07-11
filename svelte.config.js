@@ -53,7 +53,13 @@ const config = {
 
 		// Gunakan adapter Vercel yang sudah di-import di atas
 		// adapter() dipanggil sebagai function karena bisa menerima opsi tambahan
-		adapter: adapter()
+		//
+		// regions: ['sin1'] = deploy ke Singapore (terdekat dari Indonesia & Supabase)
+		// Tanpa ini, Vercel default ke US-East (iad1) → setiap query ke Supabase
+		// harus cross-Pacific (+200-400ms per round-trip)
+		adapter: adapter({
+			regions: ['sin1']
+		})
 	}
 };
 
