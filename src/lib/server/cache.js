@@ -128,6 +128,7 @@ export function invalidateDashboardCache(branchId = null) {
 		cache.delete(`active_rentals_count_${branchId}`);
 		cache.delete(`washing_assets_${branchId}`);
 		cache.delete(`maintenance_assets_${branchId}`);
+		cache.delete(`customers_list_${branchId}`);
 		cacheInvalidatePrefix(`unpaid_denda_count_`);
 		cacheInvalidatePrefix(`transactions_for_revenue_${branchId}`);
 		cacheInvalidatePrefix(`paid_penalties_for_revenue_${branchId}`);
@@ -146,6 +147,7 @@ export function invalidateDashboardCache(branchId = null) {
 		cacheInvalidatePrefix(`todays_returns_due_`);
 		cacheInvalidatePrefix(`washing_assets_`);
 		cacheInvalidatePrefix(`maintenance_assets_`);
+		cacheInvalidatePrefix(`customers_list_`);
 	}
 	cacheInvalidatePrefix(`recent_logs_`);
 }

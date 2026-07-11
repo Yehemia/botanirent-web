@@ -26,7 +26,7 @@
 import { customerModel } from '../models/customerModel.js';
 import { branchModel } from '../models/branchModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
-import { cacheGet } from '../cache.js';
+import { cacheGet, invalidateDashboardCache } from '../cache.js';
 
 /**
  * FUNGSI SANITASI TEKS — Hapus HTML tags berbahaya dari input user.
@@ -107,8 +107,12 @@ export const customerController = {
 			};
 		}
 
-		// Ambil data pelanggan dari model
-		const customers = await customerModel.getCustomers(supabase, selectedBranchId);
+		// Ambil data pelanggan dari model - di-cache 15 detik
+		const customers = await cacheGet(
+			`customers_list_${selectedBranchId}`,
+			() => customerModel.getCustomers(supabase, selectedBranchId),
+			15000
+		);
 
 		return {
 			customers,
@@ -216,6 +220,9 @@ export const customerController = {
 				entityId: customer.id,
 				metadata: { full_name, phone } // Data mentah (sebelum sanitasi) untuk keperluan log
 			});
+
+			// Invalidate cache
+			invalidateDashboardCache(branch_id);
 
 			return { success: true };
 		} catch (error) {
@@ -335,6 +342,9 @@ export const customerController = {
 				metadata: { full_name, phone }
 			});
 
+			// Invalidate cache
+			invalidateDashboardCache(branch_id);
+
 			return { success: true };
 		} catch (error) {
 			console.error('Error in updateCustomer controller:', error);
@@ -383,6 +393,11 @@ export const customerController = {
 					entityId: id,
 					metadata: { full_name: customer.full_name }
 				});
+			}
+
+			// Invalidate cache
+			if (customer) {
+				invalidateDashboardCache(customer.branch_id);
 			}
 
 			return { success: true };
