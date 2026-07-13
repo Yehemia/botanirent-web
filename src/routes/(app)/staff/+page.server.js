@@ -1,35 +1,16 @@
-/**
- * ============================================================
- * FILE: routes/(app)/staff/+page.server.js
- * TUJUAN: Logika server untuk Pengelolaan Karyawan/Staf (Staff Management).
- *
- * MENGAPA KODE INI DITULIS?
- *   Aplikasi Botanirent memerlukan pengelolaan akun staf kasir/gudang.
- *   Halaman ini membatasi akses hanya untuk Owner dan mengimplementasikan:
- *     1. Supabase Admin SDK (Service Role) untuk mendaftarkan akun staf secara instan.
- *     2. Proteksi lockout agar owner tidak menonaktifkan dirinya sendiri secara tidak sengaja.
- *     3. Cache invalidation agar data baru segera terlihat di dashboard & tabel staff.
- * ============================================================
- */
-
 import { error, fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { cacheGet, cacheInvalidate, cacheInvalidatePrefix } from '$lib/server/cache.js';
 import { sendWhatsApp } from '$lib/server/fontee';
 
-/**
- * LOAD FUNCTION
- * Dijalankan di server untuk mengambil daftar staff aktif/nonaktif dan daftar cabang toko.
- */
+/** @type {import('./$types').PageServerLoad} */
 export const load = async ({ locals: { supabase }, parent }) => {
 	const { profile } = await parent();
 
-	// Guard Hak Akses: Hanya Owner yang boleh mengakses manajemen karyawan
 	if (profile?.role !== 'owner') {
 		throw error(403, 'Akses ditolak. Hanya Owner yang dapat mengakses halaman ini.');
 	}
 
-	// 1. Ambil data profil staf dengan caching 15 detik untuk mengurangi beban DB
 	const staffPromise = cacheGet(
 		'staff_list',
 		async () => {
@@ -44,10 +25,9 @@ export const load = async ({ locals: { supabase }, parent }) => {
 			}
 			return data || [];
 		},
-		15000 // Cache selama 15 detik
+		15000
 	);
 
-	// 2. Ambil daftar cabang aktif untuk dropdown di form undang staff
 	const branchesPromise = cacheGet(
 		'active_branches_dropdown',
 		async () => {
@@ -63,10 +43,9 @@ export const load = async ({ locals: { supabase }, parent }) => {
 			}
 			return data || [];
 		},
-		30000 // Cache selama 30 detik
+		30000
 	);
 
-	// Ambil kedua data secara paralel
 	const [staff, branches] = await Promise.all([staffPromise, branchesPromise]);
 
 	return {
@@ -75,15 +54,8 @@ export const load = async ({ locals: { supabase }, parent }) => {
 	};
 };
 
-/**
- * SVELTEKIT FORM ACTIONS
- * Menyediakan aksi 'invite' (mendaftarkan staf baru) dan 'updateStatus' (mengaktifkan/nonaktifkan staf).
- */
+/** @type {import('./$types').Actions} */
 export const actions = {
-	/**
-	 * Aksi 'invite': Mendaftarkan akun staf baru
-	 * Menggunakan Supabase Admin API untuk langsung membuat user di auth.users bypass email confirmation.
-	 */
 	invite: async ({ request, url, locals: { safeGetSession } }) => {
 		const { profile } = await safeGetSession();
 
@@ -98,12 +70,10 @@ export const actions = {
 		const full_name = formData.get('full_name');
 		const phone = formData.get('phone');
 
-		// Validasi input wajib
 		if (!email || !role || !branch_id || !full_name || !phone) {
 			return fail(400, { error: 'Semua field (termasuk nomor WhatsApp) harus diisi.' });
 		}
 
-		// LANGKAH 1: Generate link aktivasi via Admin Client (tanpa kirim email)
 		let userId;
 		let inviteLink = null;
 		let isExisting = false;
@@ -127,7 +97,6 @@ export const actions = {
 				console.log(`User ${email} already exists in auth.users. Fetching details for recovery link...`);
 				isExisting = true;
 
-				// Fetch existing users to retrieve user ID
 				const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
 				if (listError) {
 					console.error('Error listing users for recovery:', listError);
@@ -141,7 +110,6 @@ export const actions = {
 
 				userId = existingUser.id;
 
-				// Buat link recovery/reset password manual
 				const { data: recoveryData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
 					type: 'recovery',
 					email: email.toString(),
@@ -163,7 +131,6 @@ export const actions = {
 			inviteLink = `${url.origin}/callback?token_hash=${linkData.properties.hashed_token}&type=invite`;
 		}
 
-		// LANGKAH 2: Update tabel public.profiles untuk mencatat detail nama, role, cabang, dan nomor telepon.
 		let dbWarning = null;
 		const { error: profileError } = await supabaseAdmin
 			.from('profiles')
@@ -179,7 +146,6 @@ export const actions = {
 		if (profileError) {
 			console.warn('Error updating profile with phone column, retrying without phone...', profileError.message);
 			if (profileError.message.includes('phone') || profileError.message.includes('column') || profileError.message.includes('not exist')) {
-				// Retry without phone column
 				const { error: retryError } = await supabaseAdmin
 					.from('profiles')
 					.update({
@@ -200,11 +166,9 @@ export const actions = {
 			}
 		}
 
-		// Invalidasi cache staff agar data langsung terupdate tanpa perlu reload
 		cacheInvalidate('staff_list');
 		cacheInvalidatePrefix('staff_count_');
 
-		// LANGKAH 3: Kirim WhatsApp via Fontee
 		const cleanPhone = phone.toString().replace(/[^0-9]/g, '');
 		const formattedRole = role.toString() === 'kasir' ? 'Kasir' : 'Admin Gudang';
 		
@@ -228,9 +192,6 @@ export const actions = {
 		};
 	},
 
-	/**
-	 * Aksi 'updateStatus': Mengaktifkan atau menonaktifkan staf.
-	 */
 	updateStatus: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { profile: currentUser } = await safeGetSession();
 		if (currentUser?.role !== 'owner') return fail(403, { error: 'Akses ditolak.' });
@@ -239,24 +200,19 @@ export const actions = {
 		const id = formData.get('id');
 		const is_active = formData.get('is_active') === 'true';
 
-		// PROTEKSI LOCKOUT: Cegah owner menonaktifkan dirinya sendiri.
-		// Jika ini terjadi, tidak akan ada admin yang bisa login kembali untuk mengelola sistem.
 		if (id === currentUser.id) {
 			return fail(400, { error: 'Anda tidak dapat menonaktifkan akun Anda sendiri.' });
 		}
 
-		// Update kolom is_active di tabel profiles
 		const { error } = await supabase.from('profiles').update({ is_active }).eq('id', id);
 
 		if (error) {
 			return fail(500, { error: 'Gagal mengubah status staff.' });
 		}
 
-		// Invalidasi cache staff
 		cacheInvalidate('staff_list');
 		cacheInvalidatePrefix('staff_count_');
 
 		return { success: true };
 	}
 };
-
