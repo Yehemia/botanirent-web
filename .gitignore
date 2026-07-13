@@ -29,3 +29,15 @@ vite.config.ts.timestamp-*
 # Scratch
 /scratch/
 
+# User Documents, Diagrams, & Configs
+*SRS*.pdf
+stitch-prompts.md
+skills-lock.json
+*PRD*.md
+Planning*.md
+Integrasi*.md
+design.md
+walkthrough.md
+*sequence*.md
+/modul/
+/.agents/
