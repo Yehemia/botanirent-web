@@ -148,12 +148,12 @@ export const itemModel = {
 	 * @param {Array<object>} itemsList
 	 */
 	async bulkInsertItems(supabase, itemsList) {
-		const { error } = await supabase.from('items').insert(itemsList);
+		const { data, error } = await supabase.from('items').insert(itemsList).select();
 
 		if (error) {
 			console.error('Error bulk inserting items in model:', error);
 			throw new Error(error.message);
 		}
-		return true;
+		return data || [];
 	}
 };

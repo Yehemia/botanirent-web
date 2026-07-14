@@ -504,7 +504,30 @@ export const itemController = {
 				return { success: false, status: 400, error: 'Tidak ada data valid yang bisa dimasukkan.' };
 			}
 
-			await itemModel.bulkInsertItems(supabase, insertData);
+			const insertedItems = await itemModel.bulkInsertItems(supabase, insertData);
+
+			// Generate and insert rental assets for rental ('sewa') items
+			const newAssets = [];
+			for (const item of insertedItems) {
+				const isSewa = catMap.get(item.category_id) === 'sewa';
+				if (isSewa && item.stock_total > 0) {
+					for (let i = 0; i < item.stock_total; i++) {
+						newAssets.push({
+							item_id: item.id,
+							asset_code: `${item.barcode}-${getLetterSuffix(i)}`,
+							status: 'ready'
+						});
+					}
+				}
+			}
+
+			if (newAssets.length > 0) {
+				try {
+					await assetModel.insertAssets(supabase, newAssets);
+				} catch (assetsError) {
+					console.error('Insert assets error in bulk upload:', assetsError);
+				}
+			}
 
 			await activityLogModel.logActivity(supabase, {
 				userId: profile.id,
