@@ -419,7 +419,13 @@
 								>
 									<div class="mb-3 flex items-start justify-between">
 										<div>
-											<h4 class="font-bold text-[var(--color-earth)]">{item.item_name}</h4>
+											<h4 class="font-bold text-[var(--color-earth)]">
+												{#if item.item_name.startsWith(' - [Isi Paket] ') && item.item?.name}
+													- [Isi Paket] {item.item.name}
+												{:else}
+													{item.item_name}
+												{/if}
+											</h4>
 											<div class="mt-1 flex gap-4 text-xs text-[var(--color-stone)]">
 												<span class="flex items-center gap-1"
 													><Calendar size={12} /> Ambil: {formatDate(item.rental_start_date, {

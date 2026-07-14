@@ -374,7 +374,7 @@ export const transactionModel = {
 		let query = supabase
 			.from('transaction_items')
 			.select(
-				'*, transaction:transactions!inner(transaction_code, type, created_at, branch_id, customer:customers(full_name, phone)), item:items(sell_price)'
+				'*, transaction:transactions!inner(transaction_code, type, created_at, branch_id, customer:customers(full_name, phone)), item:items(name, sell_price)'
 			)
 			.eq('rental_status', 'active')
 			.order('rental_end_date', { ascending: true });
