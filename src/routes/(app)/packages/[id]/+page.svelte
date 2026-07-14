@@ -18,17 +18,20 @@
 	import { formatCurrency } from '$lib/utils/format';
 
 	let { data, form } = $props();
-	let availableItems = $derived(data.availableItems);
+	let availableItems = $derived(data.availableItems || []);
+	let currentPackage = $derived(data.package || {});
+	let currentItems = $derived(data.packageItems || []);
 
 	let loading = $state(false);
 
 	// State for form inputs and selected items in the package
-	let packageName = $state('Paket Gunung Premium');
-	let packageDescription = $state('');
-	let packagePriceInput = $state('200000');
+	let packageName = $state(data.package?.name || '');
+	let packageDescription = $state(data.package?.description || '');
+	let packagePriceInput = $state(data.package?.package_price ? String(data.package.package_price) : '0');
+	let isActive = $state(data.package ? data.package.is_active : true);
 
 	/** @type {any[]} */
-	let selectedItems = $state([]);
+	let selectedItems = $state(data.packageItems || []);
 	let searchQuery = $state('');
 
 	// Available items filtered by search query and excluding already selected items
@@ -78,14 +81,14 @@
 	}
 
 	/** @type {string | null} */
-	let imagePreview = $state(null);
+	let imagePreview = $state(data.package?.image_url || null);
 	/** @param {Event & { currentTarget: HTMLInputElement }} e */
 	function handleImageChange(e) {
 		const file = e.currentTarget.files?.[0];
 		if (file) {
 			imagePreview = URL.createObjectURL(file);
 		} else {
-			imagePreview = null;
+			imagePreview = data.package?.image_url || null;
 		}
 	}
 
@@ -120,7 +123,7 @@
 				<span class="mx-2 text-[var(--color-stone)]/50">/</span>
 				<a href="/packages" class="hover:text-[var(--color-earth)]">Paket Bundling</a>
 				<span class="mx-2 text-[var(--color-stone)]/50">/</span>
-				<span class="font-bold text-[var(--color-earth)]">Buat Paket Baru</span>
+				<span class="font-bold text-[var(--color-earth)]">Edit Paket</span>
 			</nav>
 		</div>
 	</div>
@@ -128,7 +131,7 @@
 	<!-- Title Header -->
 	<div class="flex items-center justify-between">
 		<h2 class="font-heading text-2xl font-bold text-[var(--color-earth)]">
-			Buat Paket Bundling Baru
+			Edit Paket Bundling
 		</h2>
 	</div>
 
@@ -149,9 +152,9 @@
 				await update();
 				loading = false;
 				if (result.type === 'success' || result.type === 'redirect') {
-					toast.success('Berhasil membuat paket baru!');
+					toast.success('Berhasil menyimpan perubahan paket!');
 				} else if (result.type === 'error' || result.type === 'failure') {
-					toast.error('Gagal membuat paket. Periksa kembali data Anda.');
+					toast.error('Gagal menyimpan perubahan. Periksa kembali data Anda.');
 				}
 			};
 		}}
@@ -163,6 +166,9 @@
 			name="items_json"
 			value={JSON.stringify(selectedItems.map((s) => ({ id: s.id, quantity: s.quantity })))}
 		/>
+
+		<!-- Hidden input for status aktif -->
+		<input type="hidden" name="is_active" value={isActive ? 'true' : 'false'} />
 
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-10">
 			<!-- LEFT COLUMN (40% / 4-cols) -->
@@ -282,6 +288,23 @@
 									class="h-11 w-full rounded-lg border border-[var(--color-border)] bg-white pr-4 pl-11 font-mono text-sm font-bold transition-all outline-none focus:border-transparent focus:ring-2 focus:ring-[var(--color-sage)]"
 								/>
 							</div>
+						</div>
+
+						<!-- Status Aktif Toggle -->
+						<div class="flex items-center justify-between rounded-lg border border-[var(--color-border-light)] p-3.5 bg-[var(--color-cream)]/20">
+							<div>
+								<span class="block text-[13px] font-semibold text-[var(--color-earth)]">Status Paket</span>
+								<span class="text-[11px] text-[var(--color-stone)]">Aktifkan agar dapat dipilih di POS</span>
+							</div>
+							<label class="relative inline-flex cursor-pointer items-center">
+								<input
+									type="checkbox"
+									checked={isActive}
+									onchange={(e) => isActive = e.currentTarget.checked}
+									class="peer sr-only"
+								/>
+								<div class="peer h-6 w-11 rounded-full bg-[var(--color-stone)]/20 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-[var(--color-border)] after:bg-white after:transition-all after:content-[''] peer-checked:bg-[var(--color-forest)] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
+							</label>
 						</div>
 					</div>
 
@@ -509,7 +532,7 @@
 				{#if loading}
 					Menyimpan...
 				{:else}
-					<Save size={16} /> Simpan Paket
+					<Save size={16} /> Simpan Perubahan
 				{/if}
 			</Button>
 		</div>

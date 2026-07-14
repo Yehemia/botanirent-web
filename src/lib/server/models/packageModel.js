@@ -90,5 +90,106 @@ export const packageModel = {
 			throw new Error(error.message);
 		}
 		return true;
+	},
+
+	/**
+	 * Ambil satu paket berdasarkan ID.
+	 *
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {string} id - ID paket
+	 */
+	async getPackageById(supabase, id) {
+		const { data, error } = await supabase
+			.from('packages')
+			.select('*')
+			.eq('id', id)
+			.single();
+
+		if (error) {
+			console.error('Error fetching package by ID in model:', error);
+			throw new Error(error.message);
+		}
+		return data;
+	},
+
+	/**
+	 * Ambil semua item yang ada di dalam sebuah paket.
+	 *
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {string} packageId
+	 */
+	async getPackageItems(supabase, packageId) {
+		const { data, error } = await supabase
+			.from('package_items')
+			.select(`
+				id,
+				package_id,
+				item_id,
+				quantity,
+				sort_order,
+				items (
+					id,
+					name,
+					rental_price_per_day
+				)
+			`)
+			.eq('package_id', packageId)
+			.order('sort_order', { ascending: true });
+
+		if (error) {
+			console.error('Error fetching package items in model:', error);
+			throw new Error(error.message);
+		}
+		
+		return (data || []).map(pi => {
+			const item = Array.isArray(pi.items) ? pi.items[0] : pi.items;
+			return {
+				id: item?.id,
+				name: item?.name,
+				rental_price_per_day: item?.rental_price_per_day,
+				quantity: pi.quantity
+			};
+		});
+	},
+
+	/**
+	 * Perbarui data header paket.
+	 *
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {string} id
+	 * @param {object} packageData
+	 */
+	async updatePackage(supabase, id, packageData) {
+		const { data, error } = await supabase
+			.from('packages')
+			.update(packageData)
+			.eq('id', id)
+			.select()
+			.single();
+
+		if (error) {
+			console.error('Error updating package in model:', error);
+			throw new Error(error.message);
+		}
+		return data;
+	},
+
+	/**
+	 * Hapus detail item dari suatu paket.
+	 *
+	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+	 * @param {string} packageId
+	 */
+	async deletePackageItems(supabase, packageId) {
+		const { error } = await supabase
+			.from('package_items')
+			.delete()
+			.eq('package_id', packageId);
+
+		if (error) {
+			console.error('Error deleting package items in model:', error);
+			throw new Error(error.message);
+		}
+		return true;
 	}
 };

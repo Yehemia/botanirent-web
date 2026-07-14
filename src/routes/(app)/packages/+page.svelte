@@ -1,5 +1,7 @@
 <script>
 	import { Plus, Boxes, Search, Edit, Trash2 } from '@lucide/svelte';
+	import { enhance } from '$app/forms';
+	import { toast } from 'svelte-sonner';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -8,6 +10,7 @@
 
 	let { data } = $props();
 	let packages = $derived(data.packages);
+	let role = $derived(data.role);
 
 	let searchQuery = $state('');
 
@@ -16,6 +19,29 @@
 			pkg.name.toLowerCase().includes(searchQuery.toLowerCase())
 		)
 	);
+
+	/**
+	 * @param {any} pkg
+	 * @returns {import('@sveltejs/kit').SubmitFunction}
+	 */
+	const handleDeleteSubmit = (pkg) => {
+		return ({ cancel }) => {
+			if (!confirm(`Apakah Anda yakin ingin menghapus paket "${pkg.name}"?`)) {
+				cancel();
+				return;
+			}
+			return async ({ result, update }) => {
+				await update();
+				if (result.type === 'success') {
+					toast.success(`Paket "${pkg.name}" berhasil dihapus.`);
+				} else if (result.type === 'failure') {
+					toast.error(result.data?.error || 'Gagal menghapus paket.');
+				} else {
+					toast.error('Terjadi kesalahan sistem.');
+				}
+			};
+		};
+	};
 </script>
 
 <div class="mx-auto max-w-7xl space-y-6 pb-12">
@@ -111,24 +137,31 @@
 						</div>
 					</div>
 
-					<!-- Actions Overlay -->
-					<div
-						class="absolute top-3 left-3 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100"
-					>
-						<!-- eslint-disable-next-line -->
-						<a
-							href="/packages/{pkg.id}"
-							class="rounded-lg bg-white p-2 text-[var(--color-stone)] shadow-sm transition-colors hover:text-[var(--color-forest)]"
-						>
-							<Edit size={16} />
-						</a>
-						<button
-							type="button"
-							class="rounded-lg bg-white p-2 text-[var(--color-stone)] shadow-sm transition-colors hover:text-[var(--color-error)]"
-						>
-							<Trash2 size={16} />
-						</button>
-					</div>
+					<!-- Actions Bar -->
+					{#if role === 'owner' || role === 'gudang'}
+						<div class="flex border-t border-[var(--color-border-light)] bg-[var(--color-cream)]/10 px-5 py-3 gap-2">
+							<a
+								href="/packages/{pkg.id}"
+								class="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border-light)] bg-white py-2 text-xs font-bold text-[var(--color-stone)] transition-colors hover:bg-[var(--color-sand)] hover:text-[var(--color-forest)]"
+							>
+								<Edit size={14} /> Edit
+							</a>
+							<form
+								method="POST"
+								action="?/deletePackage"
+								use:enhance={handleDeleteSubmit(pkg)}
+								class="flex flex-1"
+							>
+								<input type="hidden" name="id" value={pkg.id} />
+								<button
+									type="submit"
+									class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border-light)] bg-white py-2 text-xs font-bold text-[var(--color-stone)] transition-colors hover:bg-[var(--color-error-bg)] hover:text-[var(--color-error)]"
+								>
+									<Trash2 size={14} /> Hapus
+								</button>
+							</form>
+						</div>
+					{/if}
 				</Card>
 			{/each}
 		</div>
