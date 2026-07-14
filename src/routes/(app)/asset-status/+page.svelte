@@ -11,6 +11,14 @@
 
 	let searchQuery = $state('');
 	let updatingId = $state(null);
+	
+	/** @type {any} */
+	let expandedColumns = $state({
+		ready: false,
+		rented: false,
+		washing: false,
+		maintenance: false
+	});
 
 	let filteredAssets = $derived(
 		assets.filter(
@@ -92,7 +100,8 @@
 	<!-- Kanban Board Grid -->
 	<div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-4 lg:gap-6">
 		{#each columns as col}
-			{@const colAssets = getAssetsByStatus(col.id)}
+			{@const allColAssets = getAssetsByStatus(col.id)}
+			{@const colAssets = expandedColumns[col.id] ? allColAssets : allColAssets.slice(0, 10)}
 			{@const Icon = col.icon}
 			<div
 				class="flex h-[75vh] flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-sand-lightest)]/50"
@@ -107,12 +116,12 @@
 						</div>
 						<h2 class="font-heading font-bold text-[var(--color-earth)]">{col.title}</h2>
 					</div>
-					<Badge variant="neutral" class="bg-[var(--color-sand)]">{colAssets.length}</Badge>
+					<Badge variant="neutral" class="bg-[var(--color-sand)]">{allColAssets.length}</Badge>
 				</div>
 
 				<!-- Column Body (Scrollable) -->
 				<div class="flex-1 space-y-3 overflow-y-auto p-3">
-					{#if colAssets.length === 0}
+					{#if allColAssets.length === 0}
 						<div
 							class="flex h-32 items-center justify-center rounded-xl border-2 border-dashed border-[var(--color-border-light)] text-sm text-[var(--color-stone)]"
 						>
@@ -186,6 +195,16 @@
 								{/if}
 							</div>
 						{/each}
+
+						{#if allColAssets.length > 10}
+							<button
+								type="button"
+								onclick={() => expandedColumns[col.id] = !expandedColumns[col.id]}
+								class="w-full rounded-xl border border-dashed border-[var(--color-border)] bg-white py-2.5 text-center text-xs font-bold text-[var(--color-stone)] transition-colors hover:bg-[var(--color-sand-light)] hover:text-[var(--color-earth)] shadow-sm"
+							>
+								{expandedColumns[col.id] ? 'Sembunyikan' : `+ Tampilkan Semua (${allColAssets.length - 10} Lainnya)`}
+							</button>
+						{/if}
 					{/if}
 				</div>
 			</div>
