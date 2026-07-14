@@ -382,7 +382,20 @@
 
 		<form
 			method="POST"
-			use:enhance={() => {
+			use:enhance={({ cancel }) => {
+				if (hasRental) {
+					if (customerMode === 'existing' && !customerId) {
+						alert('Untuk transaksi penyewaan barang (Rental/Hybrid), harap pilih pelanggan terdaftar dari database.');
+						cancel();
+						return;
+					}
+					if (customerMode === 'new' && (!customerName || !customerName.trim() || !customerPhone || !customerPhone.trim())) {
+						alert('Untuk transaksi penyewaan barang (Rental/Hybrid), harap masukkan Nama Lengkap dan Nomor HP/WA pelanggan baru.');
+						cancel();
+						return;
+					}
+				}
+
 				loading = true;
 				return async ({ update, result }) => {
 					loading = false;

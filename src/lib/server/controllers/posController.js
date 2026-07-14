@@ -89,6 +89,20 @@ export const posController = {
 			};
 		}
 
+		// Validation: Rental or Hybrid transactions must have a customer associated
+		const containsRental = payload.cart && payload.cart.some((/** @type {any} */ c) => c.type === 'rental' || c.type === 'package');
+		if (containsRental) {
+			const hasExistingCustomer = !!payload.customer_id;
+			const hasNewCustomer = payload.customer_name && payload.customer_name.trim() && payload.customer_phone && payload.customer_phone.trim();
+			if (!hasExistingCustomer && !hasNewCustomer) {
+				return {
+					success: false,
+					status: 400,
+					error: 'Untuk transaksi penyewaan barang (Rental/Hybrid), wajib menyertakan data pelanggan (baik pelanggan baru maupun terdaftar).'
+				};
+			}
+		}
+
 		payload.branch_id = profile.branch_id;
 		payload.cashier_id = profile.id;
 
