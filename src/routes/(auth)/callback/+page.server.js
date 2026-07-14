@@ -1,17 +1,11 @@
 import { redirect, fail } from '@sveltejs/kit';
 
-/**
- * LOAD FUNCTION
- * Dijalankan di server saat halaman callback diakses (GET request).
- * Mengambil parameter dari URL dan menampilkannya di halaman.
- */
 export const load = async ({ url, locals: { supabase } }) => {
 	const code = url.searchParams.get('code');
 	const next = url.searchParams.get('next') || '/dashboard';
 	const type = url.searchParams.get('type');
 	const token_hash = url.searchParams.get('token_hash');
 
-	// Tangkap error OAuth dari Supabase/Google
 	const errorParam = url.searchParams.get('error');
 	const errorDescription = url.searchParams.get('error_description');
 
@@ -23,9 +17,7 @@ export const load = async ({ url, locals: { supabase } }) => {
 		);
 	}
 
-	// JIKA GOOGLE OAUTH CODE:
-	// Google OAuth menggunakan parameter code. Langsung tukarkan di server side
-	// karena Google OAuth tidak di-crawl oleh WhatsApp/bot prefetch.
+	// Handle Google OAuth callback
 	if (code) {
 		const { error } = await supabase.auth.exchangeCodeForSession(code);
 		if (!error) {
@@ -42,9 +34,7 @@ export const load = async ({ url, locals: { supabase } }) => {
 		}
 	}
 
-	// JIKA TOKEN HASH (Aktivasi WA / Reset Password via Link):
-	// Return data ke frontend agar user mengklik tombol konfirmasi.
-	// Ini menjamin link preview bots tidak mengonsumsi token OTP sekali pakai.
+	// Handle link verification callback (e.g. WA or password reset links)
 	if (token_hash) {
 		return {
 			token_hash,
@@ -53,14 +43,9 @@ export const load = async ({ url, locals: { supabase } }) => {
 		};
 	}
 
-	// Fallback jika tidak ada parameter sama sekali
 	throw redirect(303, '/login');
 };
 
-/**
- * ACTIONS
- * Menangani form submit POST dari tombol verifikasi di halaman callback.
- */
 export const actions = {
 	verify: async ({ request, locals: { supabase } }) => {
 		const formData = await request.formData();

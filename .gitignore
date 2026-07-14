@@ -40,4 +40,5 @@ design.md
 walkthrough.md
 *sequence*.md
 /modul/
-/.agents/
+.agents
+.agents/

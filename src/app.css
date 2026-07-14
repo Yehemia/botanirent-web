@@ -1,96 +1,32 @@
-/**
- * ============================================================
- * FILE: app.css
- * TUJUAN: "Buku panduan desain" seluruh aplikasi BotaniRent.
- *
- * Di sini didefinisikan semua DESIGN TOKENS:
- *   - Warna (primary, secondary, status, background, border)
- *   - Font (heading, body, monospace)
- *   - Border radius, shadow, transition
- *   - Animasi global (skeleton, fade-in, modal, slide)
- *
- * TEMA DESAIN: "Alpine Earth" — Earthy, Warm, Natural
- *   Terinspirasi dari alam pegunungan — warna tanah, hijau hutan, hangat.
- *   Cocok untuk brand outdoor/camping seperti BotaniRent.
- *
- * KONSEP: Design Tokens = nilai desain yang disimpan sebagai variabel
- *   agar konsisten di seluruh aplikasi. Jika ingin mengubah warna utama,
- *   cukup ubah DI SINI, dan seluruh app akan berubah otomatis.
- * ============================================================
- */
-
-/* Mengimpor seluruh framework Tailwind CSS.
-   Ini menambahkan ribuan utility class seperti:
-   - bg-red-500 (background merah)
-   - p-4 (padding 16px)
-   - flex (display: flex)
-   Tailwind v4 menggunakan @import alih-alih @tailwind directives */
 @import 'tailwindcss';
-
-/* Plugin Typography dari Tailwind
-   Menambahkan class 'prose' untuk memformat konten teks panjang
-   (seperti artikel, deskripsi produk) agar otomatis rapi dan mudah dibaca */
 @plugin '@tailwindcss/typography';
 
-/* ================================================================
-   DESIGN TOKENS — Variabel desain yang dipakai di seluruh aplikasi
-
-   @theme adalah fitur Tailwind CSS v4.
-   Semua variabel di sini bisa dipakai sebagai:
-   - CSS variable: var(--color-forest)
-   - Tailwind class: bg-forest, text-sage, dll
-
-   MENGAPA pakai @theme? Agar warna bisa dipakai DI DUA TEMPAT:
-   1. Di file CSS biasa → var(--color-forest)
-   2. Di class Tailwind → class="bg-forest"
-   ================================================================ */
-
 @theme {
-	/* === Warna Utama (Primary) ===
-	   MENGAPA ada 3 varian hijau?
-	   Untuk VISUAL HIERARCHY & INTERACTION STATES:
-	   - forest       = warna tombol normal
-	   - forest-dark  = warna tombol saat ditekan (active) → feedback visual
-	   - forest-light = warna tombol saat di-hover          → feedback visual
-	   Ini membuat UI terasa "hidup" dan responsif terhadap interaksi user */
+	/* Primary colors (Alpine Earth theme) */
 	--color-forest: #2d5016;
 	--color-forest-dark: #244012;
 	--color-forest-light: #3a6a1e;
 	--color-sage: #6b8f4e;
-	--color-sage-10: rgba(107, 143, 78, 0.1); /* Sage 10% opacity — background ringan */
-	--color-sage-20: rgba(107, 143, 78, 0.2); /* Sage 20% opacity — selection highlight */
+	--color-sage-10: rgba(107, 143, 78, 0.1);
+	--color-sage-20: rgba(107, 143, 78, 0.2);
 
-	/* === Warna Sekunder === */
-	--color-amber: #d4a843; /* Kuning amber — highlight, badge promo */
-	--color-terracotta: #c85a3a; /* Merah bata — aksen kontras */
+	/* Secondary accent colors */
+	--color-amber: #d4a843;
+	--color-terracotta: #c85a3a;
 
-	/* === Background ===
-	   MENGAPA ada banyak varian?
-	   Untuk membuat DEPTH (kedalaman) visual tanpa warna mencolok.
-	   Semakin gelap = semakin "dalam" atau penting secara visual */
-	--color-cream: #faf6f0; /* Background utama seluruh app */
-	--color-charcoal: #1a1a1a; /* Hitam arang — untuk dark elements */
-	--color-sand: #f0e8d8; /* Background card/section */
-	--color-sand-light: #e8dfc8; /* Border, separator */
-	--color-sand-lightest: #fdfbf7; /* Subtle backgrounds */
+	/* Background colors */
+	--color-cream: #faf6f0;
+	--color-charcoal: #1a1a1a;
+	--color-sand: #f0e8d8;
+	--color-sand-light: #e8dfc8;
+	--color-sand-lightest: #fdfbf7;
 
-	/* === Teks ===
-	   MENGAPA 3 warna teks? Untuk TEXT HIERARCHY (hierarki teks):
-	   - earth = paling penting (judul, konten utama) → paling gelap
-	   - stone = penjelasan tambahan                  → medium
-	   - muted = tidak penting (placeholder)          → paling terang
-	   Mata user otomatis tertarik ke teks yang paling gelap dulu */
+	/* Text hierarchy colors */
 	--color-earth: #2c2418;
 	--color-stone: #7a7062;
 	--color-muted: #b0a696;
 
-	/* === Status (Semantic Colors) ===
-	   Warna yang punya "makna" universal:
-	   - Hijau = baik/sukses     - Kuning = hati-hati/peringatan
-	   - Merah = error/bahaya    - Biru   = informasi
-
-	   Versi _bg = warna sama tapi sangat transparan (10%)
-	   Dipakai sebagai latar badge/alert agar tidak terlalu mencolok */
+	/* Semantic status colors */
 	--color-success: #4a7c3f;
 	--color-success-bg: rgba(74, 124, 63, 0.1);
 	--color-warning: #e8a820;
@@ -100,64 +36,37 @@
 	--color-info: #3b82b0;
 	--color-info-bg: rgba(59, 130, 176, 0.1);
 
-	/* === Border === */
-	--color-border: #d6cbbb; /* Border default */
-	--color-border-light: #e8dfc8; /* Border lebih ringan */
-	--color-border-focus: #6b8f4e; /* Border saat elemen fokus (keyboard navigation) */
+	/* Borders */
+	--color-border: #d6cbbb;
+	--color-border-light: #e8dfc8;
+	--color-border-focus: #6b8f4e;
 
-	/* === Font Family ===
-	   MENGAPA 3 font berbeda?
-	   - Heading (Outfit)         = lebih tebal & elegan → menarik perhatian untuk judul
-	   - Body (Inter)             = sangat mudah dibaca  → nyaman untuk paragraf panjang
-	   - Mono (JetBrains Mono)    = lebar huruf sama     → angka/harga rata & rapi
-	     Contoh: Rp 1.000.000 vs Rp 100.000 → angka-angkanya sejajar */
+	/* Typography fonts */
 	--font-heading: 'Outfit', sans-serif;
 	--font-body: 'Inter', sans-serif;
 	--font-mono: 'JetBrains Mono', monospace;
 
-	/* === Border Radius (Kelengkungan sudut) === */
-	--radius-sm: 6px; /* Sedikit bulat — input, badge kecil */
-	--radius-md: 8px; /* Sedang — card, tombol */
-	--radius-lg: 12px; /* Bulat — card besar */
-	--radius-xl: 16px; /* Sangat bulat — modal, panel */
-	--radius-full: 9999px; /* Lingkaran penuh — avatar, pill badge */
+	/* Border radii */
+	--radius-sm: 6px;
+	--radius-md: 8px;
+	--radius-lg: 12px;
+	--radius-xl: 16px;
+	--radius-full: 9999px;
 
-	/* === Shadow (warm-toned) ===
-	   Shadow menggunakan warna COKELAT (rgba(44,36,24,...))
-	   bukan hitam (rgba(0,0,0,...)) yang biasa.
-
-	   MENGAPA? Shadow cokelat terasa lebih HANGAT dan NATURAL
-	   sesuai tema "Alpine Earth". Shadow hitam akan terasa dingin/digital.
-
-	   Setiap shadow punya 2 lapisan:
-	   - Lapisan 1: bayangan utama (lebih besar, lebih transparan)
-	   - Lapisan 2: bayangan halus dekat elemen (lebih kecil, lebih padat)
-	   Kombinasi ini membuat shadow terlihat lebih realistis */
+	/* Shadow tokens */
 	--shadow-sm: 0 1px 3px rgba(44, 36, 24, 0.06), 0 1px 2px rgba(44, 36, 24, 0.04);
 	--shadow-md: 0 4px 6px rgba(44, 36, 24, 0.07), 0 2px 4px rgba(44, 36, 24, 0.04);
 	--shadow-lg: 0 10px 15px rgba(44, 36, 24, 0.08), 0 4px 6px rgba(44, 36, 24, 0.04);
 	--shadow-xl: 0 20px 25px rgba(44, 36, 24, 0.1), 0 8px 10px rgba(44, 36, 24, 0.04);
 	--shadow-inner: inset 0 2px 4px rgba(44, 36, 24, 0.05);
 
-	/* === Transition (Durasi animasi) ===
-	   cubic-bezier(0.4, 0, 0.2, 1) = "ease curve" untuk animasi
-	   Artinya: animasi mulai pelan → mempercepat → melambat di akhir
-	   Ini terasa lebih NATURAL dibanding linear (kecepatan konstan)
-	   ANALOGI: Seperti mobil yang mengakselerasi lalu mengerem pelan */
-	--transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1); /* Cepat — hover, toggle */
-	--transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1); /* Normal — animasi UI */
-	--transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1); /* Lambat — modal, panel */
+	/* Transition curves */
+	--transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+	--transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+	--transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ================================================================
-   BASE STYLES — Gaya dasar untuk seluruh elemen HTML
-   ================================================================ */
-
-/* BOX-SIZING: BORDER-BOX — salah satu CSS rule TERPENTING!
-   Default CSS: width 100px + padding 20px = total 140px (menyebalkan!)
-   border-box:  width 100px + padding 20px = total TETAP 100px ✅
-   Artinya: padding & border dihitung DALAM width, bukan ditambahkan.
-   Ini membuat layout JAUH lebih mudah diprediksi */
+/* Base styles and resets */
 *,
 *::before,
 *::after {
@@ -165,19 +74,18 @@
 }
 
 html {
-	font-family: var(--font-body); /* Font default = Inter (body font) */
-	color: var(--color-earth); /* Warna teks default = cokelat tanah, BUKAN hitam murni (#000) karena terlalu kontras */
-	background-color: var(--color-cream); /* Background default = krem hangat */
-	-webkit-font-smoothing: antialiased; /* Membuat teks terlihat LEBIH HALUS di Mac/Chrome */
-	-moz-osx-font-smoothing: grayscale; /* Sama, tapi untuk Firefox di Mac */
+	font-family: var(--font-body);
+	color: var(--color-earth);
+	background-color: var(--color-cream);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 body {
-	margin: 0; /* Hapus margin default browser (biasanya 8px) */
-	min-height: 100vh; /* Minimal setinggi viewport/layar (100vh = 100% viewport height) */
+	margin: 0;
+	min-height: 100vh;
 }
 
-/* Semua heading menggunakan font Outfit */
 h1,
 h2,
 h3,
@@ -185,65 +93,46 @@ h4,
 h5,
 h6 {
 	font-family: var(--font-heading);
-	font-weight: 700; /* Bold */
-	line-height: 1.3; /* Jarak antar baris = 130% ukuran font */
+	font-weight: 700;
+	line-height: 1.3;
 }
 
-/* === Scrollbar Custom (WebKit = Chrome/Edge/Safari) ===
-   Membuat scrollbar tipis dan menyatu dengan tema desain */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-	width: 6px; /* Lebar scrollbar vertikal */
-	height: 6px; /* Tinggi scrollbar horizontal */
+	width: 6px;
+	height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-	background: transparent; /* Track (latar belakang) transparan */
+	background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-	background: var(--color-border); /* Thumb (yang digeser) warna border */
-	border-radius: var(--radius-full); /* Bentuk bulat penuh */
+	background: var(--color-border);
+	border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: var(--color-stone); /* Saat di-hover, thumb jadi lebih gelap */
+	background: var(--color-stone);
 }
 
-/* === Focus Visible (Aksesibilitas) ===
-   Menampilkan outline HANYA saat user navigasi pakai KEYBOARD (Tab),
-   TIDAK saat diklik mouse. Ini penting untuk user yang tidak bisa pakai mouse */
+/* Keyboard accessibility outline */
 :focus-visible {
 	outline: 2px solid var(--color-border-focus);
 	outline-offset: 2px;
 }
 
-/* === Text Selection ===
-   Saat user meng-highlight teks, background jadi sage hijau muda */
+/* Text Selection */
 ::selection {
 	background-color: var(--color-sage-20);
 	color: var(--color-forest);
 }
 
-/* Class utility untuk font monospace (angka/harga agar rapi sejajar) */
 .font-mono {
 	font-family: var(--font-mono);
 }
 
-/* ================================================================
-   ANIMASI & TRANSISI
-   
-   KONSEP KEYFRAMES: Definisi animasi frame-by-frame.
-   Seperti membuat "storyboard" animasi:
-   - from/0%  = keadaan awal
-   - to/100%  = keadaan akhir
-   Browser otomatis mengisi transisi di antaranya (interpolasi)
-   ================================================================ */
-
-/* Skeleton loading pulse — animasi "berkedip" untuk placeholder loading
-   0%   → opacity 0.4 (redup)
-   50%  → opacity 1 (terang)
-   100% → opacity 0.4 (redup lagi) → ulangi
-   Efek: elemen "bernapas" → user tahu sedang loading */
+/* Animations */
 @keyframes skeleton-pulse {
 	0%,
 	100% {
@@ -260,8 +149,6 @@ h6 {
 	border-radius: var(--radius-sm);
 }
 
-/* Fade in — animasi muncul dari bawah dengan efek fade
-   Konten "muncul naik" dengan lembut (4px ke atas) */
 @keyframes fade-in {
 	from {
 		opacity: 0;
@@ -277,8 +164,6 @@ h6 {
 	animation: fade-in var(--transition-normal) forwards;
 }
 
-/* Slide-in dari kanan — untuk toast/notifikasi
-   Toast muncul dari sisi kanan layar */
 @keyframes slide-in-right {
 	from {
 		transform: translateX(100%);
@@ -294,8 +179,6 @@ h6 {
 	animation: slide-in-right var(--transition-slow) forwards;
 }
 
-/* Modal scale-in — animasi modal muncul dengan efek zoom-in
-   Modal "muncul membesar" dari 95% ke 100% ukuran normal */
 @keyframes modal-in {
 	from {
 		opacity: 0;

@@ -5,17 +5,14 @@ export async function load({ params, locals }) {
 	const { supabase } = locals;
 	const { session, profile } = await locals.safeGetSession();
 
-	// Guard untuk login
 	if (!session || !profile) {
 		throw redirect(303, '/login');
 	}
 
-	// Guard Hak Akses: Hanya Owner dan Staf Gudang yang berhak melihat/mengedit detail paket
 	if (profile.role !== 'owner' && profile.role !== 'gudang') {
 		throw redirect(303, '/packages');
 	}
 
-	// Ambil data detail paket dan item pendukung
 	const data = await packageController.getPackage(supabase, profile, params.id);
 	
 	if (data.redirect) {
@@ -30,27 +27,20 @@ export const actions = {
 		const { supabase } = locals;
 		const { session, profile } = await locals.safeGetSession();
 
-		// Guard keamanan server
 		if (!session || !profile) {
 			return fail(401, { error: 'Unauthorized' });
 		}
 
 		const formData = await request.formData();
-		
-		// Proses pembaruan paket
 		const result = await packageController.updatePackage(supabase, profile, params.id, formData);
 
-		// Jika proses simpan gagal
 		if (!result.success) {
-			// Periksa apakah controller menyarankan redirect paksa
 			if (result.redirect) {
 				throw redirect(303, result.redirect);
 			}
-			// Jika gagal validasi, kembalikan status fail agar form tidak ter-reset
 			return fail(result.status || 500, { error: result.error, ...result.values });
 		}
 
-		// Jika sukses dan controller meminta redirect ke list paket
 		if (result.redirect) {
 			throw redirect(303, result.redirect);
 		}
