@@ -1053,16 +1053,7 @@
 		color: var(--color-muted);
 		font-weight: 400;
 	}
-	/* Hide number input spinners */
-	.cash-input::-webkit-outer-spin-button,
-	.cash-input::-webkit-inner-spin-button {
-		-webkit-appearance: none;
-		margin: 0;
-	}
-	.cash-input[type='number'] {
-		-moz-appearance: textfield;
-		appearance: textfield;
-	}
+
 
 	/* ─── Cash Shortcut Buttons ─── */
 	.cash-shortcut-btn {

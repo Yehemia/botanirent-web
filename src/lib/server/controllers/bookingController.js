@@ -1,26 +1,3 @@
-/**
- * ============================================================
- * FILE: bookingController.js
- * TUJUAN: Logic bisnis untuk halaman Booking (kalender ketersediaan barang).
- *
- * FITUR HALAMAN BOOKING:
- *   1. Tampilkan kalender ketersediaan setiap unit asset
- *   2. Tambah blokir MAINTENANCE atau WASHING (manual, oleh gudang)
- *   3. Hapus blokir maintenance yang tidak perlu lagi
- *
- * CATATAN: Booking dari transaksi pelanggan TIDAK dibuat di sini.
- *   Booking sewa dibuat otomatis oleh database function (checkout_transaction).
- *   Controller ini hanya mengurus booking MANUAL (maintenance/washing).
- *
- * LOGIKA STATUS ASSET (saat create maintenance):
- *   Jika tanggal maintenance mencakup HARI INI →
- *     status asset LANGSUNG diubah ke 'maintenance'/'washing'
- *   Jika maintenance di MASA DEPAN →
- *     status asset tetap 'ready', akan berubah nanti saat harinya tiba
- *     (proses otomatis atau manual saat itu)
- * ============================================================
- */
-
 import { bookingModel } from '../models/bookingModel.js';
 import { categoryModel } from '../models/categoryModel.js';
 import { itemModel } from '../models/itemModel.js';
@@ -34,15 +11,9 @@ export const bookingController = {
 	/**
 	 * Siapkan semua data untuk halaman kalender booking.
 	 *
-	 * Data yang dimuat:
-	 *   - categories → untuk filter kategori barang di kalender
-	 *   - items      → daftar jenis barang (untuk filter di UI)
-	 *   - assets     → semua unit fisik (titik di kalender)
-	 *   - bookings   → semua blokir waktu yang aktif
-	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ role: string, branch_id: string|null }} profile
-	 * @param {string|null} urlSearchBranchId - Cabang yang dipilih owner dari URL
+	 * @param {string|null} urlSearchBranchId
 	 */
 	async getBookingPageData(supabase, profile, urlSearchBranchId) {
 		const isOwner = profile.role === 'owner';
@@ -51,7 +22,6 @@ export const bookingController = {
 		let branches = [];
 		if (isOwner) {
 			try {
-				// Owner: ambil daftar cabang aktif untuk dropdown (di-cache 30 detik)
 				branches = await cacheGet(
 					'active_branches',
 					() => branchModel.getActiveBranches(supabase),
@@ -67,7 +37,6 @@ export const bookingController = {
 			selectedBranchId = profile.branch_id;
 		}
 
-		// Guard: jika tidak ada cabang yang dipilih, kembalikan data kosong
 		if (!selectedBranchId) {
 			return {
 				branches: [],
@@ -80,9 +49,8 @@ export const bookingController = {
 			};
 		}
 
-		// Jalankan 4 query paralel
 		const [categories, items, assets, bookings] = await Promise.all([
-			categoryModel.getCategoriesByType(supabase, 'sewa'), // Hanya kategori sewa (bukan jual)
+			categoryModel.getCategoriesByType(supabase, 'sewa'),
 			itemModel.getActiveSewaItems(supabase, selectedBranchId),
 			assetModel.getAssets(supabase, { branchId: selectedBranchId }),
 			bookingModel.getBranchBookings(supabase, selectedBranchId)
@@ -102,13 +70,6 @@ export const bookingController = {
 	/**
 	 * Buat blokir maintenance atau washing untuk satu unit asset.
 	 *
-	 * VALIDASI:
-	 *   1. Field wajib harus ada (asset, tanggal mulai, tanggal selesai)
-	 *   2. Tanggal selesai tidak boleh sebelum tanggal mulai
-	 *
-	 * EFEK SAMPING:
-	 *   Jika tanggal maintenance mencakup hari ini → langsung update status asset
-	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ id: string, branch_id: string|null }} profile
 	 * @param {FormData} formData
@@ -119,9 +80,8 @@ export const bookingController = {
 		const start_date = formData.get('start_date')?.toString();
 		const end_date = formData.get('end_date')?.toString();
 		const notes = formData.get('notes')?.toString() || 'Maintenance';
-		const status = formData.get('status')?.toString() || 'maintenance'; // 'maintenance' atau 'washing'
+		const status = formData.get('status')?.toString() || 'maintenance';
 
-		// Validasi field wajib
 		if (!rental_asset_id || !start_date || !end_date) {
 			return {
 				success: false,
@@ -130,7 +90,6 @@ export const bookingController = {
 			};
 		}
 
-		// Validasi logika tanggal: tanggal selesai harus >= tanggal mulai
 		if (new Date(start_date) > new Date(end_date)) {
 			return {
 				success: false,
@@ -140,16 +99,14 @@ export const bookingController = {
 		}
 
 		try {
-			// Buat booking baru di database
 			const booking = await bookingModel.createBooking(supabaseAdmin, {
 				rental_asset_id,
 				branch_id,
 				start_date,
 				end_date,
-				status: 'active' // Status booking: 'active' (bukan status asset)
+				status: 'active'
 			});
 
-			// Catat activity log
 			await activityLogModel.logActivity(supabaseAdmin, {
 				userId: profile.id,
 				branchId: branch_id,
@@ -159,10 +116,8 @@ export const bookingController = {
 				metadata: { rental_asset_id, start_date, end_date, notes }
 			});
 
-			// Efek samping: Jika maintenance berlaku mulai hari ini → update status asset sekarang
-			const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' }); // "YYYY-MM-DD"
+			const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
 			if (start_date <= todayStr && todayStr <= end_date) {
-				// Hari ini ada dalam rentang maintenance → asset langsung tidak tersedia
 				await assetModel.updateAssetStatus(supabaseAdmin, rental_asset_id, status, notes);
 			}
 
@@ -176,16 +131,6 @@ export const bookingController = {
 	/**
 	 * Hapus satu booking (maintenance/washing).
 	 *
-	 * EFEK SAMPING:
-	 *   Jika booking yang dihapus adalah:
-	 *   1. Booking MAINTENANCE (bukan dari transaksi sewa)
-	 *   2. DAN maintenance sedang berjalan hari ini
-	 *   → Status asset dikembalikan ke 'ready' (maintenance dianggap selesai)
-	 *
-	 * Cara deteksi apakah booking maintenance:
-	 *   isMaintenance = !booking.transaction_item_id
-	 *   (Booking sewa punya transaction_item_id, booking maintenance tidak)
-	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ id: string }} profile
 	 * @param {FormData} formData
@@ -197,20 +142,15 @@ export const bookingController = {
 		}
 
 		try {
-			// Ambil detail booking sebelum dihapus (perlu untuk log dan cek efek samping)
 			const booking = await bookingModel.getBookingDetails(supabaseAdmin, id);
 			if (!booking) {
 				return { success: false, status: 404, error: 'Booking tidak ditemukan.' };
 			}
 
-			// Cek apakah ini booking maintenance (bukan booking sewa)
-			// Booking maintenance: transaction_item_id = null
 			const isMaintenance = !booking.transaction_item_id;
 
-			// Hapus booking dari database
 			await bookingModel.deleteBooking(supabaseAdmin, id);
 
-			// Catat log penghapusan
 			await activityLogModel.logActivity(supabaseAdmin, {
 				userId: profile.id,
 				branchId: booking.branch_id,
@@ -220,7 +160,6 @@ export const bookingController = {
 				metadata: { isMaintenance, rental_asset_id: booking.rental_asset_id }
 			});
 
-			// Efek samping: Jika booking dihapus, kembalikan status asset ke 'ready' jika sesuai
 			const { data: assetData } = await supabaseAdmin
 				.from('rental_assets')
 				.select('status')
@@ -232,14 +171,14 @@ export const bookingController = {
 					await assetModel.updateAssetStatus(
 						supabaseAdmin,
 						booking.rental_asset_id,
-						'ready', // Kembalikan ke siap pakai
+						'ready',
 						'Maintenance dibatalkan/dilepas'
 					);
 				} else if (!isMaintenance && assetData.status === 'rented') {
 					await assetModel.updateAssetStatus(
 						supabaseAdmin,
 						booking.rental_asset_id,
-						'ready', // Kembalikan ke siap pakai
+						'ready',
 						'Booking sewa dilepas'
 					);
 				}
@@ -254,9 +193,6 @@ export const bookingController = {
 
 	/**
 	 * Tandai booking maintenance sebagai selesai.
-	 *
-	 * EFEK SAMPING:
-	 *   Status asset dikembalikan ke 'ready'
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {{ id: string }} profile
@@ -274,10 +210,8 @@ export const bookingController = {
 				return { success: false, status: 404, error: 'Booking tidak ditemukan.' };
 			}
 
-			// Update status booking ke 'completed'
 			await bookingModel.updateBookingStatus(supabaseAdmin, id, 'completed');
 
-			// Catat log
 			await activityLogModel.logActivity(supabaseAdmin, {
 				userId: profile.id,
 				branchId: booking.branch_id,
@@ -287,7 +221,6 @@ export const bookingController = {
 				metadata: { rental_asset_id: booking.rental_asset_id }
 			});
 
-			// Kembalikan status asset ke 'ready'
 			await assetModel.updateAssetStatus(
 				supabaseAdmin,
 				booking.rental_asset_id,

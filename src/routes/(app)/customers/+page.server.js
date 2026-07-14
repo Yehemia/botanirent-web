@@ -1,25 +1,7 @@
-/**
- * ============================================================
- * FILE: routes/(app)/customers/+page.server.js
- * TUJUAN: Logika server untuk pengelolaan data Pelanggan (Customer Management)
- *         dan pembayaran denda tertunda (Penalty Payment).
- *
- * MENGAPA KODE INI DITULIS?
- *   1. CRUD Pelanggan: Menyimpan identitas penyewa (nama, WhatsApp, dll) secara terpusat.
- *   2. Pembayaran Denda: Terkadang pelanggan mengembalikan alat outdoor melewati batas waktu sewa
- *      dan memilih untuk membayar dendanya nanti (tidak langsung lunas di halaman returns).
- *      Halaman ini memfasilitasi pelunasan denda tersebut secara tunai (Cash) atau online (QRIS Midtrans).
- * ============================================================
- */
-
 import { fail, redirect } from '@sveltejs/kit';
 import { customerController } from '$lib/server/controllers/customerController.js';
 
-/**
- * LOAD FUNCTION
- * Memuat data pelanggan berdasarkan filter cabang jika ada.
- * Menggunakan parent() untuk mengambil session/profile dari layout.
- */
+/** @type {import('./$types').PageServerLoad} */
 export async function load({ locals, url, parent }) {
 	const { supabase } = locals;
 	const { session, profile } = await parent();
@@ -32,14 +14,8 @@ export async function load({ locals, url, parent }) {
 	return customerController.getCustomersPageData(supabase, profile, selectedBranchId);
 }
 
-/**
- * SVELTEKIT FORM ACTIONS
- * Menyediakan CRUD pelanggan dan aksi pembayaran denda.
- */
+/** @type {import('./$types').Actions} */
 export const actions = {
-	/**
-	 * createCustomer: Menambahkan pelanggan baru
-	 */
 	createCustomer: async ({ request, locals }) => {
 		const { supabase } = locals;
 		const { session, profile } = await locals.safeGetSession();
@@ -58,9 +34,6 @@ export const actions = {
 		return { success: true };
 	},
 
-	/**
-	 * updateCustomer: Memperbarui data pelanggan
-	 */
 	updateCustomer: async ({ request, locals }) => {
 		const { supabase } = locals;
 		const { session, profile } = await locals.safeGetSession();
@@ -79,9 +52,6 @@ export const actions = {
 		return { success: true };
 	},
 
-	/**
-	 * deleteCustomer: Menghapus pelanggan
-	 */
 	deleteCustomer: async ({ request, locals }) => {
 		const { supabase } = locals;
 		const { session, profile } = await locals.safeGetSession();
@@ -100,18 +70,6 @@ export const actions = {
 		return { success: true };
 	},
 
-	/**
-	 * payPenalty: Memproses pembayaran denda yang tertunda
-	 * ALUR INTEGRASI PEMBAYARAN (QRIS Midtrans & Tunai):
-	 *   1. Dapatkan daftar item sewa dalam transaksi ini.
-	 *   2. Cari denda dengan status 'unpaid' pada item-item tersebut, lalu jumlahkan total dendanya.
-	 *   3. Jika metode pembayaran adalah QRIS:
-	 *      - Kirim request charge ke API Midtrans.
-	 *      - Ambil data `qr_string` / URL QR code dari Midtrans dan kembalikan ke frontend agar bisa dirender sebagai kode QR.
-	 *   4. Jika metode pembayaran adalah Tunai:
-	 *      - Update status denda langsung ke 'paid' di DB.
-	 *      - Catat aktivitas pembayaran denda di log sistem.
-	 */
 	payPenalty: async ({ request, locals }) => {
 		const { supabase } = locals;
 		const { session, profile } = await locals.safeGetSession();
@@ -131,7 +89,6 @@ export const actions = {
 		}
 
 		try {
-			// LANGKAH 1: Ambil semua ID item transaksi dari transaksi ini
 			const { data: items, error: itemsError } = await supabase
 				.from('transaction_items')
 				.select('id')
@@ -144,7 +101,6 @@ export const actions = {
 
 			const itemIds = items.map((item) => item.id);
 
-			// LANGKAH 2: Ambil denda belum bayar (payment_status = 'unpaid') dari item-item tersebut
 			const { data: penalties, error: penError } = await supabase
 				.from('penalties')
 				.select('calculated_amount')
@@ -156,19 +112,15 @@ export const actions = {
 				return fail(500, { error: 'Gagal memeriksa denda.' });
 			}
 
-			// Hitung total akumulasi denda yang harus dibayar
 			const totalPenalty = penalties.reduce((acc, p) => acc + (Number(p.calculated_amount) || 0), 0);
 
 			if (totalPenalty <= 0) {
 				return fail(400, { error: 'Tidak ada denda yang perlu dibayar.' });
 			}
 
-			// LANGKAH 3: Proses pembayaran via QRIS (Midtrans)
 			if (paymentMethod === 'QRIS') {
-				// Gunakan format Order ID unik agar Midtrans tidak menolak order duplikat
 				const orderId = `DENDA-TX-${transactionId}`;
 				
-				// Ambil data nama dan nomor telepon pelanggan untuk dikirim ke Midtrans
 				const { data: customerData } = await supabase
 					.from('transactions')
 					.select('customer:customers(full_name, phone)')
@@ -183,19 +135,15 @@ export const actions = {
 					customerPhone = customer.phone || customerPhone;
 				}
 
-				// Import environment variables secara dinamis agar tidak membebani memory saat startup
 				const { MIDTRANS_SERVER_KEY } = await import('$env/static/private');
 				const { PUBLIC_MIDTRANS_ENV } = await import('$env/static/public');
 
-				// Buat string otorisasi Basic Auth: base64(server_key + ":")
 				const authString = btoa(`${MIDTRANS_SERVER_KEY}:`);
 				const isProduction = PUBLIC_MIDTRANS_ENV === 'production';
-				// Tentukan endpoint API Sandbox vs Production
 				const apiUrl = isProduction
 					? 'https://api.midtrans.com/v2/charge'
 					: 'https://api.sandbox.midtrans.com/v2/charge';
 
-				// Susun payload API Midtrans Charge QRIS
 				const midtransPayload = {
 					payment_type: 'qris',
 					transaction_details: {
@@ -207,7 +155,7 @@ export const actions = {
 						phone: customerPhone
 					},
 					custom_expiry: {
-						expiry_duration: 5, // QRIS berlaku 5 menit saja untuk efisiensi kasir
+						expiry_duration: 5,
 						unit: 'minute'
 					}
 				};
@@ -227,7 +175,6 @@ export const actions = {
 				console.log('[payPenalty Server Action] Midtrans API response:', midtransData);
 				
 				if (response.ok && midtransData.transaction_id) {
-					// qr_string adalah raw string QR code yang bisa digenerate menjadi gambar QR di frontend
 					const qr_string = midtransData.qr_string;
 					const qr_url =
 						midtransData.actions?.find(/** @param {any} act */ (act) => act.name === 'generate-qr-code')
@@ -246,7 +193,6 @@ export const actions = {
 					return fail(400, { error: midtransData.status_message || 'Gagal inisiasi pembayaran QRIS Midtrans.' });
 				}
 			} else {
-				// LANGKAH 4: Pembayaran Tunai (Cash) -> Update status denda langsung di database
 				const { error: updateError } = await supabase
 					.from('penalties')
 					.update({
@@ -262,7 +208,6 @@ export const actions = {
 					return fail(500, { error: 'Gagal memproses pembayaran denda.' });
 				}
 
-				// Catat aktivitas di log
 				const { activityLogModel } = await import('$lib/server/models/activityLogModel.js');
 				await activityLogModel.logActivity(supabase, {
 					userId: profile.id,
@@ -282,4 +227,3 @@ export const actions = {
 		}
 	}
 };
-

@@ -1,22 +1,6 @@
-/**
- * ============================================================
- * FILE: branchModel.js
- * TUJUAN: Lapisan AKSES DATA untuk tabel "branches" (cabang).
- *
- * BotaniRent bisa punya BANYAK CABANG (multi-branch).
- * Model ini mengurus semua operasi CRUD untuk data cabang.
- *
- * KONSEP MULTI-BRANCH:
- *   - Owner bisa kelola semua cabang
- *   - Kasir & Gudang hanya bisa akses data cabang mereka sendiri
- *   - Banyak query di model lain filter berdasarkan branch_id
- * ============================================================
- */
-
 export const branchModel = {
 	/**
 	 * Ambil semua cabang (hanya id dan nama).
-	 * Dipakai untuk keperluan referensi ringan (lookup/mapping).
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 */
@@ -32,10 +16,6 @@ export const branchModel = {
 
 	/**
 	 * Ambil cabang yang AKTIF saja, diurutkan A-Z.
-	 * Dipakai untuk dropdown pemilih cabang di TopBar.
-	 * (Cabang non-aktif tidak muncul di pilihan)
-	 *
-	 * .eq('is_active', true) → hanya ambil yang is_active = true
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 */
@@ -43,8 +23,8 @@ export const branchModel = {
 		const { data, error } = await supabase
 			.from('branches')
 			.select('*')
-			.eq('is_active', true) // Filter hanya yang aktif
-			.order('name'); // Urutkan A-Z
+			.eq('is_active', true)
+			.order('name');
 
 		if (error) {
 			console.error('Fetch active branches error:', error);
@@ -55,7 +35,6 @@ export const branchModel = {
 
 	/**
 	 * Ambil SEMUA cabang (aktif maupun nonaktif), diurutkan A-Z.
-	 * Dipakai di halaman manajemen cabang (owner bisa lihat semua).
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 */
@@ -72,11 +51,8 @@ export const branchModel = {
 	/**
 	 * Tambah cabang baru.
 	 *
-	 * insert([branchData]) → bungkus dalam array [] karena insert menerima array
-	 * .select() → kembalikan data yang baru dimasukkan (termasuk id auto-generate)
-	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
-	 * @param {object} branchData - Nama cabang, alamat, telepon, dll
+	 * @param {object} branchData
 	 */
 	async insertBranch(supabase, branchData) {
 		const { data, error } = await supabase.from('branches').insert([branchData]).select();
@@ -93,14 +69,14 @@ export const branchModel = {
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string} id
-	 * @param {object} branchData - Data yang akan diupdate
+	 * @param {object} branchData
 	 */
 	async updateBranch(supabase, id, branchData) {
 		const { data, error } = await supabase
 			.from('branches')
 			.update(branchData)
 			.eq('id', id)
-			.select(); // Kembalikan data yang sudah diupdate
+			.select();
 
 		if (error) {
 			console.error('Update branch error:', error);
@@ -110,11 +86,11 @@ export const branchModel = {
 	},
 
 	/**
-	 * Nonaktifkan cabang berdasarkan ID (Soft Deactivation).
+	 * Nonaktifkan cabang berdasarkan ID.
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string} id
-	 * @param {string|null} notes - alasan penonaktifan
+	 * @param {string|null} notes
 	 */
 	async deactivateBranch(supabase, id, notes) {
 		const { data, error } = await supabase
@@ -151,14 +127,14 @@ export const branchModel = {
 	},
 
 	/**
-	 * Hitung total jumlah cabang (untuk widget di dashboard owner).
+	 * Hitung total jumlah cabang.
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 */
 	async getBranchesCount(supabase) {
 		const { count, error } = await supabase
 			.from('branches')
-			.select('*', { count: 'exact', head: true }); // COUNT tanpa ambil data
+			.select('*', { count: 'exact', head: true });
 
 		if (error) {
 			console.error('Fetch branches count error:', error);
@@ -169,9 +145,6 @@ export const branchModel = {
 
 	/**
 	 * Ambil detail satu cabang: nama, alamat, telepon.
-	 * Dipakai untuk activity log dan struk transaksi.
-	 *
-	 * .maybeSingle() → ambil 0 atau 1 baris (tidak error jika tidak ditemukan)
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string} id
@@ -187,6 +160,6 @@ export const branchModel = {
 			console.error('Fetch branch details error in model:', error);
 			throw new Error(error.message);
 		}
-		return data; // Bisa null jika tidak ditemukan
+		return data;
 	}
 };
