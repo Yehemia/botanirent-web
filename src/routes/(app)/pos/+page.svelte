@@ -233,7 +233,7 @@
 			<div class="z-10 flex flex-col gap-4 border-b border-[var(--color-border)] bg-white p-4">
 				<div class="flex items-center justify-between">
 					<h1 class="font-heading text-2xl font-bold text-[var(--color-earth)]">Point of Sales</h1>
-					<Input bind:value={searchQuery} placeholder="Cari atau scan barcode..." class="w-64">
+					<Input bind:value={searchQuery} placeholder="Cari item..." class="w-64">
 						{#snippet iconLeft()}
 							<Search size={18} />
 						{/snippet}

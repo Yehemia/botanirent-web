@@ -9,6 +9,7 @@ export const itemModel = {
 		let query = supabase
 			.from('items')
 			.select('*, category:categories(name, type)')
+			.order('is_active', { ascending: false })
 			.order('created_at', { ascending: false });
 
 		if (branchId) {
