@@ -16,6 +16,17 @@
 	let searchQuery = $state('');
 	let selectedCategory = $state('all');
 
+	// Pagination state
+	let currentPage = $state(1);
+	let itemsPerPage = $state(10);
+
+	// Reset to page 1 on search or filter change
+	$effect(() => {
+		searchQuery;
+		selectedCategory;
+		currentPage = 1;
+	});
+
 	// Filter items based on search and category
 	let filteredItems = $derived(
 		items.filter((/** @type {any} */ item) => {
@@ -25,6 +36,14 @@
 			const matchCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
 			return matchSearch && matchCategory;
 		})
+	);
+
+	let totalItems = $derived(filteredItems.length);
+	let totalPages = $derived(Math.ceil(totalItems / itemsPerPage) || 1);
+
+	// Slice filtered items for current page
+	let paginatedItems = $derived(
+		filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 	);
 
 	/**
@@ -137,7 +156,7 @@
 							</td>
 						</tr>
 					{:else}
-						{#each filteredItems as item (item.id)}
+						{#each paginatedItems as item (item.id)}
 							<tr class="group transition-colors hover:bg-[var(--color-sand-lightest)]/50">
 								<td class="px-6 py-4">
 									<div class="flex items-center gap-3">
@@ -206,7 +225,7 @@
 								</td>
 								<td class="px-6 py-4 text-right">
 									<div
-										class="flex justify-end items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100"
+										class="flex justify-end items-center gap-2 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-opacity"
 									>
 										<!-- eslint-disable-next-line -->
 										<a
@@ -248,5 +267,73 @@
 				</tbody>
 			</table>
 		</div>
+
+		<!-- Pagination Footer -->
+		{#if totalPages > 1}
+			<div class="flex flex-col sm:flex-row items-center justify-between border-t border-[var(--color-border-light)] bg-white px-6 py-4 gap-4">
+				<div class="text-xs text-[var(--color-stone)] text-center sm:text-left">
+					Menampilkan <span class="font-bold text-[var(--color-earth)]">{(currentPage - 1) * itemsPerPage + 1}</span> - <span class="font-bold text-[var(--color-earth)]">{Math.min(currentPage * itemsPerPage, totalItems)}</span> dari <span class="font-bold text-[var(--color-earth)]">{totalItems}</span> barang
+				</div>
+				<div class="flex items-center justify-center flex-wrap gap-1.5">
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={currentPage === 1}
+						onclick={() => currentPage = 1}
+						class="px-2"
+					>
+						Awal
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={currentPage === 1}
+						onclick={() => currentPage--}
+					>
+						Sebelumnya
+					</Button>
+					
+					<!-- Page numbers -->
+					<div class="hidden items-center gap-1 sm:flex">
+						{#each Array(totalPages) as _, index}
+							{@const pageNum = index + 1}
+							{#if pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)}
+								<button
+									onclick={() => currentPage = pageNum}
+									class="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all
+										{currentPage === pageNum
+											? 'bg-[var(--color-forest)] text-white shadow-md shadow-[var(--color-forest)]/10'
+											: 'border border-[var(--color-border-light)] bg-white text-[var(--color-stone)] hover:bg-[var(--color-sand-light)] hover:text-[var(--color-earth)]'}"
+								>
+									{pageNum}
+								</button>
+							{:else}
+								{#if pageNum === currentPage - 2 || pageNum === currentPage + 2}
+									<span class="px-1 text-[var(--color-stone)]">...</span>
+								{/if}
+							{/if}
+						{/each}
+					</div>
+
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={currentPage === totalPages}
+						onclick={() => currentPage++}
+					>
+						Berikutnya
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={currentPage === totalPages}
+						onclick={() => currentPage = totalPages}
+						class="px-2"
+					>
+						Akhir
+					</Button>
+				</div>
+			</div>
+		{/if}
 	</Card>
 </div>
