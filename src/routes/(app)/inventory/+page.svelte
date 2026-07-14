@@ -7,6 +7,7 @@
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 	import { formatCurrency } from '$lib/utils/format';
 
 	let { data } = $props();
@@ -46,16 +47,28 @@
 		filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 	);
 
+	let showConfirmModal = $state(false);
+	/** @type {any} */
+	let selectedItem = $state(null);
+	/** @type {HTMLFormElement | null} */
+	let formToSubmit = $state(null);
+
+	/**
+	 * @param {any} item
+	 * @param {HTMLFormElement | null} formEl
+	 */
+	function confirmDeactivate(item, formEl) {
+		selectedItem = item;
+		formToSubmit = formEl;
+		showConfirmModal = true;
+	}
+
 	/**
 	 * @param {any} item
 	 * @returns {import('@sveltejs/kit').SubmitFunction}
 	 */
 	const handleDeactivateSubmit = (item) => {
-		return ({ cancel }) => {
-			if (!confirm(`Apakah Anda yakin ingin menonaktifkan barang "${item.name}"? Barang yang dinonaktifkan tidak akan muncul di katalog kasir (POS).`)) {
-				cancel();
-				return;
-			}
+		return () => {
 			return async ({ result, update }) => {
 				await update();
 				if (result.type === 'success') {
@@ -240,7 +253,8 @@
 											<form method="POST" action="?/deactivate" use:enhance={handleDeactivateSubmit(item)} class="inline">
 												<input type="hidden" name="id" value={item.id} />
 												<button
-													type="submit"
+													type="button"
+													onclick={(e) => confirmDeactivate(item, e.currentTarget.form)}
 													class="rounded-md p-1.5 text-[var(--color-stone)] transition-colors hover:bg-[var(--color-error)]/10 hover:text-[var(--color-error)]"
 													title="Nonaktifkan"
 												>
@@ -337,3 +351,41 @@
 		{/if}
 	</Card>
 </div>
+
+<Modal bind:open={showConfirmModal} title="Konfirmasi Nonaktifkan">
+	{#snippet children()}
+		{#if selectedItem}
+			<div class="space-y-3 py-2 text-center sm:text-left">
+				<p class="text-sm leading-relaxed text-[var(--color-stone)]">
+					Apakah Anda yakin ingin menonaktifkan barang <strong class="text-[var(--color-earth)]">"{selectedItem.name}"</strong>?
+				</p>
+				<p class="text-xs text-[var(--color-stone)] bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/20 rounded-lg p-3">
+					<strong>Catatan:</strong> Barang yang dinonaktifkan tidak akan muncul di katalog kasir (POS) untuk transaksi baru.
+				</p>
+			</div>
+		{/if}
+	{/snippet}
+	{#snippet footer()}
+		<Button
+			variant="ghost"
+			onclick={() => {
+				showConfirmModal = false;
+				selectedItem = null;
+				formToSubmit = null;
+			}}
+		>
+			Batal
+		</Button>
+		<Button
+			variant="danger"
+			onclick={() => {
+				if (formToSubmit) {
+					formToSubmit.requestSubmit();
+				}
+				showConfirmModal = false;
+			}}
+		>
+			Ya, Nonaktifkan
+		</Button>
+	{/snippet}
+</Modal>
