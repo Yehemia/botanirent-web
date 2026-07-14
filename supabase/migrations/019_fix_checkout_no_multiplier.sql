@@ -17,6 +17,7 @@ DECLARE
     v_qty int;
     v_i int;
     v_pkg_item record;
+    v_transaction_item_id uuid;
 BEGIN
     -- Determine transaction type (retail, rental, hybrid)
     v_transaction_type := payload->>'type';
@@ -96,13 +97,13 @@ BEGIN
                     (v_item->>'unit_price')::numeric, 
                     (v_item->>'unit_price')::numeric, -- FIXED: Removed rental_days multiplier
                     (payload->>'rental_start_date')::date, (payload->>'rental_end_date')::date, (payload->>'rental_days')::int, 'active'
-                );
+                ) RETURNING id INTO v_transaction_item_id;
 
                 -- Insert booking (kalender ketersediaan)
                 INSERT INTO public.bookings (
-                    rental_asset_id, branch_id, start_date, end_date, status
+                    rental_asset_id, transaction_item_id, branch_id, start_date, end_date, status
                 ) VALUES (
-                    v_asset_record.id, (payload->>'branch_id')::uuid, (payload->>'rental_start_date')::date, (payload->>'rental_end_date')::date, 'active'
+                    v_asset_record.id, v_transaction_item_id, (payload->>'branch_id')::uuid, (payload->>'rental_start_date')::date, (payload->>'rental_end_date')::date, 'active'
                 );
             END LOOP;
         
@@ -119,7 +120,12 @@ BEGIN
             );
 
             -- Cari tahu isi barang apa saja yang ada di dalam paket tersebut
-            FOR v_pkg_item IN SELECT * FROM public.package_items WHERE package_id = (v_item->>'package_id')::uuid LOOP
+            FOR v_pkg_item IN 
+                SELECT pi.*, i.name as item_name 
+                FROM public.package_items pi
+                JOIN public.items i ON pi.item_id = i.id
+                WHERE pi.package_id = (v_item->>'package_id')::uuid 
+            LOOP
                 
                 -- Alokasikan fisik aset sebanyak: (Qty Paket dikali Qty Item Dalam Paket)
                 FOR v_i IN 1..(v_qty * v_pkg_item.quantity) LOOP
@@ -141,15 +147,15 @@ BEGIN
                         rental_start_date, rental_end_date, rental_days, rental_status
                     ) VALUES (
                         v_transaction_id, (v_item->>'package_id')::uuid, v_pkg_item.item_id, v_asset_record.id, 'package',
-                        ' - [Isi Paket] ' || v_asset_record.asset_code, 1, 0, 0,
+                        ' - [Isi Paket] ' || v_pkg_item.item_name, 1, 0, 0,
                         (payload->>'rental_start_date')::date, (payload->>'rental_end_date')::date, (payload->>'rental_days')::int, 'active'
-                    );
+                    ) RETURNING id INTO v_transaction_item_id;
 
                     -- Insert booking
                     INSERT INTO public.bookings (
-                        rental_asset_id, branch_id, start_date, end_date, status
+                        rental_asset_id, transaction_item_id, branch_id, start_date, end_date, status
                     ) VALUES (
-                        v_asset_record.id, (payload->>'branch_id')::uuid, (payload->>'rental_start_date')::date, (payload->>'rental_end_date')::date, 'active'
+                        v_asset_record.id, v_transaction_item_id, (payload->>'branch_id')::uuid, (payload->>'rental_start_date')::date, (payload->>'rental_end_date')::date, 'active'
                     );
                 END LOOP;
             END LOOP;
