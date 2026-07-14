@@ -235,7 +235,7 @@
 	function getBookingLabel(booking, day) {
 		const prefix = booking.status === 'completed' ? '[Selesai] ' : '';
 		if (isMaintenance(booking)) {
-			return `${prefix}Maintenance`;
+			return `${prefix}${booking.notes || 'Maintenance'}`;
 		}
 
 		const customerName = booking.transaction_item?.transaction?.customer?.full_name || 'Customer';

@@ -56,12 +56,96 @@ export const bookingController = {
 			bookingModel.getBranchBookings(supabase, selectedBranchId)
 		]);
 
+		// Post-process bookings to inject virtual status blocks for active status (washing, maintenance, late rental)
+		const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
+		const bookingsByAsset = new Map();
+		bookings.forEach((b) => {
+			if (!bookingsByAsset.has(b.rental_asset_id)) {
+				bookingsByAsset.set(b.rental_asset_id, []);
+			}
+			bookingsByAsset.get(b.rental_asset_id).push(b);
+		});
+
+		const processedBookings = bookings.map(b => ({ ...b }));
+
+		for (const asset of assets) {
+			const assetBookings = bookingsByAsset.get(asset.id) || [];
+
+			if (asset.status === 'rented') {
+				// Find if there is an active rental booking for this asset that is overdue (end_date < today)
+				const activeRentalBooking = processedBookings.find(
+					(/** @type {any} */ b) => b.rental_asset_id === asset.id && b.transaction_item_id && b.status === 'active' && b.end_date < todayStr
+				);
+				if (activeRentalBooking) {
+					activeRentalBooking.end_date = todayStr;
+					activeRentalBooking.notes = 'Sewa Terlambat Kembali';
+				} else {
+					// Check if there is already an active booking covering today
+					const hasActiveBookingToday = assetBookings.some(
+						(/** @type {any} */ b) => b.status === 'active' && b.start_date <= todayStr && b.end_date >= todayStr
+					);
+					if (!hasActiveBookingToday) {
+						const start = asset.last_status_change 
+							? new Date(asset.last_status_change).toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' })
+							: todayStr;
+						const finalStart = start > todayStr ? todayStr : start;
+
+						processedBookings.push({
+							id: `virtual-rented-${asset.id}`,
+							rental_asset_id: asset.id,
+							start_date: finalStart,
+							end_date: todayStr,
+							status: 'active',
+							notes: 'Sedang Disewa (Berjalan)',
+							rental_asset: {
+								id: asset.id,
+								asset_code: asset.asset_code,
+								item: {
+									id: asset.item.id,
+									name: asset.item.name
+								}
+							}
+						});
+					}
+				}
+			} else if (asset.status === 'washing' || asset.status === 'maintenance') {
+				// Check if there is already a manual booking covering today
+				const hasActiveBlockToday = assetBookings.some(
+					(/** @type {any} */ b) => b.status === 'active' && b.start_date <= todayStr && b.end_date >= todayStr
+				);
+
+				if (!hasActiveBlockToday) {
+					const start = asset.last_status_change 
+						? new Date(asset.last_status_change).toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' })
+						: todayStr;
+					const finalStart = start > todayStr ? todayStr : start;
+
+					processedBookings.push({
+						id: `virtual-${asset.status}-${asset.id}`,
+						rental_asset_id: asset.id,
+						start_date: finalStart,
+						end_date: todayStr,
+						status: 'active',
+						notes: asset.status === 'washing' ? 'Pembersihan (Dicuci)' : 'Pemeliharaan (Maintenance)',
+						rental_asset: {
+							id: asset.id,
+							asset_code: asset.asset_code,
+							item: {
+								id: asset.item.id,
+								name: asset.item.name
+							}
+						}
+					});
+				}
+			}
+		}
+
 		return {
 			branches,
 			categories,
 			items,
 			assets,
-			bookings,
+			bookings: processedBookings,
 			selectedBranchId,
 			role: profile.role
 		};
