@@ -10,12 +10,14 @@
 		CalendarClock,
 		Minus,
 		Plus,
-		Camera
+		Camera,
+		Info
 	} from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 	import { formatCurrency } from '$lib/utils/format';
 	import { toast } from 'svelte-sonner';
 	import { isMobileApp, scanBarcodeFromMobile } from '$lib/utils/mobileBridge';
@@ -27,6 +29,16 @@
 	let categories = $derived(data.categories);
 
 	let isMobile = $state(false);
+
+	/** @type {any} */
+	let selectedDetailPackage = $state(null);
+	let isDetailModalOpen = $state(false);
+
+	/** @param {any} pkg */
+	function showPackageDetail(pkg) {
+		selectedDetailPackage = pkg;
+		isDetailModalOpen = true;
+	}
 
 	onMount(() => {
 		isMobile = isMobileApp();
@@ -286,9 +298,17 @@
 				{:else}
 					<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
 						{#each displayItems() as item, i (item.id + item.__displayType)}
-							<button
-								class="group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white text-left shadow-sm transition-all hover:border-[var(--color-forest)]/50 hover:shadow-md"
+							<!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
+							<div
+								class="group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white text-left shadow-sm transition-all hover:border-[var(--color-forest)]/50 hover:shadow-md cursor-pointer"
 								onclick={() => addToCart(item, item.__displayType)}
+								role="button"
+								tabindex="0"
+								onkeydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										addToCart(item, item.__displayType);
+									}
+								}}
 							>
 								<div class="relative h-32 overflow-hidden bg-[var(--color-sand)]">
 									{#if item.image_url}
@@ -334,6 +354,18 @@
 										>
 											{item.stock_available}
 										</div>
+									{:else}
+										<button
+											type="button"
+											class="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[var(--color-stone)] hover:bg-white hover:text-[var(--color-forest)] transition-colors shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
+											onclick={(e) => {
+												e.stopPropagation();
+												showPackageDetail(item);
+											}}
+											title="Lihat isi paket"
+										>
+											<Info size={13} />
+										</button>
 									{/if}
 								</div>
 								<div class="flex flex-1 flex-col p-3">
@@ -362,7 +394,7 @@
 										{/if}
 									</div>
 								</div>
-							</button>
+							</div>
 						{/each}
 					</div>
 				{/if}
@@ -500,3 +532,73 @@
 		</div>
 	</div>
 {/if}
+
+<Modal bind:open={isDetailModalOpen} title="Detail Isi Paket">
+	{#snippet children()}
+		{#if selectedDetailPackage}
+			<div class="space-y-4 py-2">
+				<div class="flex items-center gap-3 border-b border-[var(--color-border-light)] pb-4">
+					<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-forest)]/10 text-[var(--color-forest)]">
+						<Boxes size={24} />
+					</div>
+					<div>
+						<h4 class="font-heading text-lg font-bold text-[var(--color-earth)]">
+							{selectedDetailPackage.name}
+						</h4>
+						<p class="text-xs text-[var(--color-stone)]">
+							Harga Sewa: <span class="font-bold text-[var(--color-forest)]">{formatCurrency(selectedDetailPackage.package_price)}</span>/siklus
+						</p>
+					</div>
+				</div>
+				
+				<div class="space-y-2">
+					<h5 class="text-xs font-bold uppercase tracking-wider text-[var(--color-stone)]">Daftar Barang di Dalam Paket:</h5>
+					<div class="divide-y divide-[var(--color-border-light)] rounded-xl border border-[var(--color-border-light)] bg-[var(--color-sand-lightest)]/30">
+						{#if selectedDetailPackage.resolved_items && selectedDetailPackage.resolved_items.length > 0}
+							{#each selectedDetailPackage.resolved_items as pi}
+								<div class="flex items-center justify-between px-4 py-3">
+									<span class="font-medium text-[var(--color-earth)]">{pi.name}</span>
+									<Badge variant="info" class="font-mono font-bold text-xs">x{pi.quantity}</Badge>
+								</div>
+							{/each}
+						{:else}
+							<div class="px-4 py-4 text-center text-sm text-[var(--color-stone)]">
+								Tidak ada rincian barang untuk paket ini.
+							</div>
+						{/if}
+					</div>
+				</div>
+				
+				{#if selectedDetailPackage.description}
+					<div class="space-y-1 pt-2">
+						<h5 class="text-xs font-bold uppercase tracking-wider text-[var(--color-stone)]">Keterangan:</h5>
+						<p class="text-sm leading-relaxed text-[var(--color-earth)]">
+							{selectedDetailPackage.description}
+						</p>
+					</div>
+				{/if}
+			</div>
+		{/if}
+	{/snippet}
+	{#snippet footer()}
+		<Button
+			variant="ghost"
+			onclick={() => {
+				isDetailModalOpen = false;
+			}}
+		>
+			Tutup
+		</Button>
+		<Button
+			variant="primary"
+			onclick={() => {
+				if (selectedDetailPackage) {
+					addToCart(selectedDetailPackage, 'package');
+					isDetailModalOpen = false;
+				}
+			}}
+		>
+			Tambahkan ke Keranjang
+		</Button>
+	{/snippet}
+</Modal>

@@ -24,7 +24,7 @@ export const packageModel = {
 	},
 
 	/**
-	 * Ambil paket yang AKTIF saja untuk satu cabang.
+	 * Ambil paket yang AKTIF saja untuk satu cabang dengan detail item di dalamnya.
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
 	 * @param {string} branchId
@@ -32,7 +32,16 @@ export const packageModel = {
 	async getActivePackages(supabase, branchId) {
 		const { data, error } = await supabase
 			.from('packages')
-			.select('*')
+			.select(`
+				*,
+				package_items (
+					quantity,
+					items (
+						id,
+						name
+					)
+				)
+			`)
 			.eq('branch_id', branchId)
 			.eq('is_active', true)
 			.order('name');
@@ -41,7 +50,25 @@ export const packageModel = {
 			console.error('Error fetching active packages in model:', error);
 			throw new Error(error.message);
 		}
-		return data || [];
+
+		return (data || []).map((pkg) => {
+			const package_items = pkg.package_items || [];
+			const resolvedItems = package_items
+				.map((/** @type {any} */ pi) => {
+					const item = Array.isArray(pi.items) ? pi.items[0] : pi.items;
+					return {
+						id: item?.id,
+						name: item?.name,
+						quantity: pi.quantity
+					};
+				})
+				.filter((/** @type {any} */ item) => item.id);
+
+			return {
+				...pkg,
+				resolved_items: resolvedItems
+			};
+		});
 	},
 
 	/**
