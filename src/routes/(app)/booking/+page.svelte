@@ -255,6 +255,8 @@
 	 * @param {Date} day
 	 */
 	function handleDayClick(day) {
+		if (role === 'kasir') return;
+
 		// Prevent scheduling in the past
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -894,13 +896,42 @@
 			<div
 				class="mt-6 flex items-center justify-between border-t border-[var(--color-border-light)] pt-4"
 			>
-				<!-- Cancel/Finish block (Only for maintenance OR if cashiers can cancel bookings) -->
-				{#if isMaint}
-					<div class="flex flex-wrap gap-2">
-						{#if selectedBooking.status !== 'completed'}
+				{#if role !== 'kasir'}
+					<!-- Cancel/Finish block (Only for maintenance OR if cashiers can cancel bookings) -->
+					{#if isMaint}
+						<div class="flex flex-wrap gap-2">
+							{#if selectedBooking.status !== 'completed'}
+								<form
+									method="POST"
+									action="?/completeMaintenance"
+									use:enhance={() => {
+										isSubmitting = true;
+										return async ({ result, update }) => {
+											isSubmitting = false;
+											if (result.type === 'success') {
+												isDetailModalOpen = false;
+											}
+											await update();
+										};
+									}}
+								>
+									<input type="hidden" name="id" value={selectedBooking.id} />
+									<input type="hidden" name="rental_asset_id" value={ra?.id} />
+									<Button
+										type="submit"
+										variant="primary"
+										size="sm"
+										class="flex items-center gap-1.5 bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)]"
+										disabled={isSubmitting}
+									>
+										<CheckCircle size={14} /> Selesaikan Maintenance
+									</Button>
+								</form>
+							{/if}
+
 							<form
 								method="POST"
-								action="?/completeMaintenance"
+								action="?/deleteBooking"
 								use:enhance={() => {
 									isSubmitting = true;
 									return async ({ result, update }) => {
@@ -916,16 +947,17 @@
 								<input type="hidden" name="rental_asset_id" value={ra?.id} />
 								<Button
 									type="submit"
-									variant="primary"
+									variant="danger"
 									size="sm"
-									class="flex items-center gap-1.5 bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)]"
+									class="flex items-center gap-1.5"
 									disabled={isSubmitting}
 								>
-									<CheckCircle size={14} /> Selesaikan Maintenance
+									<Trash2 size={14} /> Hapus Blokir
 								</Button>
 							</form>
-						{/if}
-
+						</div>
+					{:else}
+						<!-- For normal bookings, we can release the block in case of cancellations -->
 						<form
 							method="POST"
 							action="?/deleteBooking"
@@ -946,41 +978,17 @@
 								type="submit"
 								variant="danger"
 								size="sm"
-								class="flex items-center gap-1.5"
+								class="flex items-center gap-1.5 bg-red-600 text-white hover:bg-red-700"
 								disabled={isSubmitting}
 							>
-								<Trash2 size={14} /> Hapus Blokir
+								<Trash2 size={14} /> Lepas Booking Block
 							</Button>
 						</form>
-					</div>
+					{/if}
 				{:else}
-					<!-- For normal bookings, we can release the block in case of cancellations -->
-					<form
-						method="POST"
-						action="?/deleteBooking"
-						use:enhance={() => {
-							isSubmitting = true;
-							return async ({ result, update }) => {
-								isSubmitting = false;
-								if (result.type === 'success') {
-									isDetailModalOpen = false;
-								}
-								await update();
-							};
-						}}
-					>
-						<input type="hidden" name="id" value={selectedBooking.id} />
-						<input type="hidden" name="rental_asset_id" value={ra?.id} />
-						<Button
-							type="submit"
-							variant="danger"
-							size="sm"
-							class="flex items-center gap-1.5 bg-red-600 text-white hover:bg-red-700"
-							disabled={isSubmitting}
-						>
-							<Trash2 size={14} /> Lepas Booking Block
-						</Button>
-					</form>
+					<div class="text-xs text-[var(--color-stone)] italic">
+						Mode Lihat Saja (Kasir tidak diizinkan mengubah status pemeliharaan/blokir)
+					</div>
 				{/if}
 
 				<Button variant="ghost" onclick={() => (isDetailModalOpen = false)}>Tutup</Button>

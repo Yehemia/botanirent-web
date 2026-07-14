@@ -71,10 +71,18 @@ export const bookingController = {
 	 * Buat blokir maintenance atau washing untuk satu unit asset.
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
-	 * @param {{ id: string, branch_id: string|null }} profile
+	 * @param {{ id: string, role: string, branch_id: string|null }} profile
 	 * @param {FormData} formData
 	 */
 	async createMaintenance(supabase, profile, formData) {
+		if (profile.role === 'kasir') {
+			return {
+				success: false,
+				status: 403,
+				error: 'Akses ditolak: Kasir tidak diizinkan melakukan tindakan ini.'
+			};
+		}
+
 		const rental_asset_id = formData.get('rental_asset_id')?.toString();
 		const branch_id = formData.get('branch_id')?.toString() || profile.branch_id;
 		const start_date = formData.get('start_date')?.toString();
@@ -132,10 +140,18 @@ export const bookingController = {
 	 * Hapus satu booking (maintenance/washing).
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
-	 * @param {{ id: string }} profile
+	 * @param {{ id: string, role: string }} profile
 	 * @param {FormData} formData
 	 */
 	async deleteBooking(supabase, profile, formData) {
+		if (profile.role === 'kasir') {
+			return {
+				success: false,
+				status: 403,
+				error: 'Akses ditolak: Kasir tidak diizinkan melakukan tindakan ini.'
+			};
+		}
+
 		const id = formData.get('id')?.toString();
 		if (!id) {
 			return { success: false, status: 400, error: 'ID booking tidak ditemukan.' };
@@ -195,10 +211,18 @@ export const bookingController = {
 	 * Tandai booking maintenance sebagai selesai.
 	 *
 	 * @param {import('@supabase/supabase-js').SupabaseClient} supabase
-	 * @param {{ id: string }} profile
+	 * @param {{ id: string, role: string }} profile
 	 * @param {FormData} formData
 	 */
 	async completeMaintenance(supabase, profile, formData) {
+		if (profile.role === 'kasir') {
+			return {
+				success: false,
+				status: 403,
+				error: 'Akses ditolak: Kasir tidak diizinkan melakukan tindakan ini.'
+			};
+		}
+
 		const id = formData.get('id')?.toString();
 		if (!id) {
 			return { success: false, status: 400, error: 'ID booking tidak ditemukan.' };
