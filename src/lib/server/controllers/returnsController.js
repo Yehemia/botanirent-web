@@ -5,6 +5,7 @@ import { bookingModel } from '../models/bookingModel.js';
 import { assetModel } from '../models/assetModel.js';
 import { activityLogModel } from '../models/activityLogModel.js';
 import { cacheGet, invalidateDashboardCache } from '../cache.js';
+import { supabaseAdmin } from '../supabase.js';
 
 export const returnsController = {
 	/**
@@ -289,7 +290,7 @@ export const returnsController = {
 				if (item.asset_id) {
 					try {
 						console.log('[returnsController.processReturn] Updating asset status for asset:', item.asset_id, 'to:', assetStatus);
-						await assetModel.updateAssetStatus(supabase, item.asset_id, assetStatus);
+						await assetModel.updateAssetStatus(supabaseAdmin, item.asset_id, assetStatus);
 					} catch (err) {
 						console.error(`[returnsController.processReturn] Failed to update asset status for asset ID ${item.asset_id}:`, err);
 						throw err;
