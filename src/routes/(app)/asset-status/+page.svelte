@@ -159,7 +159,7 @@
 								<!-- Status Change Actions (Hover) -->
 								{#if col.id !== 'rented'}
 									<div
-										class="absolute inset-x-0 top-auto bottom-0 z-10 flex translate-y-full flex-wrap justify-center gap-1 rounded-b-xl border-t border-[var(--color-border-light)] bg-white/95 p-2 opacity-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] backdrop-blur transition-all group-hover:translate-y-0 group-hover:opacity-100"
+										class="absolute inset-x-0 top-auto bottom-0 z-10 flex translate-y-full flex-wrap justify-center gap-1 rounded-b-xl border-t border-[var(--color-border-light)] bg-white/95 p-2 opacity-0 pointer-events-none shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] backdrop-blur transition-all group-hover:translate-y-0 group-hover:opacity-100 group-hover:pointer-events-auto"
 									>
 										{#each columns as targetCol}
 											{@const TargetIcon = targetCol.icon}
