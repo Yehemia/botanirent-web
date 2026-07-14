@@ -6,7 +6,10 @@ export const assetModel = {
 	 * @param {string|null} branchId
 	 */
 	async getAssetsStatusCounts(supabase, branchId = null) {
-		let query = supabase.from('rental_assets').select('status, item:items!inner(branch_id)');
+		let query = supabase
+			.from('rental_assets')
+			.select('status, item:items!inner(branch_id, is_active)')
+			.eq('items.is_active', true);
 
 		if (branchId) {
 			query = query.eq('items.branch_id', branchId);
@@ -37,8 +40,9 @@ export const assetModel = {
 	async getWashingAssets(supabase, branchId) {
 		const { data, error } = await supabase
 			.from('rental_assets')
-			.select('*, item:items!inner(name, branch_id)')
+			.select('*, item:items!inner(name, branch_id, is_active)')
 			.eq('status', 'washing')
+			.eq('items.is_active', true)
 			.eq('items.branch_id', branchId);
 
 		if (error) {
@@ -57,8 +61,9 @@ export const assetModel = {
 	async getMaintenanceAssets(supabase, branchId) {
 		const { data, error } = await supabase
 			.from('rental_assets')
-			.select('*, item:items!inner(name, branch_id)')
+			.select('*, item:items!inner(name, branch_id, is_active)')
 			.eq('status', 'maintenance')
+			.eq('items.is_active', true)
 			.eq('items.branch_id', branchId);
 
 		if (error) {
@@ -78,7 +83,10 @@ export const assetModel = {
 	 * @param {boolean} [params.ascending]
 	 */
 	async getAssets(supabase, { branchId = null, orderBy = 'asset_code', ascending = true } = {}) {
-		let query = supabase.from('rental_assets').select('*, item:items!inner(branch_id, name)');
+		let query = supabase
+			.from('rental_assets')
+			.select('*, item:items!inner(branch_id, name, is_active)')
+			.eq('items.is_active', true);
 
 		if (branchId) {
 			query = query.eq('items.branch_id', branchId);

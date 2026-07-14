@@ -551,6 +551,12 @@ export const itemController = {
 
 			await itemModel.updateItem(supabase, id, { is_active: false });
 
+			// Reset all physical asset statuses to 'ready' so they aren't stuck in 'rented'
+			await supabase
+				.from('rental_assets')
+				.update({ status: 'ready', last_status_change: new Date().toISOString() })
+				.eq('item_id', id);
+
 			await activityLogModel.logActivity(supabase, {
 				userId: profile.id,
 				branchId: item.branch_id,
