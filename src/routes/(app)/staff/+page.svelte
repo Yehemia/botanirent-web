@@ -1,6 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { UserPlus, Shield, Store, Mail, Power, CheckCircle2, Lock, User, Phone } from '@lucide/svelte';
+	import { UserPlus, Shield, Store, Mail, Power, CheckCircle2, Lock, User, Phone, Edit } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -39,6 +39,40 @@
 			loading = false;
 			if (result.type === 'success') {
 				showModal = false;
+			}
+			update();
+		};
+	}
+
+	let showEditModal = $state(false);
+	let editLoading = $state(false);
+	let editFormData = $state({
+		id: '',
+		full_name: '',
+		role: 'kasir',
+		branch_id: '',
+		phone: ''
+	});
+
+	/** @param {any} staff */
+	function openEditModal(staff) {
+		editFormData = {
+			id: staff.id,
+			full_name: staff.full_name || '',
+			role: staff.role || 'kasir',
+			branch_id: staff.branch_id || '',
+			phone: staff.phone || ''
+		};
+		showEditModal = true;
+	}
+
+	/** @type {import('@sveltejs/kit').SubmitFunction} */
+	function handleEditSubmit() {
+		editLoading = true;
+		return async ({ update, result }) => {
+			editLoading = false;
+			if (result.type === 'success') {
+				showEditModal = false;
 			}
 			update();
 		};
@@ -162,22 +196,34 @@
 						</td>
 						<td class="px-6 py-4 text-right">
 							{#if staff.role !== 'owner'}
-								<form method="POST" action="?/updateStatus" use:enhance>
-									<input type="hidden" name="id" value={staff.id} />
-									<input type="hidden" name="is_active" value={(!staff.is_active).toString()} />
-
+								<div class="flex items-center justify-end gap-2">
 									<Button
 										variant="ghost"
 										size="sm"
-										type="submit"
-										class={staff.is_active
-											? 'text-[var(--color-error)] hover:bg-[var(--color-error-bg)] hover:text-[var(--color-error)]'
-											: 'text-[var(--color-success)] hover:bg-[var(--color-success-bg)] hover:text-[var(--color-success)]'}
+										onclick={() => openEditModal(staff)}
+										class="text-[var(--color-earth)] hover:bg-[var(--color-sand)]"
 									>
-										{#snippet iconLeft()}<Power size={16} />{/snippet}
-										{staff.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+										{#snippet iconLeft()}<Edit size={16} />{/snippet}
+										Edit
 									</Button>
-								</form>
+
+									<form method="POST" action="?/updateStatus" use:enhance>
+										<input type="hidden" name="id" value={staff.id} />
+										<input type="hidden" name="is_active" value={(!staff.is_active).toString()} />
+
+										<Button
+											variant="ghost"
+											size="sm"
+											type="submit"
+											class={staff.is_active
+												? 'text-[var(--color-error)] hover:bg-[var(--color-error-bg)] hover:text-[var(--color-error)]'
+												: 'text-[var(--color-success)] hover:bg-[var(--color-success-bg)] hover:text-[var(--color-success)]'}
+										>
+											{#snippet iconLeft()}<Power size={16} />{/snippet}
+											{staff.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+										</Button>
+									</form>
+								</div>
 							{/if}
 						</td>
 					</tr>
@@ -215,8 +261,18 @@
 				</div>
 
 				{#if staff.role !== 'owner'}
-					<div class="flex justify-end border-t border-gray-100 pt-1">
-						<form method="POST" action="?/updateStatus" use:enhance class="w-full">
+					<div class="flex gap-2 border-t border-gray-100 pt-1">
+						<Button
+							variant="ghost"
+							size="sm"
+							onclick={() => openEditModal(staff)}
+							class="w-1/2 justify-center text-[var(--color-earth)] hover:bg-[var(--color-sand)]"
+						>
+							{#snippet iconLeft()}<Edit size={14} />{/snippet}
+							Edit
+						</Button>
+
+						<form method="POST" action="?/updateStatus" use:enhance class="w-1/2">
 							<input type="hidden" name="id" value={staff.id} />
 							<input type="hidden" name="is_active" value={(!staff.is_active).toString()} />
 
@@ -229,7 +285,7 @@
 									: 'text-[var(--color-success)] hover:bg-[var(--color-success-bg)] hover:text-[var(--color-success)]'}"
 							>
 								{#snippet iconLeft()}<Power size={14} />{/snippet}
-								{staff.is_active ? 'Nonaktifkan Staff' : 'Aktifkan Staff'}
+								{staff.is_active ? 'Nonaktifkan' : 'Aktifkan'}
 							</Button>
 						</form>
 					</div>
@@ -318,6 +374,73 @@
 		<Button variant="ghost" onclick={() => (showModal = false)}>Batal</Button>
 		<Button form="add-staff-form" type="submit" disabled={loading}>
 			{loading ? 'Memproses...' : 'Buat Akun Staff'}
+		</Button>
+	{/snippet}
+</Modal>
+
+<!-- Modal Edit Staff -->
+<Modal bind:open={showEditModal} title="Edit Data Staff">
+	<form
+		id="edit-staff-form"
+		method="POST"
+		action="?/update"
+		use:enhance={handleEditSubmit}
+		class="space-y-4"
+	>
+		<input type="hidden" name="id" value={editFormData.id} />
+
+		<Input
+			id="edit_full_name"
+			name="full_name"
+			label="Nama Lengkap"
+			placeholder="Contoh: Budi Santoso"
+			bind:value={editFormData.full_name}
+			required
+		>
+			{#snippet iconLeft()}<User size={18} />{/snippet}
+		</Input>
+
+		<Input
+			id="edit_phone"
+			name="phone"
+			type="tel"
+			label="Nomor WhatsApp"
+			placeholder="Contoh: 08123456789"
+			bind:value={editFormData.phone}
+			required
+		>
+			{#snippet iconLeft()}<Phone size={18} />{/snippet}
+		</Input>
+
+		<Select id="edit_role" name="role" label="Role / Jabatan" bind:value={editFormData.role} required>
+			{#snippet iconLeft()}
+				<Shield size={18} />
+			{/snippet}
+			<option value="kasir">Kasir (POS & Transaksi)</option>
+			<option value="gudang">Admin Gudang (Inventaris & Aset)</option>
+		</Select>
+
+		<Select
+			id="edit_branch_id"
+			name="branch_id"
+			label="Penempatan Cabang"
+			bind:value={editFormData.branch_id}
+			required
+		>
+			{#snippet iconLeft()}
+				<Store size={18} />
+			{/snippet}
+			<option value="" disabled>-- Pilih Cabang --</option>
+			{#each data.branches as branch}
+				<option value={branch.id}>{branch.name}</option>
+			{/each}
+		</Select>
+	</form>
+
+	{#snippet footer()}
+		<Button variant="ghost" onclick={() => (showEditModal = false)}>Batal</Button>
+		<Button form="edit-staff-form" type="submit" disabled={editLoading}>
+			{editLoading ? 'Memproses...' : 'Simpan Perubahan'}
 		</Button>
 	{/snippet}
 </Modal>

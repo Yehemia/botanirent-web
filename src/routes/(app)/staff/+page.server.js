@@ -214,5 +214,41 @@ export const actions = {
 		cacheInvalidatePrefix('staff_count_');
 
 		return { success: true };
+	},
+
+	update: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { profile: currentUser } = await safeGetSession();
+		if (currentUser?.role !== 'owner') return fail(403, { error: 'Akses ditolak.' });
+
+		const formData = await request.formData();
+		const id = formData.get('id');
+		const full_name = formData.get('full_name');
+		const role = formData.get('role');
+		const branch_id = formData.get('branch_id');
+		const phone = formData.get('phone');
+
+		if (!id || !full_name || !role || !branch_id || !phone) {
+			return fail(400, { error: 'Semua field harus diisi.' });
+		}
+
+		const { error } = await supabase
+			.from('profiles')
+			.update({
+				full_name: full_name.toString(),
+				role: role.toString(),
+				branch_id: branch_id.toString(),
+				phone: phone.toString()
+			})
+			.eq('id', id);
+
+		if (error) {
+			console.error('Error updating staff profile:', error);
+			return fail(500, { error: 'Gagal memperbarui data staff: ' + error.message });
+		}
+
+		cacheInvalidate('staff_list');
+		cacheInvalidatePrefix('staff_count_');
+
+		return { success: true };
 	}
 };
