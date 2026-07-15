@@ -1,6 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { UserPlus, Shield, Store, Mail, Power, CheckCircle2, Lock, User, Phone, Edit } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -73,6 +74,23 @@
 			editLoading = false;
 			if (result.type === 'success') {
 				showEditModal = false;
+				toast.success('Perubahan data staff berhasil disimpan!');
+			} else if (result.type === 'failure') {
+				const resData = /** @type {any} */ (result.data);
+				toast.error(resData?.error || 'Gagal memperbarui data staff.');
+			}
+			update();
+		};
+	}
+
+	/** @type {import('@sveltejs/kit').SubmitFunction} */
+	function handleStatusSubmit() {
+		return async ({ update, result }) => {
+			if (result.type === 'success') {
+				toast.success('Status aktif staff berhasil diperbarui!');
+			} else if (result.type === 'failure') {
+				const resData = /** @type {any} */ (result.data);
+				toast.error(resData?.error || 'Gagal mengubah status staff.');
 			}
 			update();
 		};
@@ -101,65 +119,49 @@
 	</div>
 {/if}
 
-{#if form?.success}
-	{#if form.action === 'invite'}
-		<div
-			class="mb-6 flex flex-col gap-2 rounded-md border border-[var(--color-success)]/20 bg-[var(--color-success-bg)] p-4 text-sm text-[var(--color-success)]"
-		>
-			<div class="flex items-center gap-2 font-semibold">
-				<CheckCircle2 size={18} /> 
-				{#if form.isExisting}
-					Detail & Peran Staff Berhasil Diperbarui!
-				{:else}
-					Staff baru berhasil diundang!
-				{/if}
-			</div>
-
-			{#if form.waSuccess}
-				<p class="text-xs text-[var(--color-success)] font-medium">
-					Tautan aktivasi akun telah **berhasil dikirim otomatis via WhatsApp** ke nomor staff.
-				</p>
+{#if form?.success && form.action === 'invite'}
+	<div
+		class="mb-6 flex flex-col gap-2 rounded-md border border-[var(--color-success)]/20 bg-[var(--color-success-bg)] p-4 text-sm text-[var(--color-success)]"
+	>
+		<div class="flex items-center gap-2 font-semibold">
+			<CheckCircle2 size={18} /> 
+			{#if form.isExisting}
+				Detail & Peran Staff Berhasil Diperbarui!
 			{:else}
-				<div class="text-xs text-[var(--color-error)] font-medium bg-[var(--color-error-bg)] border border-[var(--color-error)]/10 rounded p-2 mt-1 mb-2">
-					⚠️ WhatsApp gagal terkirim otomatis: {form.waError || 'Error tidak diketahui'}<br>
-					Silakan salin dan berikan link di bawah ini secara manual kepada staff terkait.
-				</div>
+				Staff baru berhasil diundang!
 			{/if}
+		</div>
 
-			{#if form.dbWarning}
-				<div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mt-1 mb-2">
-					⚠️ {form.dbWarning}
-				</div>
-			{/if}
+		{#if form.waSuccess}
+			<p class="text-xs text-[var(--color-success)] font-medium">
+				Tautan aktivasi akun telah **berhasil dikirim otomatis via WhatsApp** ke nomor staff.
+			</p>
+		{:else}
+			<div class="text-xs text-[var(--color-error)] font-medium bg-[var(--color-error-bg)] border border-[var(--color-error)]/10 rounded p-2 mt-1 mb-2">
+				⚠️ WhatsApp gagal terkirim otomatis: {form.waError || 'Error tidak diketahui'}<br>
+				Silakan salin dan berikan link di bawah ini secara manual kepada staff terkait.
+			</div>
+		{/if}
 
-			{#if form.inviteLink}
-				<div class="mt-2 rounded bg-white p-3 border border-[var(--color-success)]/10 text-[var(--color-stone)]">
-					<p class="text-xs font-semibold text-[var(--color-earth)] mb-1">
-						{#if form.isExisting}
-							Link Reset Password/Aktivasi Manual:
-						{:else}
-							Link Aktivasi Akun Manual:
-						{/if}
-					</p>
-					<code class="break-all select-all block text-xs font-mono text-[var(--color-forest)] bg-[var(--color-sand-lightest)] px-2 py-1.5 rounded border border-[var(--color-border-light)]">{form.inviteLink}</code>
-				</div>
-			{/if}
-		</div>
-	{:else if form.action === 'update'}
-		<div
-			class="mb-6 flex items-center gap-2 rounded-md border border-[var(--color-success)]/20 bg-[var(--color-success-bg)] p-4 text-sm text-[var(--color-success)] font-semibold"
-		>
-			<CheckCircle2 size={18} />
-			Perubahan data staff berhasil disimpan!
-		</div>
-	{:else if form.action === 'updateStatus'}
-		<div
-			class="mb-6 flex items-center gap-2 rounded-md border border-[var(--color-success)]/20 bg-[var(--color-success-bg)] p-4 text-sm text-[var(--color-success)] font-semibold"
-		>
-			<CheckCircle2 size={18} />
-			Status aktif staff berhasil diperbarui!
-		</div>
-	{/if}
+		{#if form.dbWarning}
+			<div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mt-1 mb-2">
+				⚠️ {form.dbWarning}
+			</div>
+		{/if}
+
+		{#if form.inviteLink}
+			<div class="mt-2 rounded bg-white p-3 border border-[var(--color-success)]/10 text-[var(--color-stone)]">
+				<p class="text-xs font-semibold text-[var(--color-earth)] mb-1">
+					{#if form.isExisting}
+						Link Reset Password/Aktivasi Manual:
+					{:else}
+						Link Aktivasi Akun Manual:
+					{/if}
+				</p>
+				<code class="break-all select-all block text-xs font-mono text-[var(--color-forest)] bg-[var(--color-sand-lightest)] px-2 py-1.5 rounded border border-[var(--color-border-light)]">{form.inviteLink}</code>
+			</div>
+		{/if}
+	</div>
 {/if}
 
 <div
@@ -223,7 +225,7 @@
 										Edit
 									</Button>
 
-									<form method="POST" action="?/updateStatus" use:enhance>
+									<form method="POST" action="?/updateStatus" use:enhance={handleStatusSubmit}>
 										<input type="hidden" name="id" value={staff.id} />
 										<input type="hidden" name="is_active" value={(!staff.is_active).toString()} />
 
@@ -288,7 +290,7 @@
 							Edit
 						</Button>
 
-						<form method="POST" action="?/updateStatus" use:enhance class="w-1/2">
+						<form method="POST" action="?/updateStatus" use:enhance={handleStatusSubmit} class="w-1/2">
 							<input type="hidden" name="id" value={staff.id} />
 							<input type="hidden" name="is_active" value={(!staff.is_active).toString()} />
 
