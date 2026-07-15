@@ -184,6 +184,7 @@ export const actions = {
 
 		return { 
 			success: true, 
+			action: 'invite',
 			isExisting, 
 			inviteLink, 
 			waSuccess: waResult.success, 
@@ -213,7 +214,7 @@ export const actions = {
 		cacheInvalidate('staff_list');
 		cacheInvalidatePrefix('staff_count_');
 
-		return { success: true };
+		return { success: true, action: 'updateStatus' };
 	},
 
 	update: async ({ request, locals: { supabase, safeGetSession } }) => {
@@ -249,6 +250,6 @@ export const actions = {
 		cacheInvalidate('staff_list');
 		cacheInvalidatePrefix('staff_count_');
 
-		return { success: true };
+		return { success: true, action: 'update' };
 	}
 };
