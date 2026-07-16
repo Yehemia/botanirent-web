@@ -73,6 +73,36 @@ export const itemController = {
 			};
 		}
 
+		const nameTrimmed = name.toString().trim();
+
+		try {
+			const { data: existingItem, error: checkError } = await supabase
+				.from('items')
+				.select('id')
+				.eq('branch_id', profile.branch_id)
+				.ilike('name', nameTrimmed)
+				.maybeSingle();
+
+			if (checkError) throw checkError;
+
+			if (existingItem) {
+				return {
+					success: false,
+					status: 400,
+					error: `Barang dengan nama "${nameTrimmed}" sudah terdaftar di cabang ini.`,
+					values: Object.fromEntries(formData)
+				};
+			}
+		} catch (err) {
+			console.error('Error checking duplicate item name in createItem:', err);
+			return {
+				success: false,
+				status: 500,
+				error: 'Gagal memvalidasi nama barang.',
+				values: Object.fromEntries(formData)
+			};
+		}
+
 		let category;
 		try {
 			const { data } = await supabase
@@ -243,6 +273,37 @@ export const itemController = {
 				success: false,
 				status: 400,
 				error: 'Nama dan kategori wajib diisi.',
+				values: Object.fromEntries(formData)
+			};
+		}
+
+		const nameTrimmed = name.toString().trim();
+
+		try {
+			const { data: existingItem, error: checkError } = await supabase
+				.from('items')
+				.select('id')
+				.eq('branch_id', oldItem.branch_id)
+				.ilike('name', nameTrimmed)
+				.neq('id', id)
+				.maybeSingle();
+
+			if (checkError) throw checkError;
+
+			if (existingItem) {
+				return {
+					success: false,
+					status: 400,
+					error: `Barang dengan nama "${nameTrimmed}" sudah terdaftar di cabang ini.`,
+					values: Object.fromEntries(formData)
+				};
+			}
+		} catch (err) {
+			console.error('Error checking duplicate item name in updateItem:', err);
+			return {
+				success: false,
+				status: 500,
+				error: 'Gagal memvalidasi nama barang.',
 				values: Object.fromEntries(formData)
 			};
 		}
@@ -448,6 +509,24 @@ export const itemController = {
 			const categories = await categoryModel.getCategories(supabase);
 			const catMap = new Map(categories.map((c) => [c.id, c.type]));
 
+			let existingNames = new Set();
+			try {
+				const { data: items, error: fetchError } = await supabase
+					.from('items')
+					.select('name')
+					.eq('branch_id', profile.branch_id);
+				if (fetchError) throw fetchError;
+				existingNames = new Set((items || []).map((it) => it.name.trim().toLowerCase()));
+			} catch (err) {
+				console.error('Error fetching existing item names in bulkUpload:', err);
+				return {
+					success: false,
+					status: 500,
+					error: 'Gagal memvalidasi database untuk bulk upload.'
+				};
+			}
+
+			const processedNames = new Set();
 			const insertData = [];
 			const errors = [];
 
@@ -457,7 +536,9 @@ export const itemController = {
 				if (
 					!row ||
 					row.length === 0 ||
-					row.every(/** @param {any} cell */ (cell) => cell === null || cell === undefined || cell === '')
+					row.every(
+						/** @param {any} cell */ (cell) => cell === null || cell === undefined || cell === ''
+					)
 				) {
 					continue;
 				}
@@ -468,6 +549,23 @@ export const itemController = {
 					errors.push(`Baris ${i + 1}: Nama dan ID Kategori wajib diisi.`);
 					continue;
 				}
+
+				const nameTrimmed = name.toString().trim();
+				const nameLower = nameTrimmed.toLowerCase();
+
+				if (existingNames.has(nameLower)) {
+					errors.push(
+						`Baris ${i + 1}: Barang dengan nama "${nameTrimmed}" sudah terdaftar di cabang ini.`
+					);
+					continue;
+				}
+
+				if (processedNames.has(nameLower)) {
+					errors.push(`Baris ${i + 1}: Duplikat nama barang "${nameTrimmed}" di dalam file Excel.`);
+					continue;
+				}
+
+				processedNames.add(nameLower);
 
 				if (!catMap.has(category_id)) {
 					errors.push(`Baris ${i + 1}: ID Kategori "${category_id}" tidak ditemukan di database.`);
@@ -569,7 +667,11 @@ export const itemController = {
 			}
 
 			if (profile.role !== 'owner' && item.branch_id !== profile.branch_id) {
-				return { success: false, status: 403, error: 'Akses ditolak. Barang ini milik cabang lain.' };
+				return {
+					success: false,
+					status: 403,
+					error: 'Akses ditolak. Barang ini milik cabang lain.'
+				};
 			}
 
 			await itemModel.updateItem(supabase, id, { is_active: false });
@@ -615,7 +717,11 @@ export const itemController = {
 			}
 
 			if (profile.role !== 'owner' && item.branch_id !== profile.branch_id) {
-				return { success: false, status: 403, error: 'Akses ditolak. Barang ini milik cabang lain.' };
+				return {
+					success: false,
+					status: 403,
+					error: 'Akses ditolak. Barang ini milik cabang lain.'
+				};
 			}
 
 			await itemModel.updateItem(supabase, id, { is_active: true });
