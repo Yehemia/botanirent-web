@@ -74,6 +74,47 @@ export const actions = {
 			return fail(400, { error: 'Semua field (termasuk nomor WhatsApp) harus diisi.' });
 		}
 
+		// Validasi nomor WhatsApp unik di profiles
+		const phoneStr = phone.toString().trim();
+		const { data: existingPhone, error: phoneCheckError } = await supabaseAdmin
+			.from('profiles')
+			.select('id, full_name')
+			.eq('phone', phoneStr)
+			.maybeSingle();
+
+		if (phoneCheckError) {
+			console.error('Error checking duplicate phone in profiles:', phoneCheckError);
+		}
+
+		if (existingPhone) {
+			return fail(400, {
+				error: `Nomor WhatsApp "${phoneStr}" sudah terdaftar pada akun staff "${existingPhone.full_name}".`
+			});
+		}
+
+		// Validasi email unik pada staff aktif
+		const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+		if (listError) {
+			console.error('Error listing users to check email duplicate:', listError);
+		} else if (users) {
+			const existingUser = users.find(
+				(/** @type {any} */ u) => u.email?.toLowerCase() === email.toString().trim().toLowerCase()
+			);
+			if (existingUser) {
+				const { data: existingProfile } = await supabaseAdmin
+					.from('profiles')
+					.select('id, full_name')
+					.eq('id', existingUser.id)
+					.maybeSingle();
+
+				if (existingProfile) {
+					return fail(400, {
+						error: `Email "${email.toString().trim()}" sudah terdaftar pada akun staff "${existingProfile.full_name}".`
+					});
+				}
+			}
+		}
+
 		let userId;
 		let inviteLink = null;
 		let isExisting = false;
@@ -230,6 +271,25 @@ export const actions = {
 
 		if (!id || !full_name || !role || !branch_id || !phone) {
 			return fail(400, { error: 'Semua field harus diisi.' });
+		}
+
+		// Validasi nomor WhatsApp unik pada update staff
+		const phoneStr = phone.toString().trim();
+		const { data: existingPhone, error: phoneCheckError } = await supabase
+			.from('profiles')
+			.select('id, full_name')
+			.eq('phone', phoneStr)
+			.neq('id', id)
+			.maybeSingle();
+
+		if (phoneCheckError) {
+			console.error('Error checking duplicate phone in profiles update:', phoneCheckError);
+		}
+
+		if (existingPhone) {
+			return fail(400, {
+				error: `Nomor WhatsApp "${phoneStr}" sudah terdaftar pada akun staff "${existingPhone.full_name}".`
+			});
 		}
 
 		const { error } = await supabase

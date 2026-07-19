@@ -116,6 +116,22 @@ export const posController = {
 				const clean_phone = payload.customer_phone ? payload.customer_phone.trim().replace(/[^0-9+\-\s]/g, '') : '';
 				const clean_guarantee = payload.customer_guarantee ? payload.customer_guarantee.trim().replace(/<\/?[^>]+(>|$)/g, '') : 'Tanpa Jaminan';
 
+				// Validasi nomor WhatsApp unik di tabel customers sebelum registrasi inline saat checkout
+				if (clean_phone) {
+					const { data: existingCustomer } = await supabase
+						.from('customers')
+						.select('id, full_name')
+						.eq('phone', clean_phone)
+						.maybeSingle();
+					if (existingCustomer) {
+						return {
+							success: false,
+							status: 400,
+							error: `Nomor HP/WA "${clean_phone}" sudah terdaftar pada pelanggan "${existingCustomer.full_name}". Silakan pilih pelanggan tersebut.`
+						};
+					}
+				}
+
 				const notesObj = {
 					guarantee_type: clean_guarantee,
 					deposit_amount: 0,

@@ -117,6 +117,36 @@ export const customerController = {
 			clean_email = emailTrim;
 		}
 
+		if (clean_phone) {
+			const { data: existingPhone } = await supabase
+				.from('customers')
+				.select('id, full_name')
+				.eq('phone', clean_phone)
+				.maybeSingle();
+			if (existingPhone) {
+				return {
+					success: false,
+					status: 400,
+					error: `Nomor Handphone "${clean_phone}" sudah terdaftar pada pelanggan "${existingPhone.full_name}".`
+				};
+			}
+		}
+
+		if (clean_email) {
+			const { data: existingEmail } = await supabase
+				.from('customers')
+				.select('id, full_name')
+				.eq('email', clean_email)
+				.maybeSingle();
+			if (existingEmail) {
+				return {
+					success: false,
+					status: 400,
+					error: `Email "${clean_email}" sudah terdaftar pada pelanggan "${existingEmail.full_name}".`
+				};
+			}
+		}
+
 		const notesObj = {
 			guarantee_type: clean_guarantee_type,
 			deposit_amount: 0,
@@ -199,6 +229,38 @@ export const customerController = {
 				return { success: false, status: 400, error: 'Format Email tidak valid.' };
 			}
 			clean_email = emailTrim;
+		}
+
+		if (clean_phone) {
+			const { data: existingPhone } = await supabase
+				.from('customers')
+				.select('id, full_name')
+				.eq('phone', clean_phone)
+				.neq('id', id)
+				.maybeSingle();
+			if (existingPhone) {
+				return {
+					success: false,
+					status: 400,
+					error: `Nomor Handphone "${clean_phone}" sudah terdaftar pada pelanggan "${existingPhone.full_name}".`
+				};
+			}
+		}
+
+		if (clean_email) {
+			const { data: existingEmail } = await supabase
+				.from('customers')
+				.select('id, full_name')
+				.eq('email', clean_email)
+				.neq('id', id)
+				.maybeSingle();
+			if (existingEmail) {
+				return {
+					success: false,
+					status: 400,
+					error: `Email "${clean_email}" sudah terdaftar pada pelanggan "${existingEmail.full_name}".`
+				};
+			}
 		}
 
 		let ktp_number = '';
